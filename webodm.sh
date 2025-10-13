@@ -563,7 +563,8 @@ update(){
 		echo "Skipping source update (git not found)"
 	else
 		if [[ -d .git ]]; then
-			run "git pull origin master"
+		    # Try master, as default for webodm, and main, if branch name changed in fork
+			run "git pull origin master || git pull origin main"
 		else
 			echo "Skipping source update (.git directory not found)"
 		fi
