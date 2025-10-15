@@ -1,0 +1,56 @@
+/* Стиль для проекта, работает над бутстрапом */
+
+/* Обычный текст - PTSans-Caption */
+@font-face {
+    font-family: 'PTSansCaption';
+    src: url('PTSans-Caption.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Обычный жирный текст - PTSans-CaptionBold */
+@font-face {
+    font-family: 'PTSansCaptionBold';
+    src: url('PTSans-CaptionBold.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Жирный обычный текст - PTSans-CaptionBold */
+@font-face {
+    font-family: 'RobotoMono';
+    src: url('RobotoMono-VariableFont_wght.woff2') format('woff2');
+    font-weight: 100 700;
+    font-style: normal;
+}
+
+body {
+    font-family: 'PTSansCaption', Arial, sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'RobotoMono', 'PTSansCaption', Arial, sans-serif !important;
+}
+
+p {
+    font-family: 'PTSansCaption', Arial, sans-serif !important;
+    font-size: 16px !important;
+}
+
+/* Стиль для кнопок бутстрапа (в будущем поменять на свои) */
+.btn-default, .btn, .btn-sm {
+    font-family: 'RobotoMono', Arial, sans-serif !important;
+    font-size: 20px !important;
+    background-color: #FBBC05 !important;
+    color: #333333 !important;
+    border-radius: 20px !important;
+    border: 0px !important; /* УДАЛИТЬ ПРИ ОТКЛЮЧЕНИИ БУТСТРАПА */
+    box-shadow: 0px 4px 0px #222222 !important;
+    font-weight: 500 !important;
+    transition: background-color 0.5s ease, color 0.5s ease !important;
+}
+
+.btn-default:hover, .btn:hover, .btn-sm:hover {
+  background-color: #b18606 !important;
+  color: #333333 !important;
+}
