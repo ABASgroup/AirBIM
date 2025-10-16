@@ -19,18 +19,8 @@ from app.views.utils import get_permissions
 from webodm import settings
 
 def index(request):
-    # Check first access
-    if User.objects.filter(is_superuser=True).count() == 0:
-        if settings.SINGLE_USER_MODE:
-            # Automatically create a default account
-            User.objects.create_superuser('admin', 'admin@localhost', 'admin')
-        else:
-            # the user is expected to create an admin account
-            return redirect('welcome')
-
-    if settings.SINGLE_USER_MODE and not request.user.is_authenticated:
-        login(request, User.objects.get(username="admin"), 'django.contrib.auth.backends.ModelBackend')
-
+    if request.user.is_authenticated:
+        return redirect('dashboard')
     return redirect('welcome')
 
 @login_required
@@ -140,33 +130,36 @@ class UserRegistrationForm(forms.ModelForm):
             'password': forms.PasswordInput(),
         }
 
-class LoginView(View):
+class RegistrationView(View):
+    template_path = 'app/registration/registration.html'
+    
     def get(self, request):
-        form = AuthenticationForm()
+        form = UserRegistrationForm()
         
-        return render(request, 'app/login.html',
+        return render(request, self.template_path,
                     {
-                        'user_login_form': form
+                        'form': form
                     })
 
     def post(self, request):
-        form = AuthenticationForm(request, data=request.POST)
+        form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                print(3)
-                login(request, user, 'django.contrib.auth.backends.ModelBackend')
-                return redirect('dashboard')
-        return render(request, 'app/login.html',
+            user = form.save(commit=False)
+            user.password = make_password(form.cleaned_data['password'])
+            user.save()
+
+            # Log-in automatically
+            login(request, user, 'django.contrib.auth.backends.ModelBackend')
+            return redirect('dashboard')
+        return render(request, self.template_path,
             {
-                'user_login_form': form
+                'form': form
             })
 
-
 def welcome(request):
-        return render(request, 'app/welcome.html')
+    if request.user.is_authenticated:
+        return redirect('index')
+    return render(request, 'app/welcome.html')
 
 def handler404(request, exception):
     return render(request, '404.html', status=404)

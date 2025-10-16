@@ -21,7 +21,7 @@ if settings.TESTING:
 
 urlpatterns = [
     url(r'^$', app_views.index, name='index'),
-    url(r'^login/$', app_views.LoginView.as_view(), name='login'),
+    url(r'^registration/$', app_views.RegistrationView.as_view(), name='registration'),
     url(r'^welcome/$', app_views.welcome, name='welcome'),
 
     url(r'^dashboard/$', app_views.dashboard, name='dashboard'),

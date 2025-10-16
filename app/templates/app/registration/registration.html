@@ -2,17 +2,17 @@
 {% load i18n %}
 
 {% block registration_content %}
+    <h1>{% trans 'AirBIM' %}</h1>
+    <h2 style="margin-bottom: 28px;">{% trans "Добро пожаловать!" %}</h2>
     {% if firstuserform.errors %}
         <div class="alert alert-warning">
-            <p>{% trans "Uh oh! Could you please check the errors below?" %}</p>
+            <p>{% trans "Что-то пошло не так" %}</p>
         </div>
     {% else %}
-        <h1>{% trans 'AirBIM' %}</h1>
-        <h2 style="margin-bottom: 28px;">{% trans "Войдите в ваш аккаунт" %}</h2>
     {% endif %}
 
-    <form action="{% url 'login'  %}" method="post" class="form-horizontal" role="form">{% csrf_token %}
-        {% for field in user_login_form %}
+    <form action="{% url 'registration'  %}" method="post" class="form-horizontal" role="form">{% csrf_token %}
+        {% for field in form %}
             {% include 'registration/form_field.html' %}
         {% endfor %}
         <div class="form-group">
