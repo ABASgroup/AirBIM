@@ -1,12 +1,11 @@
 import json
 
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import AuthenticationForm
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
-from guardian.shortcuts import get_objects_for_user
+from django.contrib.auth import logout
 from django.views import View
 
 from nodeodm.models import ProcessingNode
@@ -156,10 +155,15 @@ class RegistrationView(View):
                 'form': form
             })
 
-def welcome(request):
+def welcome_view(request):
     if request.user.is_authenticated:
         return redirect('index')
     return render(request, 'app/welcome.html')
+
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('welcome')
 
 def handler404(request, exception):
     return render(request, '404.html', status=404)

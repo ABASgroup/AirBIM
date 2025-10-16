@@ -22,7 +22,8 @@ if settings.TESTING:
 urlpatterns = [
     url(r'^$', app_views.index, name='index'),
     url(r'^registration/$', app_views.RegistrationView.as_view(), name='registration'),
-    url(r'^welcome/$', app_views.welcome, name='welcome'),
+    url(r'^welcome/$', app_views.welcome_view, name='welcome'),
+    url(r'^logout/$', app_views.logout_view, name='logout'),
 
     url(r'^dashboard/$', app_views.dashboard, name='dashboard'),
     url(r'^map/project/(?P<project_pk>[^/.]+)/task/(?P<task_pk>[^/.]+)/$', app_views.map, name='map'),
