@@ -12,6 +12,9 @@ def HomeView(plugin):
     def view(request):
         # Определяем базовый URL в зависимости от того, как зашли
         base_url = "/bim/" if request.path.startswith("/bim/") else plugin.public_url("")
+        api_upload_url = "/api" + plugin.public_url("upload")
+        api_files_url = "/api" + plugin.public_url("files")
+        api_files_2_url = "/api" + plugin.public_url("files/")
         
         return render(
             request,
@@ -19,7 +22,10 @@ def HomeView(plugin):
             {
                 "title": "Test", 
                 "plugin": plugin,
-                "test_url": base_url + "test" if base_url.endswith("/") else base_url + "/test"
+                "test_url": base_url + "test" if base_url.endswith("/") else base_url + "/test",
+                "api_upload_url": api_upload_url,
+                "api_files_url": api_files_url,
+                "api_files_2_url": api_files_2_url,
             },
         )
 

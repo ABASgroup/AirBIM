@@ -4,4 +4,190 @@
 Hello world!
 
 <a href="{{ test_url }}">Перейти на вторую страницу</a>
+
+<div class="container" style="margin-top: 20px;">
+    
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <form id="uploadForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="fileInput">Загрузите файл (LAS, LAZ или GeoTIFF):</label>
+                    <input type="file" class="form-control" id="fileInput" name="file" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="uploadBtn">
+                    <i class="fa fa-upload"></i> Загрузить
+                </button>
+                
+                <div id="uploadProgress" style="display: none; margin-top: 10px;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped active" role="progressbar" 
+                             style="width: 100%">
+                            Загружаем...
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <div id="uploadResult" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+    
+    <h3>Мои файлы:</h3>
+    <div id="filesList"></div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Загрузка файла
+    $('#uploadForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = new FormData(this);
+        
+        $('#uploadBtn').prop('disabled', true);
+        $('#uploadProgress').show();
+        $('#uploadResult').html('');
+        
+        $.ajax({
+            url: '{{ api_upload_url }}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            success: function(response) {
+                $('#uploadProgress').hide();
+                $('#uploadBtn').prop('disabled', false);
+                
+                $('#uploadResult').html(
+                    '<div class="alert alert-success">' +
+                    '<strong>Успех!</strong> ' + response.message +
+                    '<br><strong>File:</strong> ' + response.filename +
+                    '<br><strong>Type:</strong> ' + response.file_type +
+                    '<br><strong>Size:</strong> ' + (response.size / 1024 / 1024).toFixed(2) + ' MB' +
+                    '</div>'
+                );
+                
+                // Обновляем список файлов
+                loadFilesList();
+                
+                // Очищаем форму
+                $('#uploadForm')[0].reset();
+            },
+            error: function(xhr) {
+                $('#uploadProgress').hide();
+                $('#uploadBtn').prop('disabled', false);
+                
+                var errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Произошла неизвестная ошибка';
+                
+                $('#uploadResult').html(
+                    '<div class="alert alert-danger">' +
+                    '<strong>Ошибка!</strong> ' + errorMsg +
+                    '</div>'
+                );
+            }
+        });
+    });
+    
+    // Загрузка списка файлов
+    function loadFilesList() {
+        $.ajax({
+            url: '{{ api_files_url }}',
+            type: 'GET',
+            success: function(response) {
+                if (response.count === 0) {
+                    $('#filesList').html('<p class="text-muted">Файлы ещё не загружены.</p>');
+                    return;
+                }
+                
+                var html = '<div class="table-responsive"><table class="table table-striped">';
+                html += '<thead><tr>';
+                html += '<th>Filename</th>';
+                html += '<th>Type</th>';
+                html += '<th>Size</th>';
+                html += '<th>Actions</th>';
+                html += '</tr></thead><tbody>';
+                
+                response.files.forEach(function(file) {
+                    var sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+                    
+                    {% comment %}
+                        var info = '';
+                        if (file.metadata.point_count) {
+                            info = file.metadata.point_count.toLocaleString() + ' points';
+                        } else if (file.metadata.width && file.metadata.height) {
+                            info = file.metadata.width + 'x' + file.metadata.height + ', ' + file.metadata.bands + ' bands';
+                        }
+                    {% endcomment %}
+                    
+                    html += '<tr>';
+                    html += '<td>' + file.filename + '</td>';
+                    html += '<td><span class="label label-info">' + file.file_type + '</span></td>';
+                    html += '<td>' + sizeInMB + ' MB</td>';
+                    html += '<td>';
+                    html += '<button class="btn btn-sm btn-danger delete-file" data-id="' + file.id + '" data-name="' + file.filename + '">';
+                    html += '<i class="fa fa-trash"></i> Delete';
+                    html += '</button>';
+                    html += '</td>';
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table></div>';
+                $('#filesList').html(html);
+            },
+            error: function(xhr) {
+                console.log(xhr);
+                $('#filesList').html('<p class="text-danger">Failed to load files list.</p>');
+            }
+        });
+    }
+    
+    // Удаление файла
+    $(document).on('click', '.delete-file', function() {
+        var fileId = $(this).data('id');
+        var fileName = $(this).data('name');
+        
+        if (!confirm('Are you sure you want to delete "' + fileName + '"?')) {
+            return;
+        }
+        
+        $.ajax({
+            url: '{{ api_files_2_url }}' + fileId,
+            type: 'DELETE',
+            headers: {
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            success: function(response) {
+                loadFilesList();
+                $('#uploadResult').html(
+                    '<div class="alert alert-success">' +
+                    response.message +
+                    '</div>'
+                );
+            },
+            error: function(xhr) {
+                var errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Failed to delete file';
+                
+                $('#uploadResult').html(
+                    '<div class="alert alert-danger">' +
+                    '<strong>Error!</strong> ' + errorMsg +
+                    '</div>'
+                );
+            }
+        });
+    });
+    
+    // Загружаем список файлов при загрузке страницы
+    loadFilesList();
+});
+</script>
 {% endblock %}
