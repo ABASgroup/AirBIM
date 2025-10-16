@@ -3,6 +3,8 @@
 {% load settings %}
 
 {% block registration_content %}
+    <h1>{% trans 'AirBIM' %}</h1>
+    <h2 style="margin-bottom: 28px;">{% trans "Войдите в ваш аккаунт" %}</h2>
     {% if form.errors %}
         <div class="alert alert-warning">
             <p><strong>{% trans "Invalid credentials." %}</strong> {% trans "Note that both fields are case-sensitive." %}</p>
@@ -32,9 +34,9 @@
             </div>
             <div class="top-buffer col-sm-offset-2 col-sm-10">
                 {% if reset_pwd_link != '' %}
-                <p><a href="{{ reset_pwd_link }}">{% trans "Forgot your password?" %}</a></p>
+                <p><a href="{{ reset_pwd_link }}">{% trans "Забыли пароль?" %}</a></p>
                 {% else %}
-                <p><a href="javascript:toggleForgotPasswordHint();">{% trans "Forgot your password?" %}</a></p>
+                <p><a href="javascript:toggleForgotPasswordHint();">{% trans "Забыли пароль?" %}</a></p>
                 <script>function toggleForgotPasswordHint(){ $("#forgotPasswordHint").toggle(); }</script>
                 <div id="forgotPasswordHint" style="display: none; font-size: 90%; padding: 4px;" class="theme-secondary">
                     You can reset the administrator password by running the following command:

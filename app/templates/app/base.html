@@ -28,6 +28,7 @@
     <link rel="icon" type="image/png" href="{% settings_image_url 'app_logo_favicon' %}" sizes="32x32">
 
     <link rel="stylesheet" type="text/css" href="{% static 'app/css/bootstrap.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'app/fonts/Bim.css' %}">
 
     <link rel="preload" href="{% static 'app/webfonts/fa-regular-400.woff2' %}" as="font" type="font/woff2" crossorigin="anonymous">
     <link rel="preload" href="{% static 'app/webfonts/fa-solid-900.woff2' %}" as="font" type="font/woff2" crossorigin="anonymous">
@@ -61,8 +62,6 @@
     </style>
     {% endcache %}
 
-    {% is_desktop_mode as desktop_mode %}
-    {% if desktop_mode %}
     <!-- Hide top nav bar -->
     <style type="text/css">
         .navbar-header { display: none; }
@@ -71,7 +70,6 @@
         .map-view { height: calc(100% + 30px) !important; }
         .model-view { height: calc(100% + 50px) !important; }
     </style>
-    {% endif %}
 
     <style type="text/css">
         {{ SETTINGS.theme.css|safe }}
