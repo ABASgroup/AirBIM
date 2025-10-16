@@ -64,6 +64,8 @@ def get_pointcloud_info(file_path):
             "srs": info.get("srs", {}).get("wkt", None),
         }
 
+        print(f"Point cloud info for {file_path}: {metadata}")
+
         return metadata
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to get point cloud info: {e.stderr}")
@@ -97,6 +99,9 @@ def get_geotiff_info(file_path):
                 "dtype": str(src.dtypes[0]),
                 "nodata": src.nodata,
             }
+
+            print(metadata)
+            print(src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top)
 
         return metadata
     except Exception as e:

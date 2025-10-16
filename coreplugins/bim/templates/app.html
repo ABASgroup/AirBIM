@@ -135,6 +135,10 @@ $(document).ready(function() {
                     html += '<button class="btn btn-sm btn-danger delete-file" data-id="' + file.id + '" data-name="' + file.filename + '">';
                     html += '<i class="fa fa-trash"></i> Delete';
                     html += '</button>';
+                    html += '        ';
+                    html += '<button class="btn btn-sm btn-info get-info" data-id="' + file.id + '">';
+                    html += '<i class="fa fa-info-circle"></i> Info';
+                    html += '</button>';
                     html += '</td>';
                     html += '</tr>';
                 });
@@ -176,6 +180,53 @@ $(document).ready(function() {
                 var errorMsg = xhr.responseJSON && xhr.responseJSON.error 
                     ? xhr.responseJSON.error 
                     : 'Failed to delete file';
+                
+                $('#uploadResult').html(
+                    '<div class="alert alert-danger">' +
+                    '<strong>Error!</strong> ' + errorMsg +
+                    '</div>'
+                );
+            }
+        });
+    });
+
+    // Получить информацию о файле
+    $(document).on('click', '.get-info', function() {
+        var fileId = $(this).data('id');
+        
+        $.ajax({
+            url: '{{ api_files_2_url }}' + fileId,
+            type: 'GET',
+            success: function(response) {
+                var infoHtml = '<ul>';
+                for (var key in response.metadata) {
+                    if (response.metadata.hasOwnProperty(key)) {
+                        if (typeof response.metadata[key] === 'object' && response.metadata[key] !== null && !Array.isArray(response.metadata[key])) {
+                            infoHtml += '<li><strong>' + key + ':</strong><ul>';
+                            for (var subKey in response.metadata[key]) {
+                                if (response.metadata[key].hasOwnProperty(subKey)) {
+                                    infoHtml += '<li><strong>' + subKey + ':</strong> ' + response.metadata[key][subKey] + '</li>';
+                                }
+                            }
+                            infoHtml += '</ul></li>';
+                        } else {
+                            infoHtml += '<li><strong>' + key + ':</strong> ' + response.metadata[key] + '</li>';
+                        }
+                    }
+                }
+                infoHtml += '</ul>';
+                
+                $('#uploadResult').html(
+                    '<div class="alert alert-info">' +
+                    '<h4>File Info: ' + response.filename + '</h4>' +
+                    infoHtml +
+                    '</div>'
+                );
+            },
+            error: function(xhr) {
+                var errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Failed to get file info';
                 
                 $('#uploadResult').html(
                     '<div class="alert alert-danger">' +
