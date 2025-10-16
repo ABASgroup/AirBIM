@@ -8,7 +8,15 @@ echo "| |     / /__  / /_  / __ \/ __ \/  |/  /"
 echo "| | /| / / _ \/ __ \/ / / / / / / /|_/ / "
 echo "| |/ |/ /  __/ /_/ / /_/ / /_/ / /  / /  "
 echo "|__/|__/\___/_.___/\____/_____/_/  /_/   "
-echo                          
+echo
+echo "                    &                    "
+echo "      ___  _     ______ _                "
+echo "     / _ \(_)    | ___ (_)               "
+echo "    / /_\ \_ _ __| |_/ /_ _ __ ___       "
+echo "    |  _  | | '__| ___ \ | '_ \` _ \      "
+echo "    | | | | | |  | |_/ / | | | | | |     "
+echo "    \_| |_/_|_|  \____/|_|_| |_| |_|     "
+                          
 echo -e "\033[39m"
 
 almost_there(){
@@ -39,6 +47,7 @@ fi
 if [ "$1" = "--setup-devenv" ] || [ "$2" = "--setup-devenv" ]; then
     echo Setup git modules...
     
+    git config --global --add safe.directory /webodm    # Needed for getting submodules from webodm for forked repos
     git submodule update --init
     
     echo Setup npm dependencies...
@@ -67,7 +76,7 @@ if [[ "$WO_DEFAULT_NODES" > 0 ]]; then
     while [ $i -ne "$WO_DEFAULT_NODES" ]
     do
         i=$(($i+1))
-        NODE_HOST=$(python manage.py getnodehostname webodm_node-odm_$i)
+        NODE_HOST=$(python manage.py getnodehostname airbim_node-odm_$i)    # default node name for our project is airbim
         python manage.py addnode $NODE_HOST 3000 --label node-odm-$i
     done
 fi
