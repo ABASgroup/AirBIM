@@ -1,0 +1,24 @@
+{% extends 'registration/registration_base.html' %}
+{% load i18n %}
+
+{% block registration_content %}
+    {% if firstuserform.errors %}
+        <div class="alert alert-warning">
+            <p>{% trans "Uh oh! Could you please check the errors below?" %}</p>
+        </div>
+    {% else %}
+        <h1>{% trans 'AirBIM' %}</h1>
+        <h2 style="margin-bottom: 28px;">{% trans "Войдите в ваш аккаунт" %}</h2>
+    {% endif %}
+
+    <form action="{% url 'login'  %}" method="post" class="form-horizontal" role="form">{% csrf_token %}
+        {% for field in user_login_form %}
+            {% include 'registration/form_field.html' %}
+        {% endfor %}
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button type="submit" class="btn btn-default">{% trans 'Войти' %}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

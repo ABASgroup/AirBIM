@@ -1,11 +1,13 @@
 import json
 
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import AuthenticationForm
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from guardian.shortcuts import get_objects_for_user
+from django.views import View
 
 from nodeodm.models import ProcessingNode
 from app.models import Project, Task
@@ -29,8 +31,7 @@ def index(request):
     if settings.SINGLE_USER_MODE and not request.user.is_authenticated:
         login(request, User.objects.get(username="admin"), 'django.contrib.auth.backends.ModelBackend')
 
-    return redirect(settings.LOGIN_REDIRECT_URL if request.user.is_authenticated
-                    else settings.LOGIN_URL)
+    return redirect('welcome')
 
 @login_required
 def dashboard(request):
@@ -131,7 +132,7 @@ def processing_node(request, processing_node_id):
                 'available_options_json': pn.get_available_options_json(pretty=True)
             })
 
-class FirstUserForm(forms.ModelForm):
+class UserRegistrationForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('username', 'password', )
@@ -139,33 +140,33 @@ class FirstUserForm(forms.ModelForm):
             'password': forms.PasswordInput(),
         }
 
+class LoginView(View):
+    def get(self, request):
+        form = AuthenticationForm()
+        
+        return render(request, 'app/login.html',
+                    {
+                        'user_login_form': form
+                    })
+
+    def post(self, request):
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                print(3)
+                login(request, user, 'django.contrib.auth.backends.ModelBackend')
+                return redirect('dashboard')
+        return render(request, 'app/login.html',
+            {
+                'user_login_form': form
+            })
+
 
 def welcome(request):
-    if User.objects.filter(is_superuser=True).count() > 0:
-        return redirect('index')
-
-    fuf = FirstUserForm()
-
-    if request.method == 'POST':
-        fuf = FirstUserForm(request.POST)
-        if fuf.is_valid():
-            admin_user = fuf.save(commit=False)
-            admin_user.password = make_password(fuf.cleaned_data['password'])
-            admin_user.is_superuser = admin_user.is_staff = True
-            admin_user.save()
-
-            # Log-in automatically
-            login(request, admin_user, 'django.contrib.auth.backends.ModelBackend')
-            return redirect('dashboard')
-
-    return render(request, 'app/welcome.html',
-                  {
-                      'title': _('Welcome'),
-                      'firstuserform': fuf
-                  })
-
-def air_bim_welcome(request):
-        return render(request, 'app/air_bim_welcome.html')
+        return render(request, 'app/welcome.html')
 
 def handler404(request, exception):
     return render(request, '404.html', status=404)
