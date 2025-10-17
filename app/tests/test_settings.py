@@ -1,12 +1,12 @@
 import os
 import time
+import inspect
 
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.test import Client
 
 from app.contexts.settings import load as load_settings
-from app.models import Setting
 from app.models import Theme
 from webodm import settings as webodm_settings
 from .classes import BootTestCase
@@ -22,45 +22,27 @@ class TestSettings(BootTestCase):
     def test_settings(self):
         c = Client()
 
-        # There should always be a Setting object
-        self.assertTrue(Setting.objects.count() == 1, "There's a settings object")
+        # There should always be a settings file
+        settings_file = inspect.getfile(webodm_settings)
+        self.assertTrue(os.path.exists(settings_file), "webodm_settings file is accessible")
 
         # There should be "default" Theme object
+        # TODO: remove theme
         self.assertTrue(Theme.objects.filter(name="Default").count() == 1, "Default theme found")
 
         # The default settings use the default theme
-        self.assertTrue(Setting.objects.first().theme.id == Theme.objects.get(name="Default").id, "Default theme is associated to settings")
+        # TODO: remove theme
+        self.assertTrue(webodm_settings.DEFAULT_THEME_ID == Theme.objects.get(name="Default").id, "Default theme is associated to settings")
 
         # We can create a new theme object
+        # TODO: remove theme
         second_theme = Theme.objects.create(name="Second")
-
-        # We cannot add another setting objects
-        with self.assertRaises(ValidationError):
-            Setting.objects.create(app_name="Test", theme=second_theme)
 
         # We can retrieve the settings
         settings = load_settings()['SETTINGS']
         self.assertTrue(settings is not None, "Can retrieve settings")
 
-        # The default logo has been created in the proper destination
-        default_logo_path = os.path.join(webodm_settings.MEDIA_ROOT, settings.app_logo.name)
-        self.assertTrue(os.path.exists(default_logo_path), "Default logo exists in MEDIA_ROOT/settings")
-
-        # We can update the logo
-        logo = os.path.join('app', 'static', 'app', 'img', 'favicon.png')
-        settings.app_logo.save(os.path.basename(logo), File(open(logo, 'rb')))
-        settings.save()
-
-        # The main logo has been uploaded
-        self.assertTrue("favicon" in settings.app_logo.name, "Logo has been updated")
-        self.assertTrue(os.path.exists(os.path.join(webodm_settings.MEDIA_ROOT, settings.app_logo.name)),
-                        "New logo exists in MEDIA_ROOT/settings")
-
-        # The old logo does not exist anymore
-        self.assertFalse(os.path.exists(default_logo_path),
-                        "Old logo has been deleted")
-
-
-
-
-
+        # The logos have been created in the proper destination
+        self.assertTrue(settings["app_logo"], "Default logo exists")
+        self.assertTrue(settings["app_logo_36"], "Default logo exists")
+        self.assertTrue(settings["app_logo_favicon"], "Default logo exists")

@@ -78,13 +78,13 @@ def is_dev_mode():
 @register.simple_tag(takes_context=True)
 def settings_image_url(context, image):
     try:
-        img_cache = getattr(context['SETTINGS'], image)
+        img_url = context['SETTINGS'][image]
     except KeyError:
         logger.warning("Cannot get SETTINGS key from context. Something's wrong in settings_image_url.")
         return ''
 
     try:
-        return "/media/" + img_cache.url
+        return img_url
     except FileNotFoundError:
         logger.warning("Cannot get %s, this could mean the image was deleted." % image)
         return ''
@@ -97,15 +97,15 @@ def get_footer(context):
         logger.warning("Cannot get SETTINGS key from context. The footer will not be displayed.")
         return ""
 
-    if settings.theme.html_footer == "": return ""
+    if settings["theme"].html_footer == "": return ""
 
     organization = ""
-    if settings.organization_name != "" and settings.organization_website != "":
-        organization = "<a href='{}'>{}</a>".format(settings.organization_website, settings.organization_name)
-    elif settings.organization_name != "":
-        organization = settings.organization_name
+    if settings["organization_name"] != "" and settings["organization_website"] != "":
+        organization = "<a href='{}'>{}</a>".format(settings["organization_website"], settings["organization_name"])
+    elif settings["organization_name"] != "":
+        organization = settings["organization_name"]
 
-    footer = settings.theme.html_footer
+    footer = settings["theme"].html_footer
     footer = footer.replace("{ORGANIZATION}", organization)
     footer = footer.replace("{YEAR}", str(datetime.datetime.now().year))
 
@@ -117,7 +117,7 @@ def get_footer(context):
 def theme(context, color):
     """Return a theme color from the currently selected theme"""
     try:
-        return getattr(context['SETTINGS'].theme, color)
+        return getattr(context['SETTINGS']['theme'], color)
     except Exception as e:
         logger.warning("Cannot load configuration from theme(): " + str(e))
         return "#0000FF" # dah buh dih ah buh daa..

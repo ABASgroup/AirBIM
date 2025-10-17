@@ -1,5 +1,5 @@
 from app.plugins import PluginBase, Menu, MountPoint
-from app.models import Setting
+from app.contexts.settings import load as load_settings
 from django.utils.translation import gettext as _
 from django.shortcuts import render
 from django.contrib import messages
@@ -64,7 +64,7 @@ class ConfigurationForm(forms.Form):
 
     def test_settings(self, request):
         try:
-            settings = Setting.objects.first()
+            settings = load_settings()["SETTINGS"]
             email.send(f'{self.cleaned_data["notification_app_name"]} - Testing Notification', 'Hi, just testing if notification is working', self.cleaned_data)
             messages.success(request, f"Email sent successfully, check your inbox at {self.cleaned_data.get('smtp_to_address')}")
         except SMTPAuthenticationError as e:
@@ -103,8 +103,8 @@ class Plugin(PluginBase):
                 config_data = config.load()
                 
                 # notification_app_name initial value should be whatever is defined in the settings
-                settings = Setting.objects.first()
-                config_data['notification_app_name'] = config_data['notification_app_name'] or settings.app_name
+                settings = load_settings()["SETTINGS"]
+                config_data['notification_app_name'] = config_data['notification_app_name'] or settings["app_name"]
                 form = ConfigurationForm(initial=config_data)
             
             return render(request, self.template_path('index.html'), {'form' : form, 'title' : 'Task Notification'})

@@ -70,7 +70,7 @@ class Info(TaskView):
                 task_info['endDate'] = datetime.utcnow().timestamp() * 1000
                 task_info['sensor'] = ''
                 task_info['title'] = task.name
-                task_info['provider'] = get_site_settings().organization_name
+                task_info['provider'] = get_site_settings()["organization_name"]
 
                 if 'exif' in im.info:
                     exif_dict = piexif.load(im.info['exif'])

@@ -224,6 +224,7 @@ class TestApp(BootTestCase):
         c = Client()
         c.login(username='testsuperuser', password='test1234')
 
+        # TODO: remove settings and theme
         settingId = Setting.objects.all()[0].id # During tests, sometimes this is != 1
         themeId = Theme.objects.all()[0].id # During tests, sometimes this is != 1
 
