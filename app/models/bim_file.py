@@ -8,7 +8,7 @@ from django.conf import settings
 
 class BIMFile(models.Model):
     """
-    Модель для хранения загруженных LAS/LAZ и GeoTIFF файлов (BIM плагин)
+    Model for storing uploaded LAS/LAZ and GeoTIFF files (BIM plugin)
     """
 
     FILE_TYPE_CHOICES = [
@@ -59,11 +59,11 @@ class BIMFile(models.Model):
         return f"{self.original_filename} ({self.file_type})"
 
     def get_absolute_path(self):
-        """Возвращает абсолютный путь к файлу"""
+        """Returns the absolute path to the file"""
         return os.path.join(settings.MEDIA_ROOT, self.file_path)
 
     def delete_file(self):
-        """Удаляет файл из файловой системы"""
+        """Deletes the file from the file system"""
         if not self.file_path:
             return
 
@@ -92,6 +92,6 @@ class BIMFile(models.Model):
                 pass
 
     def delete(self, *args, **kwargs):
-        """Переопределяем метод delete для удаления файла"""
+        """Override the delete method to remove the file"""
         self.delete_file()
         super().delete(*args, **kwargs)

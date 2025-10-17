@@ -11,7 +11,6 @@ def HomeView(plugin):
     @login_required
     def view(request):
         # Определяем базовый URL в зависимости от того, как зашли
-        base_url = "/bim/" if request.path.startswith("/bim/") else plugin.public_url("")
         api_upload_url = "/api" + plugin.public_url("upload")
         api_files_url = "/api" + plugin.public_url("files")
         api_files_2_url = "/api" + plugin.public_url("files/")
@@ -22,7 +21,7 @@ def HomeView(plugin):
             {
                 "title": "Test", 
                 "plugin": plugin,
-                "test_url": base_url + "test" if base_url.endswith("/") else base_url + "/test",
+                "test_url": "/bim/test",
                 "api_upload_url": api_upload_url,
                 "api_files_url": api_files_url,
                 "api_files_2_url": api_files_2_url,
@@ -34,8 +33,6 @@ def HomeView(plugin):
 def TestView(plugin):
     @login_required
     def view(request):
-        # Определяем базовый URL в зависимости от того, как зашли
-        base_url = "/bim/" if request.path.startswith("/bim/") else plugin.public_url("")
         
         return render(
             request,
@@ -43,7 +40,7 @@ def TestView(plugin):
             {
                 "title": "Test", 
                 "plugin": plugin,
-                "home_url": base_url
+                "home_url": "/bim"
             },
         )
 
