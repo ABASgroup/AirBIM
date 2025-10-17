@@ -13,6 +13,9 @@
 {% theme "success" as theme_success %}
 {% theme "failed" as theme_failed %}
 
+/* USED TO APPLY THEME, BE CAREFUL */
+/* RENAME TO theme.css TO APPLY */
+
 /* Primary */
 body,
 ul#side-menu.nav a,

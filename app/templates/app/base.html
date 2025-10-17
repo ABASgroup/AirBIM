@@ -58,7 +58,6 @@
 
     {% cache 3600 theme_css %}
     <style type="text/css">
-    {% include "theme.css" %}
     </style>
     {% endcache %}
 
@@ -71,9 +70,6 @@
         .model-view { height: calc(100% + 50px) !important; }
     </style>
 
-    <style type="text/css">
-        {{ SETTINGS.theme.css|safe }}
-    </style>
 </head>
 <body data-admin-utc-offset="{% now "Z" %}">
 {% if desktop_mode %}
@@ -113,7 +109,6 @@
     </div>
 
     {% autoescape off %}
-    {% get_footer %}
     {% endautoescape %}
 {% endblock %}
 </body>
