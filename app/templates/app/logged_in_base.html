@@ -111,13 +111,6 @@
                             <a href="/admin/auth/group/"><i class="fa fa-users fa-fw"></i> {% trans 'Groups' %}</a>
                         </li>
                         {% endif %}
-
-                        <li>
-                            <a href="{% url 'admin:app_setting_change' SETTINGS.id %}"><i class="fa fa-magic fa-fw"></i> {% trans 'Brand' %}</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'admin:app_theme_change' SETTINGS.theme.id %}"><i class="fa fa-paint-brush fa-fw"></i> {% trans 'Theme' %}</a>
-                        </li>
                         <li>
                             <a href="/admin/app/plugin/"><i class="fa fa-plug fa-fw"></i> {% trans 'Plugins' %}</a>
                         </li>

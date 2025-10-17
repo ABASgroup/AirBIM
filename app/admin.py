@@ -19,9 +19,8 @@ from app.models import Plugin
 from app.models import Profile
 from app.plugins import get_plugin_by_name, enable_plugin, disable_plugin, delete_plugin, valid_plugin, \
     get_plugins_persistent_path, clear_plugins_cache, init_plugins
-from .models import Project, Task, Setting, Theme
+from .models import Project, Task, Setting
 from django import forms
-from codemirror2.widgets import CodeMirrorEditor
 from webodm import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils.translation import gettext_lazy as _, gettext
@@ -57,43 +56,6 @@ class SettingAdmin(admin.ModelAdmin):
         count = Setting.objects.all().count()
         return count == 0
 
-
-admin.site.register(Setting, SettingAdmin)
-
-
-class ThemeModelForm(forms.ModelForm):
-    css = forms.CharField(help_text=_("Enter custom CSS"),
-                          label=_("CSS"),
-                          required=False,
-                          widget=CodeMirrorEditor(options={'mode': 'css', 'lineNumbers': True}))
-    html_before_header = forms.CharField(help_text=_("HTML that will be displayed above site header"),
-                                         label=_("HTML (before header)"),
-                                         required=False,
-                                         widget=CodeMirrorEditor(options={'mode': 'xml', 'lineNumbers': True}))
-    html_after_header = forms.CharField(help_text=_("HTML that will be displayed after site header"),
-                                        label=_("HTML (after header)"),
-                                        required=False,
-                                        widget=CodeMirrorEditor(options={'mode': 'xml', 'lineNumbers': True}))
-    html_after_body = forms.CharField(help_text=_("HTML that will be displayed after the body tag"),
-                                      label=_("HTML (after body)"),
-                                      required=False,
-                                      widget=CodeMirrorEditor(options={'mode': 'xml', 'lineNumbers': True}))
-    html_footer = forms.CharField(help_text=_(
-        "HTML that will be displayed in the footer. You can also use the special tags such as {ORGANIZATION} and {YEAR}."),
-        label=_("HTML (footer)"),
-        required=False,
-        widget=CodeMirrorEditor(options={'mode': 'xml', 'lineNumbers': True}))
-
-    class Meta:
-        model = Theme
-        fields = '__all__'
-
-
-class ThemeAdmin(admin.ModelAdmin):
-    form = ThemeModelForm
-
-
-admin.site.register(Theme, ThemeAdmin)
 admin.site.register(PluginDatum, admin.ModelAdmin)
 
 
