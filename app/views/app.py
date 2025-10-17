@@ -20,7 +20,6 @@ from webodm import settings
 
 
 def index(request):
-    print(2)
     if request.user.is_authenticated:
         return redirect('dashboard')
     return redirect('welcome')
@@ -141,19 +140,16 @@ class UserRegistrationForm(forms.ModelForm):
 
 
 class RegistrationView(View):
-    template_path = 'app/registration/registration.html'
+    form_class = UserRegistrationForm
+    template_name = 'app/registration/registration.html'
+    title = _("Регистрация")
 
     def get(self, request):
-        form = UserRegistrationForm()
-
-        return render(request, self.template_path,
-                      {
-                          'title': _('Регистрация'),
-                          'form': form
-                      })
+        form = self.form_class()
+        return render(request, self.template_name, context={'form': form, 'title': self.title})
 
     def post(self, request):
-        form = UserRegistrationForm(request.POST)
+        form = self.form_class(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             user.password = make_password(form.cleaned_data['password'])
@@ -162,11 +158,8 @@ class RegistrationView(View):
             # Log-in automatically
             login(request, user, 'django.contrib.auth.backends.ModelBackend')
             return redirect('dashboard')
-        return render(request, self.template_path,
-                      {
-                          'title': _('Регистрация'),
-                          'form': form
-                      })
+        return render(request, self.template_name, context={'form': form, 'title': self.title})
+
 
 
 def welcome_view(request):
@@ -183,7 +176,7 @@ class ModifiedLoginView(LoginView):
             # Redirect user to index
             return redirect('/')
         return super().dispatch(request, *args, **kwargs)
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
