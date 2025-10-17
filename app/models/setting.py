@@ -11,7 +11,6 @@ from imagekit.processors import ResizeToFit
 from django.utils.translation import gettext_lazy as _
 
 from webodm import settings
-from .theme import Theme, update_theme_css
 
 logger = logging.getLogger('app.logger')
 
@@ -30,8 +29,6 @@ class Setting(models.Model):
 
     organization_name = models.CharField(default='WebODM', max_length=255, blank=True, null=True, help_text=_("The name of your organization"), verbose_name=_("Organization name"))
     organization_website = models.URLField(default='https://github.com/OpenDroneMap/WebODM/', max_length=255, blank=True, null=True, help_text=_("The website URL of your organization"), verbose_name=_("Organization website"))
-    theme = models.ForeignKey(Theme, blank=False, null=False, on_delete=models.DO_NOTHING, verbose_name=_("Theme"),
-                              help_text=_("Active theme"))
 
     def __init__(self, *args, **kwargs):
         super(Setting, self).__init__(*args, **kwargs)
@@ -81,10 +78,3 @@ class Setting(models.Model):
 def setting_pre_save(sender, instance, **kwargs):
     if Setting.objects.count() > 0 and instance.id != Setting.objects.get().id:
         raise ValidationError("Can only create 1 %s instance" % Setting.__name__)
-
-
-@receiver(signals.post_save, sender=Setting, dispatch_uid="setting_post_save")
-def setting_post_save(sender, instance, created, **kwargs):
-    update_theme_css()
-
-

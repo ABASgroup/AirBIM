@@ -11,7 +11,6 @@ from guardian.shortcuts import assign_perm
 
 from worker import tasks as worker_tasks
 from app.models import Preset
-from app.models import Theme
 from app.plugins import init_plugins
 from nodeodm.models import ProcessingNode
 # noinspection PyUnresolvedReferencesapp/boot.py#L20
@@ -72,18 +71,12 @@ def boot():
         add_default_presets()
 
         # Add settings
-        default_theme, created = Theme.objects.get_or_create(name='Default')
         if created:
             logger.info("Created default theme")
 
-            if settings.DEFAULT_THEME_CSS:
-                default_theme.css = settings.DEFAULT_THEME_CSS
-                default_theme.save()
-
         if Setting.objects.all().count() == 0:
             s = Setting.objects.create(
-                    app_name=settings.APP_NAME,
-                    theme=default_theme)
+                    app_name=settings.APP_NAME)
             s.app_logo.save(os.path.basename(settings.APP_DEFAULT_LOGO), File(open(settings.APP_DEFAULT_LOGO, 'rb')))
 
             logger.info("Created settings")
