@@ -19,7 +19,7 @@ from app.models import Plugin
 from app.models import Profile
 from app.plugins import get_plugin_by_name, enable_plugin, disable_plugin, delete_plugin, valid_plugin, \
     get_plugins_persistent_path, clear_plugins_cache, init_plugins
-from .models import Project, Task, Setting
+from .models import Project, Task
 from webodm import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils.translation import gettext_lazy as _, gettext
@@ -46,14 +46,6 @@ class TaskAdmin(admin.ModelAdmin):
 admin.site.register(Task, TaskAdmin)
 
 admin.site.register(Preset, admin.ModelAdmin)
-
-
-class SettingAdmin(admin.ModelAdmin):
-
-    def has_add_permission(self, request):
-        # if there's already an entry, do not allow adding
-        count = Setting.objects.all().count()
-        return count == 0
 
 admin.site.register(PluginDatum, admin.ModelAdmin)
 

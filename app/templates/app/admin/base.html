@@ -13,7 +13,6 @@
     <!-- Content -->
     <section class="main">
         <div class="content {% block coltype %}colM{% endblock %}">
-            {{ SETTINGS.theme.html_after_header|safe }}
             {% block breadcrumbs %}
             <div class="breadcrumbs">
             <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>

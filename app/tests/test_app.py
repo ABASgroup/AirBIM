@@ -5,8 +5,6 @@ from guardian.shortcuts import assign_perm
 from nodeodm.models import ProcessingNode
 
 from app.models import Project, Task
-from app.models import Setting
-from app.models import Theme
 from webodm import settings
 from .classes import BootTestCase
 from django.core.exceptions import ValidationError
@@ -224,14 +222,8 @@ class TestApp(BootTestCase):
         c = Client()
         c.login(username='testsuperuser', password='test1234')
 
-        # TODO: remove settings and theme
-        settingId = Setting.objects.all()[0].id # During tests, sometimes this is != 1
-        themeId = Theme.objects.all()[0].id # During tests, sometimes this is != 1
-
         # Can access admin menu items
-        admin_menu_items = ['/admin/app/setting/{}/change/'.format(settingId),
-                            '/admin/app/theme/{}/change/'.format(themeId),
-                            '/admin/',
+        admin_menu_items = ['/admin/',
                             '/admin/app/plugin/',
                             '/admin/auth/user/',
                             '/admin/auth/group/',

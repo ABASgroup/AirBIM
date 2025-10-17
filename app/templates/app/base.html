@@ -25,7 +25,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="author" content="WebODM Contributors">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/png" href="{% settings_image_url 'app_logo_favicon' %}" sizes="32x32">
+
+    {% comment %} # TODO: Change href to image in app/static/app/img/logo512_favicon.png {% endcomment %}
+    {% comment %} <link rel="icon" type="image/png" href="{% settings_image_url 'app_logo_favicon' %}" sizes="32x32"> {% endcomment %}
 
     <link rel="stylesheet" type="text/css" href="{% static 'app/css/bootstrap.min.css' %}" />
     <link rel="stylesheet" href="{% static 'app/fonts/Bim.css' %}">
@@ -81,7 +83,6 @@
         <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
     <div id="wrapper">
-        {{ SETTINGS.theme.html_before_header|safe }}
 
         <nav id="navbar-top" class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
             <div class="navbar-header">
@@ -94,10 +95,12 @@
                 {% block navbar-top-links %}{% endblock %}
             
                 {% if '/public/task/' in request.path and request.user.is_anonymous and SETTINGS.organization_website %}
-                    <a class="navbar-brand" href="{{ SETTINGS.organization_website }}"><img src="{% settings_image_url 'app_logo_36' %}" alt="{{ SETTINGS.app_name }}" /></a>
+                    {% comment %} # TODO: Change href to image in app/static/app/img/logo512_36.png {% endcomment %}
+                    {% comment %} <a class="navbar-brand" href="{{ SETTINGS.organization_website }}"><img src="{% settings_image_url 'app_logo_36' %}" alt="{{ SETTINGS.app_name }}" /></a> {% endcomment %}
                     <a class="navbar-link" href="{{ SETTINGS.organization_website }}"><p class="navbar-text">{{ SETTINGS.app_name }}</p></a>
                 {% else %}
-                    <a class="navbar-brand" href="/"><img src="{% settings_image_url 'app_logo_36' %}" alt="{{ SETTINGS.app_name }}" /></a>
+                    {% comment %} # TODO: Change href to image in app/static/app/img/logo512_36.png {% endcomment %}
+                    {% comment %} <a class="navbar-brand" href="/"><img src="{% settings_image_url 'app_logo_36' %}" alt="{{ SETTINGS.app_name }}" /></a> {% endcomment %}
                     <a class="navbar-link" href="/"><p class="navbar-text">{{ SETTINGS.app_name }}</p></a>
                 {% endif %}
             </div>
@@ -105,7 +108,7 @@
             {% block navbar-sidebar %}{% endblock %}
         </nav>
 
-        {% block page-wrapper %}{{ SETTINGS.theme.html_after_header|safe }}{% endblock %}
+        {% block page-wrapper %}{% endblock %}
     </div>
 
     {% autoescape off %}
@@ -161,5 +164,4 @@ $(function(){
 
 </script>
 <script src="{% static 'app/js/vendor/bootstrap.min.js' %}"></script>
-{{ SETTINGS.theme.html_after_body|safe }}
 </html>
