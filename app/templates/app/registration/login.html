@@ -3,7 +3,7 @@
 {% load settings %}
 
 {% block registration_content %}
-    <h1>{% trans 'AirBIM' %}</h1>
+    <h1>AirBIM</h1>
     <h2 style="margin-bottom: 28px;">{% trans "Войдите в ваш аккаунт" %}</h2>
     {% if form.errors %}
         <div class="alert alert-warning">
@@ -30,7 +30,7 @@
         </script>
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
-              <button type="submit" class="btn btn-default">{% trans 'Log in' %}</button>
+              <button type="submit" class="btn btn-default">{% trans 'Войти' %}</button>
             </div>
             <div class="top-buffer col-sm-offset-2 col-sm-10">
                 {% if reset_pwd_link != '' %}
@@ -39,9 +39,8 @@
                 <p><a href="javascript:toggleForgotPasswordHint();">{% trans "Забыли пароль?" %}</a></p>
                 <script>function toggleForgotPasswordHint(){ $("#forgotPasswordHint").toggle(); }</script>
                 <div id="forgotPasswordHint" style="display: none; font-size: 90%; padding: 4px;" class="theme-secondary">
-                    You can reset the administrator password by running the following command:
-                    <span class="theme-background-highlight" style="padding: 4px; margin: 8px 0; display: inline-block;">./webodm.sh resetadminpassword yournewpass</span><br/>
-                    If you used WebODM Manager to launch WebODM, find the "Reset Password" button within the maintenance panel or within one of WebODM Manager menus.
+                    {% trans "Вы можете сбросить пароль, используя эту команду:" %}
+                    <span class="theme-background-highlight" style="padding: 4px; margin: 8px 0; display: inline-block;">./webodm.sh resetadminpassword yournewpassword</span><br/>
                 </div>
                 {% endif %}
             </div>
