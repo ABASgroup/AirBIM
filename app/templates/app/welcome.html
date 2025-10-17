@@ -1,116 +1,122 @@
 {% extends 'registration/registration_base.html' %}
-{% load i18n settings %}
+{% load i18n static settings %}
 
 {% block registration_content %}
-<h1>AirBim</h1>
-<h2>{% trans "Ваш помощник в проектировании" %}</h2>
-<div style="margin-bottom: 28px;">
+<div class="container">
+    <img src="{% static 'app/img/bim_logo.png' %}" alt="logo" class="icon">
+    <h1>Air<span style="color: #FBBC05;">BIM</span></h1>
+</div>
+<h3 class="welcome-font">{% trans "Ваш помощник в проектировании" %}</h3>
+<div style="margin-bottom: 28px;" class="container">
     <a class="btn btn-default" href="{% url 'registration'  %}">{% trans 'Начать работу' %}</a>
-    <a class="btn btn-default" href="{% url 'login'  %}">{% trans 'Войти в профиль' %}</a>
+    <a class="btn btn-default-blue" href="{% url 'login'  %}">{% trans 'Войти в профиль' %}</a>
 </div>
 <!-- images + text -->
-<div>
-    <div>
-        <div>
-            <h4>BIM - это круто</h4>
-            <p>BIM (англ. Building Information Modeling) - это реально круто<br>Используйте бим, чтобы были деньги<br>И у нас тоже!</p>
-        </div>
-        <img src="Какая то имага" alt="Тут имага">
+<div class="promo-blocks-container">
+    <div class="promo-block">
+        <img src="{% static 'app/img/welcome/minecraft_1.png' %}" alt="маинкрафт аирбим скачать обои">
     </div>
 
-    <div>
-        <div>
-            <h4>BIM - это класс</h4>
+    <div class="promo-block">
+        <div class="promo-block-text">
+            <h4 class="yellow-header">BIM - это круто</h4>
+            <p>BIM (англ. Building Information Modeling) - это реально круто<br>Используйте бим, чтобы были деньги<br>И у нас тоже!</p>
+        </div>
+        <img src="{% static 'app/img/welcome/minecraft_2.png' %}" alt="маинкрафт аирбим скачать обои 2">
+    </div>
+
+    <div class="promo-block">
+        <img src="{% static 'app/img/welcome/smart_picture.png' %}" alt=" умный аирбим скачать обои">
+        <div class="promo-block-text">
+            <h4 class="yellow-header">BIM - это класс</h4>
             <p>Еще не поняли?</p>
         </div>
-
-        <img src="Какая то имага" alt="Тут имага">
     </div>
 </div>
 
 <hr>
 
 <!-- reasons -->
-<div>
-    <h2>{% trans "Почему AirBIM?" %}</h2>
+<div class="welcome-blocks-container">
+    
+    <h2 class="welcome-font">{% trans "Почему AirBIM?" %}</h2>
 
-    <div>
-        {% blocktrans %}
-        <h4>Гибкость</h4>
-        <p>AirBIM может снабжен системой плагинов<br>Настройте ваше рабочее окружение под себя'
-        </p>
-        {% endblocktrans %}
+    <div class="welcome-block">
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="yellow-header">Гибкость</h3>
+            <p>AirBIM может снабжен системой плагинов<br>Настройте ваше рабочее окружение под себя
+            </p>
+            {% endblocktrans %}
+        </div>
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="blue-header">Удобство</h3>
+            <p>Вы работаете, а остальное возьмет на себя AirBIM<br>Удобный интерфейс сделает работу приятнее
+            </p>
+            {% endblocktrans %}
+        </div>
     </div>
 
-    <div>
-        {% blocktrans %}
-        <h4>Удобство</h4><p>Вы работаете, а остальное возьмет на себя AirBIM<br>
-            Удобный интерфейс сделает работу приятнее
-        </p>
-        {% endblocktrans %}
+    <div class="welcome-block">
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="blue-header">Многофункциональность</h3>
+            <p>Подходит не только для BIM, но и для ортофотопланов, 3D моделей<br>Поддержка различных форматов данных
+            </p>
+            {% endblocktrans %}
+        </div>
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="yellow-header">Инструменты для анализа</h3>
+            <p>Получайте не просто данные, но полезные инсайты по проекту</p>
+            {% endblocktrans %}
+        </div>
     </div>
 
-    <div>
-        {% blocktrans %}
-        <h4>Многофункциональность</h4>
-        <p>
-            Подходит не только для BIM, но и для ортофотопланов, 3D моделей
-            <br>
-            Поддержка различных форматов данных
-        </p>
-        {% endblocktrans %}
+    <div class="welcome-block">
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="yellow-header">Производительность</h3>
+            <p>AirBIM поддерживает CUDA для ускорения работы с данными</p>
+            {% endblocktrans %}
+        </div>
+        <div class="welcome-cell">
+            {% blocktrans %}
+            <h3 class="blue-header">Расширяемость</h3>
+            <p>Используйте несколько вычислительных узлов для работы<br>Ведите несколько проектов сразу
+            </p>
+            {% endblocktrans %}
+        </div>
     </div>
 
-    <div>
-        {% blocktrans %}
-        <h4>Инструменты для анализа</h4>
-        <p>
-            Получайте не просто данные, но полезные инсайты по проекту
-        </p>
-        {% endblocktrans %}
-    </div>
-
-    <div>
-        {% blocktrans %}
-        <h4>Производительность</h4>
-        <p>
-            AirBIM поддерживает CUDA для ускорения работы с данными
-        </p>
-        {% endblocktrans %}
-    </div>
-
-    <div>
-        {% blocktrans %}
-        <h4>Расширяемость</h4>
-        <p>
-            Используйте несколько вычислительных узлов для работы
-            <br>
-            Ведите несколько проектов сразу
-        </p>
-        {% endblocktrans %}
-    </div>
 </div>
+
+<hr>
 
 <!-- our team -->
 <div>
-    <h2>{% trans "Наша команда" %}</h2>
-
+    <h2 class="welcome-font">{% trans "Наша команда" %}</h2>
     <!-- members -->
-    <div>
-        <div>
-            {% trans "Господин Лягушка" %}
+    <div class="team-container">
+        <div class="team-block">
+            <img src="{% static 'app/img/welcome/amoga.png' %}" class="person-logo">
+            <h3 class="black-header">{% trans "Господин Лягушка" %}</h3>
         </div>
-        <div>
-            {% trans "Удмуртский Скелет" %}
+        <div class="team-block">
+            <img src="{% static 'app/img/welcome/amoga.png' %}">
+            <h3 class="black-header">{% trans "Удмуртский Скелет" %}</h3>
         </div>
-        <div>
-            {% trans "Топ 1 РК всея мира" %}
+        <div class="team-block">
+            <img src="{% static 'app/img/welcome/amoga.png' %}">
+            <h3 class="black-header">{% trans "Топ 1 РК всея мира" %}</h3>
         </div>
-        <div>
-            {% trans "Deus Ex GPT" %}
+        <div class="team-block">
+            <img src="{% static 'app/img/welcome/real_one.png' %}">
+            <h3 class="black-header">{% trans "Deus Ex GPT" %}</h3>
         </div>
     </div>
 </div>
 
-<p>Заглушка футера</p>
+<!-- <p>Заглушка футера</p> -->
 {% endblock %}

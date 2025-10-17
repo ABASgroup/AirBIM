@@ -1,0 +1,10 @@
+
+.sidebar {
+  background-color: #333333 !important;
+  color: #EAEAEA !important;
+  height: 100vh
+}
+.sidebar a {
+  color: #EAEAEA !important;
+}
+

@@ -1,0 +1,76 @@
+body {
+  background-color: #333333 !important;
+  color: #EAEAEA !important;
+}
+
+.yellow-header {
+  color: #FBBC05;
+  font-weight: 500;
+}
+
+.blue-header {
+  color: #4772D7;
+  font-weight: 500;
+}
+
+.black-header {
+  color: #333333;
+  font-weight: 500;
+}
+
+hr {
+  justify-content: center;
+  width: 1200px;
+  border: none;
+  border-top: 4px solid #525252;
+  border-radius: 20px;
+  gap: 0px;
+}
+
+/* Стиль для кнопок бутстрапа (в будущем поменять на свои) */
+.btn.btn-default,
+.btn-default,
+.btn.btn,
+.btn,
+.btn.btn-sm,
+.btn-sm {
+    font-family: 'RobotoMono', Arial, sans-serif !important;
+    font-size: 20px !important;
+    background-color: #FBBC05 !important;
+    color: #333333 !important;
+    border-radius: 20px !important;
+    border: 0px !important; /* УДАЛИТЬ ПРИ ОТКЛЮЧЕНИИ БУТСТРАПА */
+    box-shadow: 0px 4px 0px #222222 !important;
+    font-weight: 500 !important;
+    transition: background-color 0.5s ease, color 0.5s ease !important;
+}
+
+.btn.btn-default:hover,
+.btn-default:hover,
+.btn.btn:hover,
+.btn:hover,
+.btn.btn-sm:hover,
+.btn-sm:hover  {
+  background-color: #b98c04 !important;
+  color: #2e2e2e !important;
+}
+
+.btn.btn-default-blue,
+.btn-default-blue,
+.btn.btn-blue,
+.btn-blue,
+.btn.btn-sm-blue,
+.btn-sm-blue {
+    background-color: #4772D7 !important;
+    color: #EAEAEA !important;
+}
+
+.btn.btn-default-blue:hover,
+.btn-default-blue:hover,
+.btn.btn-blue:hover,
+.btn-blue:hover,
+.btn.btn-sm-blue:hover,
+.btn-sm-blue:hover {
+    background-color: #325199 !important;
+    color: #a8a8a8 !important;
+}
