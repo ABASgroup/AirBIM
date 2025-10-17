@@ -31,7 +31,7 @@ class TestSettings(BootTestCase):
         self.assertFalse(purple in body)
 
         # But colors from the theme are
-        theme = load_settings()["SETTINGS"].theme
+        theme = load_settings()["SETTINGS"]["theme"]
         self.assertTrue(theme.primary in body)
 
         # Let's change the theme

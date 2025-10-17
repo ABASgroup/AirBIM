@@ -64,6 +64,13 @@ ALLOWED_HOSTS = ['*']
 # Branding
 APP_NAME = "WebODM"
 APP_DEFAULT_LOGO = os.path.join('app', 'static', 'app', 'img', 'logo512.png')
+APP_DEFAULT_LOGO_36 = os.path.join('app', 'static', 'app', 'img', 'logo512_36.png')
+APP_DEFAULT_LOGO_FAVICON = os.path.join('app', 'static', 'app', 'img', 'logo512_favicon.png')
+ORGANIZATION_NAME = "WebODM"
+ORGANIZATION_WEBSITE = 'https://github.com/OpenDroneMap/WebODM/'
+# TODO: remove themes
+DEFAULT_THEME_ID = 1
+
 
 # In single user mode, a default admin account is created and automatically
 # used so that no login windows are displayed

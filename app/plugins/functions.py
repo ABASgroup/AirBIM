@@ -15,7 +15,7 @@ from string import Template
 from django.http import HttpResponse
 
 from app.models import Plugin
-from app.models import Setting
+from app.contexts.settings import load as load_settings
 from django.conf import settings
 from app.security import path_traversal_check
 
@@ -353,7 +353,7 @@ def delete_plugin(plugin_name):
     clear_plugins_cache()
 
 def get_site_settings():
-    return Setting.objects.first()
+    return load_settings()['SETTINGS']
 
 def versionToInt(version):
     """
