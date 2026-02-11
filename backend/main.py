@@ -1,7 +1,7 @@
 """Entry point to the app."""
-from fastapi import FastAPI
 import uvicorn
-
+from fastapi import FastAPI
+from config import api_config
 
 app = FastAPI()
 
@@ -9,4 +9,7 @@ app = FastAPI()
 
 # launch
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("main:app",
+                host=api_config.HOST,
+                port=api_config.PORT,
+                reload=True)

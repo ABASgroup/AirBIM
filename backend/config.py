@@ -1,0 +1,43 @@
+"""Configurations for the API and related."""
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+
+# path to the env file
+BASE_DIR = Path(__file__).resolve().parent
+print(BASE_DIR)
+ENV_PATH = BASE_DIR / '.env'
+
+
+class APIConfig(BaseSettings):
+    """API configuration parameters."""
+    HOST: str
+    PORT: int = Field(default=8000)
+
+    model_config = SettingsConfigDict(env_file=ENV_PATH,
+                                      env_file_encoding='utf-8',
+                                      extra='ignore')
+
+
+class DBConfig(BaseSettings):
+    """Database configuration parameters."""
+    HOST: str
+    DB_NAME: str
+    DB_PORT: int
+    DB_USER: str
+    DB_PASSWORD: str
+
+    model_config = SettingsConfigDict(env_file=ENV_PATH,
+                                      env_file_encoding='utf-8',
+                                      extra='ignore')
+
+    @property
+    def api_db_url(self) -> str:
+        """Database URL for the API."""
+        return (f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@"
+                f"{self.HOST}:{self.DB_PORT}/{self.DB_NAME}")
+
+
+# import these to get the configurations
+api_config = APIConfig()  # type: ignore
+db_config = DBConfig()  # type: ignore
