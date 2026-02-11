@@ -5,7 +5,6 @@ from pydantic import Field
 
 # path to the env file
 BASE_DIR = Path(__file__).resolve().parent
-print(BASE_DIR)
 ENV_PATH = BASE_DIR / '.env'
 
 
@@ -32,8 +31,8 @@ class DBConfig(BaseSettings):
                                       extra='ignore')
 
     @property
-    def api_db_url(self) -> str:
-        """Database URL for the API."""
+    def db_url(self) -> str:
+        """Database URL."""
         return (f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@"
                 f"{self.HOST}:{self.DB_PORT}/{self.DB_NAME}")
 
