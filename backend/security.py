@@ -10,8 +10,9 @@ password_context = CryptContext(schemes=['bcrypt'])
 
 
 def create_access_token(data: dict) -> str:
-    """Generates a JWT access token with
-    
+    """
+    Generates a JWT access token with
+
     Uses settings stated in the API config
     """
     to_encode = data.copy()
