@@ -13,6 +13,10 @@ class APIConfig(BaseSettings):
     HOST: str
     PORT: int = Field(default=8000)
 
+    JWT_SECRET_KEY: str
+    JWT_EXPIRE_MINUTES: int = 60
+    JWT_ALGORITHM: str = "HS256"
+
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
                                       extra='ignore')
