@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, Enum, ForeignKey
-from .company import Company
 from .base import BaseModel
-from .user import User
 import enum
 
 

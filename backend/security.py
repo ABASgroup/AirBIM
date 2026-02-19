@@ -1,5 +1,5 @@
 """Security related features."""
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from config import api_config
 from datetime import datetime, timedelta, timezone
@@ -9,17 +9,19 @@ from datetime import datetime, timedelta, timezone
 password_context = CryptContext(schemes=['bcrypt'])
 
 
-def create_access_token(data: dict) -> str:
+def create_access_token(user_id: int, data: dict) -> str:
     """
-    Generates a JWT access token with
+    Generates a JWT access token
+
+    Uses user ID for sub claim
 
     Uses settings stated in the API config
     """
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + \
         timedelta(minutes=api_config.JWT_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(data,
+    to_encode.update({"exp": expire, "sub": user_id})
+    encoded_jwt = jwt.encode(to_encode,
                              key=api_config.JWT_SECRET_KEY,
                              algorithm=api_config.JWT_ALGORITHM)
     return encoded_jwt

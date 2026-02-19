@@ -9,7 +9,9 @@ from models.base import BaseModel
 from database import db_config
 # !!!IMPORT OUR MODELS HERE!!!
 from models.company import Company
-from models.employee import Employee
+from models.invitation import Invitation
+from models.membership import Membership
+from models.user import User
 
 from alembic import context
 

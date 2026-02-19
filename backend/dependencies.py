@@ -24,16 +24,24 @@ async def get_db_session():
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/token")
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    """Get"""
+async def get_current_user_id(token: str = Depends(oauth2_scheme)):
+    """
+    Get current user ID using a JWT token
+
+    Raises exception if user is not found
+    """
     try:
         payload = jwt.decode(token,
                              api_config.JWT_SECRET_KEY,
                              algorithms=[api_config.JWT_ALGORITHM])
-    except JWTError:
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise JWTError
+        return int(user_id)
+    except JWTError as exc:
         credentials_exception = HTTPException(
             status_code=401,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
+        raise credentials_exception from exc

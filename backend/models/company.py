@@ -6,6 +6,10 @@ from .base import BaseModel
 class Company(BaseModel):
     __tablename__ = "companies"
 
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(nullable=False, unique=True)
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="company", cascade="all, delete-orphan")
+
+    invitations: Mapped[list["Invitation"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
