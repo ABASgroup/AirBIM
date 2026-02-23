@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Column, Enum, ForeignKey
+from sqlalchemy import Enum, ForeignKey
 from .base import BaseModel
 import enum
 
 
-class Roles(enum.StrEnum):
+class Role(enum.StrEnum):
     OWNER = "owner"
     ADMIN = "admin"
     MEMBER = "member"
@@ -14,8 +14,8 @@ class Roles(enum.StrEnum):
 class Membership(BaseModel):
     __tablename__ = "memberships"
 
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    company: Mapped["Company"] = relationship(
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
+    workspace: Mapped["Workspace"] = relationship(
         back_populates="memberships", cascade="delete")
 
     user_id: Mapped[int] = mapped_column(
@@ -26,4 +26,8 @@ class Membership(BaseModel):
         back_populates="memberships"
     )
 
-    role = Column(Enum(Roles), nullable=False, default=Roles.MEMBER)
+    role: Mapped[Role] = mapped_column(
+        Enum(Role, name="roles", create_constraint=True),
+        nullable=False,
+        default=Role.OWNER
+    )

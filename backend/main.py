@@ -4,10 +4,13 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from config import api_config
 from dependencies import oauth2_scheme
+from routers.auth import router as auth_router
 
 app = FastAPI()
 
 # include routers here
+app.include_router(auth_router)
+
 
 @app.get('/test/')
 async def test(token: Annotated[str, Depends(oauth2_scheme)]):

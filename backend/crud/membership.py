@@ -1,4 +1,4 @@
-from base import BaseCRUD
+from .base import BaseCRUD
 from models.membership import Membership
 
 

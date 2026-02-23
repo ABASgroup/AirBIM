@@ -21,7 +21,7 @@ async def get_db_session():
         yield session
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 async def get_current_user_id(token: str = Depends(oauth2_scheme)):

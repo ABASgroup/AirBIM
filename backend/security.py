@@ -1,15 +1,15 @@
 """Security related features."""
 from jose import jwt
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
 from config import api_config
 from datetime import datetime, timedelta, timezone
 
 
 # password hashing context
-password_context = CryptContext(schemes=['bcrypt'])
+password_context = PasswordHash.recommended()
 
 
-def create_access_token(user_id: int, data: dict) -> str:
+def create_access_token(user_id: int, data: dict | None = None) -> str:
     """
     Generates a JWT access token
 
@@ -17,7 +17,7 @@ def create_access_token(user_id: int, data: dict) -> str:
 
     Uses settings stated in the API config
     """
-    to_encode = data.copy()
+    to_encode = data.copy() if data else {}
     expire = datetime.now(timezone.utc) + \
         timedelta(minutes=api_config.JWT_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "sub": user_id})
