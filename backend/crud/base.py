@@ -3,7 +3,7 @@ from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel as BaseScheme
-from backend.models.base import BaseModel
+from models.base import BaseModel
 
 # type parameter for BaseModel children
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -51,7 +51,8 @@ class BaseCRUD(Generic[ModelT]):
             entry_id (`int`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
         """
-        return await session.get(cls._model, entry_id)
+        entry = await session.get(cls._model, entry_id)
+        return entry
 
     @classmethod
     async def update_by_id(cls,

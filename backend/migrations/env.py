@@ -8,6 +8,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from models.base import BaseModel
 from database import db_config
 # !!!IMPORT OUR MODELS HERE!!!
+from models.workspace import Workspace
+from models.invitation import Invitation
+from models.membership import Membership
+from models.user import User
 
 from alembic import context
 
@@ -25,7 +29,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
+target_metadata = BaseModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
