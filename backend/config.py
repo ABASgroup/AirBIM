@@ -10,8 +10,8 @@ ENV_PATH = BASE_DIR / '.env'
 
 class APIConfig(BaseSettings):
     """API configuration parameters."""
-    API_HOST: str = Field(default='0.0.0.0')
-    API_PORT: int = Field(default=8000)
+    HOST: str
+    PORT: int = Field(default=8000)
 
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
@@ -20,7 +20,7 @@ class APIConfig(BaseSettings):
 
 class DBConfig(BaseSettings):
     """Database configuration parameters."""
-    DB_HOST: str
+    HOST: str
     DB_NAME: str
     DB_PORT: int
     DB_USER: str
@@ -34,7 +34,7 @@ class DBConfig(BaseSettings):
     def db_url(self) -> str:
         """Database URL."""
         return (f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@"
-                f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}")
+                f"{self.HOST}:{self.DB_PORT}/{self.DB_NAME}")
 
 
 # import these to get the configurations
