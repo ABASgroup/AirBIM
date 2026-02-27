@@ -201,10 +201,17 @@ cmd_rebuild() {
     local cmd
     cmd=$(compose_cmd "$mode")
 
-    info "Rebuilding containers (mode: ${mode})..."
-    $cmd up -d --build
+    local no_cache=""
+    for arg in "$@"; do
+        if [[ "$arg" == "--no-cache" ]]; then
+            no_cache="--no-cache"
+        fi
+    done
 
-    success "Containers rebuilt and started."
+    info "Rebuilding containers (mode: ${mode})..."
+    $cmd build $no_cache
+
+    success "Containers rebuilt"
 }
 
 cmd_logs() {
@@ -242,15 +249,16 @@ usage() {
     echo "Usage: ./airbim.sh <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  start [flags]   Start all containers (builds images only if missing)"
-    echo "      --dev       Start in development mode (Vite HMR + hot reload)"
-    echo "      -d          Run in detached mode (background, no log output)"
-    echo "  up              Start existing containers without rebuilding (start analog, but uses last saved deployment mode - dev or prod)"
-    echo "  stop            Stop all running containers"
-    echo "  down            Stop and remove all containers"
-    echo "  rebuild         Force-rebuild images and restart all containers"
-    echo "  logs [service]  Follow container logs (optionally for a specific service)"
-    echo "  status          Show status of all containers"
+    echo "  start [flags]    Start all containers (builds images only if missing)"
+    echo "      --dev        Start in development mode (Vite HMR + hot reload)"
+    echo "      -d           Run in detached mode (background, no log output)"
+    echo "  up               Start existing containers without rebuilding (start analog, but uses last saved deployment mode - dev or prod)"
+    echo "  stop             Stop all running containers"
+    echo "  down             Stop and remove all containers"
+    echo "  rebuild [flags]  Force-rebuild images"
+    echo "      --no-cache   Do not use cache when building images"
+    echo "  logs [service]   Follow container logs (optionally for a specific service)"
+    echo "  status           Show status of all containers"
     echo ""
     echo "Examples:"
     echo "  ./airbim.sh start            # Production foreground (logs + Ctrl+C stops)"
@@ -269,7 +277,7 @@ case "${1:-}" in
     up)      cmd_up ;;
     stop)    cmd_stop ;;
     down)    cmd_down ;;
-    rebuild) cmd_rebuild ;;
+    rebuild) shift; cmd_rebuild "$@" ;;
     logs)    shift; cmd_logs "$@" ;;
     status)  cmd_status ;;
     *)       usage; exit 1 ;;
