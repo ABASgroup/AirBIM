@@ -19,6 +19,6 @@ async def test(token: Annotated[str, Depends(oauth2_scheme)]):
 # launch
 if __name__ == "__main__":
     uvicorn.run("main:app",
-                host=api_config.HOST,
-                port=api_config.PORT,
+                host=api_config.API_HOST,
+                port=api_config.API_PORT,
                 reload=True)

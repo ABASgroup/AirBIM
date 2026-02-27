@@ -1,0 +1,22 @@
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "entrypoint.dev.sh"]
+
+  frontend:
+    container_name: airbim-frontend-dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  frontend_node_modules:
