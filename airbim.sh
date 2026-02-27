@@ -280,5 +280,6 @@ case "${1:-}" in
     rebuild) shift; cmd_rebuild "$@" ;;
     logs)    shift; cmd_logs "$@" ;;
     status)  cmd_status ;;
+    help|--help) usage; exit 0 ;;
     *)       usage; exit 1 ;;
 esac
