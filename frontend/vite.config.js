@@ -18,11 +18,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      // Next line is for OpenAPI (Swagger) spec access in .../api/docs
-      "/openapi.json": {
-        target: "http://backend:8000",
-        changeOrigin: true,
-      },
     },
   },
 })

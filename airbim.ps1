@@ -221,6 +221,69 @@ function Cmd-Status {
     Invoke-Expression "$cmd ps"
 }
 
+function Cmd-Clean {
+    Check-Docker
+
+    Write-Host ""
+    warn "WARNING: This will permanently delete all AirBIM containers, volumes and networks."
+    warn "All data stored in the database will be LOST and cannot be recovered."
+    Write-Host ""
+    $confirm = Read-Host "Are you sure you want to proceed? (Y/n)"
+    if ($confirm -eq "n" -or $confirm -eq "N"-or $confirm -eq "no" -or $confirm -eq "NO"-or $confirm -eq "No") {
+        info "Clean cancelled."
+        return
+    }
+    Write-Host ""
+
+    $containers = @("airbim-frontend-dev", "airbim-frontend", "airbim-backend", "airbim-database")
+    $volumes    = @("airbim_database_data", "airbim_frontend_node_modules")
+    $networks   = @("airbim_default")
+
+    info "Removing containers..."
+    foreach ($c in $containers) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker container inspect $c 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker rm -f $c | Out-Null
+            success "Container removed: $c"
+        } else {
+            warn "Container not found, skipping: $c"
+        }
+    }
+
+    info "Removing volumes..."
+    foreach ($v in $volumes) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker volume inspect $v 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker volume rm $v | Out-Null
+            success "Volume removed: $v"
+        } else {
+            warn "Volume not found, skipping: $v"
+        }
+    }
+
+    info "Removing networks..."
+    foreach ($n in $networks) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker network inspect $n 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker network rm $n | Out-Null
+            success "Network removed: $n"
+        } else {
+            warn "Network not found, skipping: $n"
+        }
+    }
+
+    success "Clean complete."
+}
+
 # ─── Usage ───────────────────────────────────────────────────────────────────
 
 function Show-Usage {
@@ -242,6 +305,7 @@ function Show-Usage {
     Write-Host "      --no-cache   Do not use cache when building images"
     Write-Host "  logs [service]   Follow container logs"
     Write-Host "  status           Show status of all containers"
+    Write-Host "  clean            Remove all AirBIM containers, volumes and networks (be careful, you'll lose all data from the database)"
     Write-Host ""
     Write-Host "Examples:"
     Write-Host "  .\airbim.ps1 start            # Production foreground"
@@ -250,6 +314,7 @@ function Show-Usage {
     Write-Host "  .\airbim.ps1 start -d         # Production detached"
     Write-Host "  .\airbim.ps1 rebuild          # Rebuild images"
     Write-Host "  .\airbim.ps1 logs backend     # Tail backend logs"
+    Write-Host "  .\airbim.ps1 clean            # WARNING: This will delete ALL containers, volumes and networks related to AirBIM, including database data!"
     Write-Host ""
 }
 
@@ -266,6 +331,7 @@ switch ($command) {
     "rebuild" { Cmd-Rebuild $rest }
     "logs"    { Cmd-Logs    $rest }
     "status"  { Cmd-Status }
+    "clean"   { Cmd-Clean }
     "help|--help"    { Show-Usage; exit 1 }
     default   { Show-Usage; exit 1 }
 }

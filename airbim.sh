@@ -252,6 +252,54 @@ cmd_logs() {
     $cmd logs -f "$@"
 }
 
+cmd_clean() {
+    check_docker
+
+    echo ""
+    warn "WARNING: This will permanently delete all AirBIM containers, volumes and networks."
+    warn "All data stored in the database will be LOST and cannot be recovered."
+    echo ""
+    read -rp "Are you sure you want to proceed? (Y/n): " confirm
+    if [[ "$confirm" == "n" || "$confirm" == "N" || "$confirm" == "no" || "$confirm" == "NO" || "$confirm" == "No" ]]; then
+        info "Clean cancelled."
+        return
+    fi
+    echo ""
+
+    local containers=("airbim-frontend-dev" "airbim-frontend" "airbim-backend" "airbim-database")
+    local volumes=("airbim_database_data" "airbim_frontend_node_modules")
+    local networks=("airbim_default")
+
+    info "Removing containers..."
+    for c in "${containers[@]}"; do
+        if docker container inspect "$c" &>/dev/null; then
+            docker rm -f "$c" && success "Container removed: $c" || true
+        else
+            warn "Container not found, skipping: $c"
+        fi
+    done
+
+    info "Removing volumes..."
+    for v in "${volumes[@]}"; do
+        if docker volume inspect "$v" &>/dev/null; then
+            docker volume rm "$v" && success "Volume removed: $v" || true
+        else
+            warn "Volume not found, skipping: $v"
+        fi
+    done
+
+    info "Removing networks..."
+    for n in "${networks[@]}"; do
+        if docker network inspect "$n" &>/dev/null; then
+            docker network rm "$n" && success "Network removed: $n" || true
+        else
+            warn "Network not found, skipping: $n"
+        fi
+    done
+
+    success "Clean complete."
+}
+
 cmd_status() {
     check_docker
 
@@ -285,6 +333,7 @@ usage() {
     echo "      --no-cache   Do not use cache when building images"
     echo "  logs [service]   Follow container logs (optionally for a specific service)"
     echo "  status           Show status of all containers"
+    echo "  clean            Remove all AirBIM containers, volumes and networks (be careful, you'll lose all data from the database)"
     echo ""
     echo "Examples:"
     echo "  ./airbim.sh start            # Production foreground (logs + Ctrl+C stops)"
@@ -293,6 +342,7 @@ usage() {
     echo "  ./airbim.sh start -d         # Production detached (background)"
     echo "  ./airbim.sh rebuild          # Rebuild images after code changes"
     echo "  ./airbim.sh logs backend     # Tail backend logs"
+    echo "  ./airbim.sh clean            # WARNING: This will delete ALL containers, volumes and networks related to AirBIM, including database data!"
     echo ""
 }
 
@@ -306,6 +356,7 @@ case "${1:-}" in
     rebuild) shift; cmd_rebuild "$@" ;;
     logs)    shift; cmd_logs "$@" ;;
     status)  cmd_status ;;
+    clean)   cmd_clean ;;
     help|--help) usage; exit 0 ;;
     *)       usage; exit 1 ;;
 esac
