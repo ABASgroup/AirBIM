@@ -34,6 +34,20 @@ function Check-Env {
     }
 }
 
+# ─── Env file reader ────────────────────────────────────────────────────────
+
+function Get-EnvValue {
+    param([string]$key, [string]$default = "")
+    if (Test-Path ".env") {
+        $line = Get-Content ".env" | Where-Object { $_ -match "^\s*$key\s*=" } | Select-Object -First 1
+        if ($line) {
+            $val = ($line -split '=', 2)[1] -replace '#.*$', '' -replace '^\s+|\s+$', ''
+            if ($val) { return $val }
+        }
+    }
+    return $default
+}
+
 # ─── Docker checks ───────────────────────────────────────────────────────────
 
 function Check-Docker {
@@ -92,6 +106,11 @@ function Cmd-Start {
     Save-Mode $mode
 
     $cmd = Get-ComposeCmd $mode
+    $vitePort     = Get-EnvValue "VITE_PORT"     "5173"
+    $apiPort      = Get-EnvValue "API_PORT"      "8000"
+    $nginxPort = Get-EnvValue "NGINX_PORT" "80"
+    $frontendUrl  = if ($nginxPort -eq "80") { "http://localhost" } else { "http://localhost:$nginxPort" }
+
 
     if ($mode -eq "dev") {
         info "Starting AirBIM in DEVELOPMENT mode..."
@@ -106,21 +125,21 @@ function Cmd-Start {
         Write-Host ""
         if ($mode -eq "dev") {
             success "AirBIM is running in development mode!"
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:$vitePort"
+            info "Backend  (API):   http://localhost:$apiPort or http://localhost:$vitePort/api"
         } else {
             success "AirBIM is running in production mode!"
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      $frontendUrl"
+            info "Backend  (API):   http://localhost:$apiPort or $frontendUrl/api"
         }
     } else {
-        Write-Host ""
+       Write-Host ""
         if ($mode -eq "dev") {
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:$vitePort"
+            info "Backend  (API):   http://localhost:$apiPort or http://localhost:$vitePort/api"
         } else {
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      $frontendUrl"
+            info "Backend  (API):   http://localhost:$apiPort or $frontendUrl/api"
         }
         info "Streaming logs... Press Ctrl+C to stop all containers."
         Write-Host ""
@@ -202,6 +221,69 @@ function Cmd-Status {
     Invoke-Expression "$cmd ps"
 }
 
+function Cmd-Clean {
+    Check-Docker
+
+    Write-Host ""
+    warn "WARNING: This will permanently delete all AirBIM containers, volumes and networks."
+    warn "All data stored in the database will be LOST and cannot be recovered."
+    Write-Host ""
+    $confirm = Read-Host "Are you sure you want to proceed? (Y/n)"
+    if ($confirm -eq "n" -or $confirm -eq "N"-or $confirm -eq "no" -or $confirm -eq "NO"-or $confirm -eq "No") {
+        info "Clean cancelled."
+        return
+    }
+    Write-Host ""
+
+    $containers = @("airbim-frontend-dev", "airbim-frontend", "airbim-backend", "airbim-database")
+    $volumes    = @("airbim_database_data", "airbim_frontend_node_modules")
+    $networks   = @("airbim_default")
+
+    info "Removing containers..."
+    foreach ($c in $containers) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker container inspect $c 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker rm -f $c | Out-Null
+            success "Container removed: $c"
+        } else {
+            warn "Container not found, skipping: $c"
+        }
+    }
+
+    info "Removing volumes..."
+    foreach ($v in $volumes) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker volume inspect $v 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker volume rm $v | Out-Null
+            success "Volume removed: $v"
+        } else {
+            warn "Volume not found, skipping: $v"
+        }
+    }
+
+    info "Removing networks..."
+    foreach ($n in $networks) {
+        $ErrorActionPreference = "SilentlyContinue"
+        $null = docker network inspect $n 2>&1
+        $ok = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = "Stop"
+        if ($ok) {
+            docker network rm $n | Out-Null
+            success "Network removed: $n"
+        } else {
+            warn "Network not found, skipping: $n"
+        }
+    }
+
+    success "Clean complete."
+}
+
 # ─── Usage ───────────────────────────────────────────────────────────────────
 
 function Show-Usage {
@@ -223,6 +305,7 @@ function Show-Usage {
     Write-Host "      --no-cache   Do not use cache when building images"
     Write-Host "  logs [service]   Follow container logs"
     Write-Host "  status           Show status of all containers"
+    Write-Host "  clean            Remove all AirBIM containers, volumes and networks (be careful, you'll lose all data from the database)"
     Write-Host ""
     Write-Host "Examples:"
     Write-Host "  .\airbim.ps1 start            # Production foreground"
@@ -231,6 +314,7 @@ function Show-Usage {
     Write-Host "  .\airbim.ps1 start -d         # Production detached"
     Write-Host "  .\airbim.ps1 rebuild          # Rebuild images"
     Write-Host "  .\airbim.ps1 logs backend     # Tail backend logs"
+    Write-Host "  .\airbim.ps1 clean            # WARNING: This will delete ALL containers, volumes and networks related to AirBIM, including database data!"
     Write-Host ""
 }
 
@@ -247,6 +331,7 @@ switch ($command) {
     "rebuild" { Cmd-Rebuild $rest }
     "logs"    { Cmd-Logs    $rest }
     "status"  { Cmd-Status }
+    "clean"   { Cmd-Clean }
     "help|--help"    { Show-Usage; exit 1 }
     default   { Show-Usage; exit 1 }
 }
