@@ -34,6 +34,20 @@ function Check-Env {
     }
 }
 
+# ─── Env file reader ────────────────────────────────────────────────────────
+
+function Get-EnvValue {
+    param([string]$key, [string]$default = "")
+    if (Test-Path ".env") {
+        $line = Get-Content ".env" | Where-Object { $_ -match "^\s*$key\s*=" } | Select-Object -First 1
+        if ($line) {
+            $val = ($line -split '=', 2)[1] -replace '#.*$', '' -replace '^\s+|\s+$', ''
+            if ($val) { return $val }
+        }
+    }
+    return $default
+}
+
 # ─── Docker checks ───────────────────────────────────────────────────────────
 
 function Check-Docker {
@@ -92,6 +106,11 @@ function Cmd-Start {
     Save-Mode $mode
 
     $cmd = Get-ComposeCmd $mode
+    $vitePort     = Get-EnvValue "VITE_PORT"     "5173"
+    $apiPort      = Get-EnvValue "API_PORT"      "8000"
+    $nginxPort = Get-EnvValue "NGINX_PORT" "80"
+    $frontendUrl  = if ($nginxPort -eq "80") { "http://localhost" } else { "http://localhost:$nginxPort" }
+
 
     if ($mode -eq "dev") {
         info "Starting AirBIM in DEVELOPMENT mode..."
@@ -106,21 +125,21 @@ function Cmd-Start {
         Write-Host ""
         if ($mode -eq "dev") {
             success "AirBIM is running in development mode!"
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:$vitePort"
+            info "Backend  (API):   http://localhost:$apiPort or http://localhost:$vitePort/api"
         } else {
             success "AirBIM is running in production mode!"
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      $frontendUrl"
+            info "Backend  (API):   http://localhost:$apiPort or $frontendUrl/api"
         }
     } else {
-        Write-Host ""
+       Write-Host ""
         if ($mode -eq "dev") {
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:$vitePort"
+            info "Backend  (API):   http://localhost:$apiPort or http://localhost:$vitePort/api"
         } else {
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      $frontendUrl"
+            info "Backend  (API):   http://localhost:$apiPort or $frontendUrl/api"
         }
         info "Streaming logs... Press Ctrl+C to stop all containers."
         Write-Host ""

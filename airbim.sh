@@ -43,6 +43,21 @@ check_env() {
     fi
 }
 
+# ─── Env file reader ────────────────────────────────────────────────────────
+
+get_env_value() {
+    local key="$1"
+    local default="$2"
+    if [ -f .env ]; then
+        local val
+        val=$(grep -E "^\s*${key}\s*=" .env | head -1 | sed 's/[^=]*=//' | sed 's/#.*//' | tr -d '[:space:]')
+        [ -n "$val" ] && echo "$val" || echo "$default"
+    else
+        echo "$default"
+    fi
+}
+
+
 # ─── Docker checks ──────────────────────────────────────────────────────────
 
 check_docker() {
@@ -103,6 +118,17 @@ cmd_start() {
     local cmd
     cmd=$(compose_cmd "$mode")
 
+    local vite_port api_port nginx_port frontend_url
+    vite_port=$(get_env_value "VITE_PORT" "5173")
+    api_port=$(get_env_value "API_PORT" "8000")
+    nginx_port=$(get_env_value "NGINX_PORT" "80")
+    if [ "$nginx_port" = "80" ]; then
+        frontend_url="http://localhost"
+    else
+        frontend_url="http://localhost:${nginx_port}"
+    fi
+
+
     if [ "$mode" = "dev" ]; then
         info "Starting AirBIM in ${BOLD}DEVELOPMENT${NC} mode..."
     else
@@ -120,21 +146,21 @@ cmd_start() {
         echo ""
         if [ "$mode" = "dev" ]; then
             success "AirBIM is running in development mode!"
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:${vite_port}"
+            info "Backend  (API):   http://localhost:${api_port} or http://localhost:${vite_port}/api"
         else
             success "AirBIM is running in production mode!"
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      ${frontend_url}"
+            info "Backend  (API):   http://localhost:${api_port} or ${frontend_url}/api"
         fi
     else
         echo ""
         if [ "$mode" = "dev" ]; then
-            info "Frontend (Vite):  http://localhost:5173"
-            info "Backend  (API):   http://localhost:8000"
+            info "Frontend (Vite):  http://localhost:${vite_port}"
+            info "Backend  (API):   http://localhost:${api_port} or http://localhost:${vite_port}/api"
         else
-            info "Application:      http://localhost"
-            info "Backend  (API):   http://localhost:8000"
+            info "Application:      ${frontend_url}"
+            info "Backend  (API):   http://localhost:${api_port} or ${frontend_url}/api"
         fi
         info "Streaming logs... Press ${BOLD}Ctrl+C${NC} to stop all containers."
         echo ""
