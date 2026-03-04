@@ -20,7 +20,7 @@ def create_access_token(user_id: int, data: dict | None = None) -> str:
     to_encode = data.copy() if data else {}
     expire = datetime.now(timezone.utc) + \
         timedelta(minutes=api_config.JWT_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "sub": user_id})
+    to_encode.update({"exp": expire, "sub": str(user_id)})
     encoded_jwt = jwt.encode(to_encode,
                              key=api_config.JWT_SECRET_KEY,
                              algorithm=api_config.JWT_ALGORITHM)
