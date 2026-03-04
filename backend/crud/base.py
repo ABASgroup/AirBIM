@@ -38,8 +38,7 @@ class BaseCRUD(Generic[ModelT]):
         Args:
             session (`AsyncSession`): an asynchronous database session
         """
-        query = select(cls._model).filter_by()
-        result = await session.execute(query)
+        result = await session.execute(select(cls._model))
         entries = result.scalars().all()
         return entries
 
@@ -55,10 +54,12 @@ class BaseCRUD(Generic[ModelT]):
         return entry
 
     @classmethod
-    async def update_by_id(cls,
-                           entry_id: int,
-                           update_data: BaseScheme,
-                           session: AsyncSession):
+    async def update_by_id(
+        cls,
+        entry_id: int,
+        update_data: BaseScheme,
+        session: AsyncSession
+    ):
         """Update an entry with new data by its ID/primary key.
 
         Args:

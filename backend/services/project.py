@@ -15,11 +15,11 @@ async def get_project(project_id: int, session: AsyncSession) -> Project:
         raise Exception from exc
 
 
-async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> Project:
+async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> list[Project]:
     """Get all projects related to the workspace"""
     try:
-        workspace = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
-        return workspace.projects
+        projects = await ProjectCRUD.get_by_workspace_id(workspace_id, session=session)
+        return list(projects)
     except Exception as exc:
         raise Exception from exc
 
