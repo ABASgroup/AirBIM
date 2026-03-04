@@ -1,13 +1,12 @@
 // Routing for the app
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Landing from './pages/Landing'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import LandingPage from "./pages/LandingPage"
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
   )
