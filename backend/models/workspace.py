@@ -20,6 +20,10 @@ class Workspace(BaseModel):
     invitations: Mapped[list["Invitation"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
+    
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
 
     type: Mapped[WorkspaceType] = mapped_column(
         Enum(WorkspaceType, name="workspace_types", create_constraint=True),
