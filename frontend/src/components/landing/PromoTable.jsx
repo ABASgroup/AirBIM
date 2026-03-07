@@ -49,27 +49,31 @@ const StepSection = ({ step, index }) => {
 
   return (
     <section className={`${step.bgColor} ${step.textColor} overflow-hidden`}>
-      <div className={`max-w-8xl h-80 mx-auto flex flex-row items-center gap-12 ${isEven ? "" : "flex-row-reverse"}`}>
+      <div className={`max-w-6xl h-80 flex flex-row items-center gap-12 ${isEven ? "" : "flex-row-reverse"} ${isEven ? "ml-auto" : "mr-auto"}`}>
 
         <div className="flex-1 space-y-5 items-center text-center">
-          <h2 className={`text-4xl font-extrabold leading-tight ${step.textColor}`}>
+          <h2 className={`text-4xl font-extrabold leading-tight text-main-purple`}>
             {step.title}
           </h2>
           <p className={`text-md max-w-xl mx-auto ${step.textColor}`}>
             {step.desc}
           </p>
         </div>
-         <div className="flex-1 relative h-full w-full">
+        <div className="flex-1 relative h-full w-full">
           <img
             src={step.image}
             alt={step.title}
             className="w-full h-full object-cover transition-all"
             style={{
-              maskImage: `linear-gradient(${isEven ? "to left" : "to right"}, black 50%, transparent 100%)`,
+              maskImage: `linear-gradient(${isEven ? "to right" : "to left"}, transparent 0%, black 25%)`,
             }}
+          />
+                  <div 
+            className={`absolute inset-0 pointer-events-none bg-gradient-to-${isEven ? "l" : "r"} from-main-dark via-transparent to-transparent`} 
           />
         </div>
       </div>
+
 
     </section>
   );

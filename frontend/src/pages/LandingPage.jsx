@@ -19,8 +19,8 @@ function LandingPage() {
           </p>
         </div>
 
-        <div className="mt-20">
-          <PromoTable/>
+        <div className="mt-20 max-w-7xl mx-auto">
+          <PromoTable className=""/>
         </div>
 
         <div className="mt-20">
