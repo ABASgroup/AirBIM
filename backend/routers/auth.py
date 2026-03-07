@@ -7,7 +7,7 @@ from schemas.token import Token
 from schemas.membership import MembershipCreate
 from schemas.workspace import WorkspaceCreate
 from security import create_access_token
-from models.membership import Role
+from roles import Role, Permission
 from models.workspace import WorkspaceType
 from services import user as user_service
 from services import workspace as workspace_service
@@ -38,7 +38,26 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_db_se
 
 
 @router.post("/login", response_model=Token)
-async def login(data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db_session)):
+async def login(
+    data: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_db_session)
+):
     user = await user_service.authenticate_user(data.username, data.password, session)
     token = create_access_token(user.id)
     return Token(access_token=token)
+
+
+@router.get("/permissions")
+async def permissions():
+    """
+    Get all possible permissions in the system
+    """
+    return [member.value for member in Permission]
+
+
+@router.get("/roles")
+async def roles():
+    """
+    Get all possible roles in the system
+    """
+    return [member.value for member in Role]

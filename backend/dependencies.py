@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from config import api_config
+from roles import Permission
 from database import session_maker
 
 
@@ -27,8 +28,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 async def get_current_user_id(token: str = Depends(oauth2_scheme)):
     """
     Get current user ID using a JWT token
-
-    Raises exception if user is not found
     """
     try:
         payload = jwt.decode(token,
@@ -41,7 +40,7 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)):
     except JWTError as exc:
         credentials_exception = HTTPException(
             status_code=401,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {exc}",
             headers={"WWW-Authenticate": "Bearer"},
         )
         raise credentials_exception from exc

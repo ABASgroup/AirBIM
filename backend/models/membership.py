@@ -1,14 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Enum, ForeignKey
 from .base import BaseModel
-import enum
-
-
-class Role(enum.StrEnum):
-    OWNER = "owner"
-    ADMIN = "admin"
-    MEMBER = "member"
-    VIEWER = "viewer"
+from roles import Role
 
 
 class Membership(BaseModel):
