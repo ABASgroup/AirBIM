@@ -16,16 +16,13 @@ class Permission(enum.StrEnum):
     PROJECT_CREATE = "projects:create"
     PROJECT_EDIT = "projects:edit"
     PROJECT_DELETE = "projects:delete"
-
     # files
     FILES_UPLOAD_BIM = "files:upload:bim"
     FILES_UPLOAD_CLOUDS = "files:upload:clouds"
-
     # member management
     MEMBERS_INVITE = "members:invite"
     MEMBERS_REMOVE = "members:remove"
     MEMBERS_EDIT_ROLE = "members:edit_role"
-
     # workspace management
     WORKSPACE_DELETE = "workspace:delete"
     WORKSPACE_EDIT = "workspace:edit"
@@ -33,7 +30,7 @@ class Permission(enum.StrEnum):
 
 ROLE_PERMISSIONS = {
     Role.VIEWER: (
-        Permission.PROJECT_VIEW
+        Permission.PROJECT_VIEW,
     ),
     Role.MEMBER: (
         Permission.PROJECT_VIEW,
@@ -58,6 +55,6 @@ ROLE_PERMISSIONS = {
 }
 
 
-def get_role_permissions(role: Role) -> list[Permission]:
+def get_role_permissions(role: Role) -> tuple[Permission]:
     """Get permissions for some role"""
     return ROLE_PERMISSIONS[role]

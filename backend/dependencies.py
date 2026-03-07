@@ -1,9 +1,11 @@
 """Dependencies used in the app."""
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 from config import api_config
-from roles import Permission
+from roles import ROLE_PERMISSIONS, Permission
+from crud.membership import MembershipCRUD
 from database import session_maker
 
 
@@ -13,7 +15,7 @@ async def get_db_session():
 
     Use as a dependency.
 
-    Don't forget to use 'session.commit()' when
+    Don't forget to use `session.commit()` when
     making changes in database.
 
     Otherwise changes will be lost.
@@ -44,3 +46,25 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
         raise credentials_exception from exc
+
+
+def require_membership_permission(permission: Permission):
+    """
+    Require certain membership permission from user to access an endpoint
+    
+    Requires membership in the workspace
+    
+    You can use it instead of :func:`get_current_user_id` to
+    protect an endpoint
+    """
+    async def checker(
+        workspace_id: int,
+        user_id: int = Depends(get_current_user_id),
+        session: AsyncSession = Depends(get_db_session)
+    ):
+        membership = await MembershipCRUD.get_user_workspace_membership(user_id, workspace_id, session)
+        if permission not in ROLE_PERMISSIONS[membership.role]:
+            raise HTTPException(
+                status_code=403, detail="No permission")
+        return membership
+    return checker
