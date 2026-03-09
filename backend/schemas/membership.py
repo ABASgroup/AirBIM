@@ -9,6 +9,7 @@ class MembershipCreate(BaseModel):
 
 
 class MembershipPermissionsPublic(BaseModel):
+    """API Response schema"""
     workspace_id: int
     user_id: int
     role: Role

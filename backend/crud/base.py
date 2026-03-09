@@ -77,6 +77,14 @@ class BaseCRUD(Generic[ModelT]):
         for key, value in update_data_dict.items():
             setattr(entry, key, value)
         await session.flush()
+        return entry
+
+    @classmethod
+    async def delete(cls, entry: ModelT, session: AsyncSession):
+        """Delete entry using its object"""
+        await session.delete(entry)
+        await session.flush()
+        return entry
 
     @classmethod
     async def delete_by_id(cls, entry_id: int, session: AsyncSession) -> ModelT:
