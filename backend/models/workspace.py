@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, relationship, mapped_column
-from sqlalchemy import Enum
+from sqlalchemy import Enum, Index
 from .base import BaseModel
 import enum
 
@@ -12,7 +12,7 @@ class WorkspaceType(enum.StrEnum):
 class Workspace(BaseModel):
     __tablename__ = "workspaces"
 
-    name: Mapped[str] = mapped_column(nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(nullable=False)
 
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan")
@@ -20,7 +20,7 @@ class Workspace(BaseModel):
     invitations: Mapped[list["Invitation"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
-    
+
     projects: Mapped[list["Project"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
