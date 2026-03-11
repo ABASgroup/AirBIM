@@ -3,7 +3,7 @@ from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel as BaseScheme
-from backend.models.base import BaseModel
+from models.base import BaseModel
 
 # type parameter for BaseModel children
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -38,8 +38,7 @@ class BaseCRUD(Generic[ModelT]):
         Args:
             session (`AsyncSession`): an asynchronous database session
         """
-        query = select(cls._model).filter_by()
-        result = await session.execute(query)
+        result = await session.execute(select(cls._model))
         entries = result.scalars().all()
         return entries
 
@@ -51,13 +50,16 @@ class BaseCRUD(Generic[ModelT]):
             entry_id (`int`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
         """
-        return await session.get(cls._model, entry_id)
+        entry = await session.get(cls._model, entry_id)
+        return entry
 
     @classmethod
-    async def update_by_id(cls,
-                           entry_id: int,
-                           update_data: BaseScheme,
-                           session: AsyncSession):
+    async def update_by_id(
+        cls,
+        entry_id: int,
+        update_data: BaseScheme,
+        session: AsyncSession
+    ):
         """Update an entry with new data by its ID/primary key.
 
         Args:

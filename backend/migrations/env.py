@@ -8,6 +8,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from models.base import BaseModel
 from database import db_config
 # !!!IMPORT OUR MODELS HERE!!!
+from models.workspace import Workspace
+from models.invitation import Invitation
+from models.membership import Membership
+from models.user import User
 
 from alembic import context
 
