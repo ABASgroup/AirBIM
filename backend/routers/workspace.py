@@ -41,7 +41,7 @@ async def create_workspace(
 async def delete_team_workspace(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
     """
     Deletes team workspace using its ID
-    
+
     - You need permission to do so
     - You can't delete personal workspace
     """
