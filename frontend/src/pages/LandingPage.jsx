@@ -4,7 +4,7 @@ import { PricingTable } from "../components/landing/PricingTable";
 
 function LandingPage() {
   return (
-    <body>
+    <>
       <LandingHeader />
       <main>
         <div className="flex flex-col items-center justify-center px-5 pt-5 text-center">
@@ -20,14 +20,14 @@ function LandingPage() {
         </div>
 
         <div className="mt-20 max-w-7xl mx-auto">
-          <PromoTable className=""/>
+          <PromoTable/>
         </div>
 
         <div className="mt-20">
           <PricingTable/>
         </div>
       </main>
-    </body>
+    </>
   )
 }
 
