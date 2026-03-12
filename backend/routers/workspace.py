@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.workspace import WorkspaceType
-from dependencies import get_db_session, get_current_user_id, require_membership_permission
+from dependencies import (
+    get_db_session,
+    get_current_user_id,
+    require_membership_permission,
+)
 from roles import Role, get_role_permissions, Permission
 from schemas.workspace import WorkspaceCreate, WorkspaceCreateRequest, WorkspacePublic
 from schemas.project import ProjectCreate, ProjectPublic, ProjectUpdate
@@ -18,7 +22,7 @@ router = APIRouter(prefix="/workspace",
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     user_id: int = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
 ):
     """Creates a new workspace, making current user its owner"""
     workspace = WorkspaceCreate(
@@ -26,8 +30,9 @@ async def create_workspace(
     workspace = await workspace_service.create_workspace(workspace, session)
 
     # current user is the owner
-    membership = MembershipCreate(workspace_id=workspace.id,
-                                  user_id=user_id, role=Role.OWNER)
+    membership = MembershipCreate(
+        workspace_id=workspace.id, user_id=user_id, role=Role.OWNER
+    )
     await membership_service.create_membership(membership, session)
     return workspace
 
@@ -35,17 +40,21 @@ async def create_workspace(
 @router.delete(
     "/{workspace_id}",
     response_model=WorkspacePublic,
-    dependencies=[
-        Depends(require_membership_permission(Permission.WORKSPACE_DELETE))]
+    dependencies=[Depends(require_membership_permission(
+        Permission.WORKSPACE_DELETE))],
 )
-async def delete_team_workspace(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
+async def delete_team_workspace(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+):
     """
     Deletes team workspace using its ID
 
     - You need permission to do so
     - You can't delete personal workspace
     """
-    workspace = await workspace_service.delete_team_workspace(workspace_id, session=session)
+    workspace = await workspace_service.delete_team_workspace(
+        workspace_id, session=session
+    )
     return workspace
 
 
@@ -53,18 +62,20 @@ async def delete_team_workspace(workspace_id: int, session: AsyncSession = Depen
 async def access(
     workspace_id: int,
     user_id: int = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
 ):
     """
     Get current user access, including permissions and role in the workspace
     """
-    membership = await membership_service.get_membership(user_id, workspace_id, session=session)
+    membership = await membership_service.get_membership(
+        user_id, workspace_id, session=session
+    )
     permissions = get_role_permissions(membership.role)
     return MembershipPermissionsPublic(
         workspace_id=membership.workspace_id,
         user_id=membership.user_id,
         role=membership.role,
-        permissions=permissions
+        permissions=permissions,
     )
 
 
@@ -72,9 +83,11 @@ async def access(
     "/projects",
     response_model=ProjectPublic,
     dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_CREATE))]
+        Depends(require_membership_permission(Permission.PROJECT_CREATE))],
 )
-async def create_project(project_data: ProjectCreate, session: AsyncSession = Depends(get_db_session)):
+async def create_project(
+    project_data: ProjectCreate, session: AsyncSession = Depends(get_db_session)
+):
     project = await project_service.create_project(project_data, session=session)
     return project
 
@@ -83,11 +96,15 @@ async def create_project(project_data: ProjectCreate, session: AsyncSession = De
     "/{workspace_id}/projects",
     response_model=list[ProjectPublic],
     dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_VIEW))]
+        Depends(require_membership_permission(Permission.PROJECT_VIEW))],
 )
-async def get_workspace_projects(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
+async def get_workspace_projects(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+):
     """Get all projects related to the workspace"""
-    projects = await project_service.get_workspace_projects(workspace_id, session=session)
+    projects = await project_service.get_workspace_projects(
+        workspace_id, session=session
+    )
     return projects
 
 
@@ -95,7 +112,7 @@ async def get_workspace_projects(workspace_id: int, session: AsyncSession = Depe
     "/{workspace_id}/projects/{project_id}",
     response_model=ProjectPublic,
     dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_VIEW))]
+        Depends(require_membership_permission(Permission.PROJECT_VIEW))],
 )
 async def get_project(project_id: int, session: AsyncSession = Depends(get_db_session)):
     project = await project_service.get_project(project_id, session=session)
@@ -106,14 +123,16 @@ async def get_project(project_id: int, session: AsyncSession = Depends(get_db_se
     "/{workspace_id}/projects/{project_id}",
     response_model=ProjectPublic,
     dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_EDIT))]
+        Depends(require_membership_permission(Permission.PROJECT_EDIT))],
 )
 async def update_project(
     project_id: int,
     project_data: ProjectUpdate,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
 ):
-    project = await project_service.update_project(project_id, project_data, session=session)
+    project = await project_service.update_project(
+        project_id, project_data, session=session
+    )
     return project
 
 
@@ -121,8 +140,11 @@ async def update_project(
     "/{workspace_id}/projects/{project_id}",
     response_model=ProjectPublic,
     dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_DELETE))]
+        Depends(require_membership_permission(Permission.PROJECT_DELETE))],
 )
-async def delete_project(project_id: int, session: AsyncSession = Depends(get_db_session),):
+async def delete_project(
+    project_id: int,
+    session: AsyncSession = Depends(get_db_session),
+):
     project = await project_service.delete_project(project_id, session=session)
     return project

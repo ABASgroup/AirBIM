@@ -9,6 +9,12 @@ class Role(enum.StrEnum):
     VIEWER = "viewer"
 
 
+class InviteableRole(enum.StrEnum):
+    """Roles that can have invite links"""
+    VIEWER = "viewer"
+    MEMBER = "member"
+
+
 class Permission(enum.StrEnum):
     """Permissions stated in the app"""
     # projects
