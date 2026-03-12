@@ -112,20 +112,18 @@ async def delete_team_workspace(
 
 
 @router.post(
-    "/{workspace_id}/invite/refresh",
-    response_model=list[InviteLinkPublic],
+    "/{workspace_id}/invite/revoke",
     dependencies=[Depends(require_membership_permission(
         Permission.MEMBERS_INVITE_REFRESH))]
 )
-async def refresh_invite_links(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
+async def revoke_invite_links(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
     """
-    Refresh invite links for the workspace
+    Revoke invite links for the workspace
 
     Old links (created before call) will become obsolete and invalid
     """
-    old_links = invite_link_service.refresh_links(
+    await invite_link_service.revoke_links(
         workspace_id, session=session)
-    return old_links
 
 
 @router.post("/{workspace_id}/invite", response_model=InviteLinkPublic)

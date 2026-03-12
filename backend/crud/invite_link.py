@@ -2,7 +2,6 @@ from .base import BaseCRUD
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Iterable
 from roles import Role
 
 
@@ -11,11 +10,11 @@ class InviteLinkCRUD(BaseCRUD[InviteLink]):
     _model = InviteLink
 
     @classmethod
-    async def delete_by_workspace_id(cls, workspace_id, session: AsyncSession) -> Iterable[InviteLink]:
+    async def delete_by_workspace_id(cls, workspace_id, session: AsyncSession):
         """Delete all invite links for the workspace"""
-        stmt = delete(cls._model).where(cls._model.workspace_id == workspace_id)
-        result = await session.execute(stmt)
-        return result.scalars().all()
+        stmt = delete(cls._model).where(
+            cls._model.workspace_id == workspace_id)
+        await session.execute(stmt)
 
     @classmethod
     async def get_by_workspace_id_and_role(
@@ -31,7 +30,8 @@ class InviteLinkCRUD(BaseCRUD[InviteLink]):
     @classmethod
     async def get_by_token(cls, token_hashed: str, session: AsyncSession) -> InviteLink | None:
         """Get invite link using its token"""
-        stmt = select(cls._model).where(cls._model.token_hashed == token_hashed)
+        stmt = select(cls._model).where(
+            cls._model.token_hashed == token_hashed)
         result = await session.execute(stmt)
         link = result.scalar_one_or_none()
         return link

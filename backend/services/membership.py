@@ -43,13 +43,13 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
     You can't remove the owner from the workspace
     """
     try:
-        membership = await MembershipCRUD.delete_user_workspace_membership(
+        membership = await MembershipCRUD.get_user_workspace_membership(
             user_id,
             workspace_id,
             session=session)
 
         # check role first
-        if membership.role != Role.OWNER:
+        if membership.role == Role.OWNER:
             raise ValueError("Owner can't leave workspace")
 
         # not an owner, delete

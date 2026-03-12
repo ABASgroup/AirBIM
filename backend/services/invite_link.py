@@ -47,7 +47,7 @@ async def generate_invite_link(
             continue
 
 
-async def refresh_links(workspace_id: int, session: AsyncSession) -> list[InviteLink]:
+async def revoke_links(workspace_id: int, session: AsyncSession):
     """
     All previous links will be removed
 
@@ -55,10 +55,8 @@ async def refresh_links(workspace_id: int, session: AsyncSession) -> list[Invite
     """
     try:
         # delete old links
-        links = await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
-
+        await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
         await session.commit()
-        return list(links)
     except Exception as exc:
         await session.rollback()
         raise Exception from exc

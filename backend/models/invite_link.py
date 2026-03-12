@@ -12,7 +12,7 @@ class InviteLink(BaseModel):
 
     workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
     workspace: Mapped["Workspace"] = relationship(
-        back_populates="invite_links", cascade="delete")
+        back_populates="invite_links")
 
     role: Mapped[Role] = mapped_column(
         Enum(Role, name="roles", create_constraint=True),
