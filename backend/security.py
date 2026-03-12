@@ -1,4 +1,7 @@
 """Security related features."""
+import hashlib
+import base64
+from secrets import token_urlsafe
 from jose import jwt
 from pwdlib import PasswordHash
 from config import api_config
@@ -35,3 +38,15 @@ def verify_password(password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """Hashes password"""
     return password_context.hash(password)
+
+
+def generate_link_token(byte_length: int = 32) -> str:
+    """Generates URL-friendly token for link"""
+    return token_urlsafe(byte_length)
+
+
+def hash_link_token(token: str) -> str:
+    """Hashes link token"""
+    hash_object = hashlib.sha256(token.encode())
+    token_hash = base64.urlsafe_b64encode(hash_object.digest()).decode()
+    return token_hash

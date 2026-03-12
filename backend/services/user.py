@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from security import get_password_hash, verify_password
 from crud.user import UserCRUD
 from models.user import User
-from schemas.user import UserCreate, UserRegister
+from schemas.user import UserCreate, UserRegisterRequest
 
 
-async def create_user(user_data: UserRegister, session: AsyncSession):
+async def create_user(user_data: UserRegisterRequest, session: AsyncSession):
     """
     Create a new user in the database.
     """
@@ -24,7 +24,7 @@ async def create_user(user_data: UserRegister, session: AsyncSession):
         raise Exception from exc
 
 
-async def is_user_registered(user_data: UserRegister, session: AsyncSession) -> bool:
+async def is_user_registered(user_data: UserRegisterRequest, session: AsyncSession) -> bool:
     """Checks if the user already has an account"""
     user = await UserCRUD.get_by_email(user_data.email, session)
     return user is not None
