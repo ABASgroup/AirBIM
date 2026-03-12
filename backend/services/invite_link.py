@@ -11,6 +11,7 @@ from models.invite_link import InviteLink
 
 async def generate_invite_link(
     workspace_id: int,
+    creator_id: int,
     role: InviteableRole,
     session: AsyncSession
 ) -> InviteLinkPublic:
@@ -28,15 +29,17 @@ async def generate_invite_link(
 
             invite_link_data = InviteLinkCreate(token_hashed=token_hashed,
                                                 workspace_id=workspace_id,
+                                                creator_id=creator_id,
                                                 role=Role(role))
 
-            await InviteLinkCRUD.create(invite_link_data, session=session)
+            link = await InviteLinkCRUD.create(invite_link_data, session=session)
 
             # output public information
             link_out = InviteLinkPublic(
                 token=token, workspace_id=workspace_id, role=role)
+            await session.commit()
             return link_out
-        except IntegrityError:
+        except IntegrityError as exc:
             # the token was not unique
             # strange, but let's
             # try again
@@ -44,33 +47,24 @@ async def generate_invite_link(
             continue
 
 
-async def refresh_links(workspace_id: int, session: AsyncSession) -> list[InviteLinkPublic]:
+async def refresh_links(workspace_id: int, session: AsyncSession) -> list[InviteLink]:
     """
-    Create new invite links for the team workspace
-
     All previous links will be removed
-    
+
     Use to secure access to the workspace
     """
     try:
         # delete old links
-        await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
-
-        # generate new links for inviteable roles
-        # they should be unique
-        links = []
-        for role in InviteableRole:
-            link = await generate_invite_link(workspace_id, role, session=session)
-            links.append(link)
+        links = await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
 
         await session.commit()
-        return links
+        return list(links)
     except Exception as exc:
         await session.rollback()
         raise Exception from exc
 
 
-async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
+async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkPublic:
     """
     Validates invite link using its token
 
@@ -86,6 +80,10 @@ async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
         if link is None:
             raise Exception
 
-        return link
+        public_link = InviteLinkPublic(
+            token=token,
+            workspace_id=link.workspace_id,
+            role=InviteableRole(link.role))
+        return public_link
     except Exception as exc:
         raise Exception from exc

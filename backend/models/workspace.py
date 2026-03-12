@@ -17,7 +17,7 @@ class Workspace(BaseModel):
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan")
 
-    invitations: Mapped[list["Invitation"]] = relationship(
+    invite_links: Mapped[list["InviteLink"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
 

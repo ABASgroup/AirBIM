@@ -10,6 +10,7 @@ class InviteLinkRequest(BaseModel):
 class InviteLinkCreate(BaseModel):
     token_hashed: str
     workspace_id: int
+    creator_id: int
     role: Role
     expires_at: datetime | None = None
 

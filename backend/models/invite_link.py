@@ -20,11 +20,11 @@ class InviteLink(BaseModel):
         default=Role.MEMBER
     )
 
-    inviter_id: Mapped[int] = mapped_column(
+    creator_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
-    inviter: Mapped["User"] = relationship(
+    created_by: Mapped["User"] = relationship(
         back_populates="invite_links"
     )
 
