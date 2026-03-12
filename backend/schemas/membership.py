@@ -8,6 +8,13 @@ class MembershipCreate(BaseModel):
     role: Role = Role.MEMBER
 
 
+class MembershipPublic(BaseModel):
+    """API Response schema"""
+    workspace_id: int
+    user_id: int
+    role: Role
+
+
 class MembershipPermissionsPublic(BaseModel):
     """API Response schema"""
     workspace_id: int

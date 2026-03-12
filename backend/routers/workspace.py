@@ -14,7 +14,7 @@ from models.workspace import WorkspaceType
 from schemas.invite_link import InviteLinkRequest, InviteLinkPublic
 from schemas.workspace import WorkspaceCreate, WorkspaceCreateRequest, WorkspacePublic
 from schemas.project import ProjectCreate, ProjectPublic, ProjectUpdate
-from schemas.membership import MembershipPermissionsPublic, MembershipCreate
+from schemas.membership import MembershipPermissionsPublic, MembershipCreate, MembershipPublic
 
 from services import project as project_service
 from services import membership as membership_service
@@ -46,7 +46,31 @@ async def access(
     )
 
 
-@router.post("/", response_model=WorkspacePublic)
+@router.delete(
+    "/{workspace_id}/membership/{user_id}",
+    response_model=MembershipPublic,
+    dependencies=[Depends(require_membership_permission(
+        Permission.MEMBERS_REMOVE))]
+)
+async def remove_user_from_workspace(
+    workspace_id: int,
+    user_id: int,
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Remove user from the workspace
+
+    - Permission required
+    - You can't remove the owner from his own workspace
+    """
+    removed_membership = await membership_service.delete_membership(
+        user_id,
+        workspace_id,
+        session=session)
+    return removed_membership
+
+
+@router.post("", response_model=WorkspacePublic)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     user_id: int = Depends(get_current_user_id),

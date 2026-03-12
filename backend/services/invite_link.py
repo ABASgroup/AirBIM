@@ -39,7 +39,7 @@ async def generate_invite_link(
                 token=token, workspace_id=workspace_id, role=role)
             await session.commit()
             return link_out
-        except IntegrityError as exc:
+        except IntegrityError:
             # the token was not unique
             # strange, but let's
             # try again

@@ -49,7 +49,11 @@ async def update_project(project_id: int, project_data: ProjectUpdate, session: 
 
 
 async def delete_project(project_id: int, session: AsyncSession) -> Project:
-    """Delete project using its ID"""
+    """
+    Delete project using its ID
+
+    Make sure to check permission
+    """
     try:
         project = await ProjectCRUD.delete_by_id(project_id, session=session)
         await session.commit()
