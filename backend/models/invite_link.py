@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import ForeignKey, Enum
+from datetime import datetime
 from roles import Role
 from .base import BaseModel
 
@@ -19,8 +20,12 @@ class InviteLink(BaseModel):
         default=Role.MEMBER
     )
 
-    # in a workspace: one role = one link
-    __table_args__ = (
-        UniqueConstraint('role', 'workspace_id',
-                         name='unique_invite_link_per_role'),
+    inviter_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
     )
+    inviter: Mapped["User"] = relationship(
+        back_populates="invite_links"
+    )
+
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)

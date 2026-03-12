@@ -27,6 +27,7 @@ class Permission(enum.StrEnum):
     FILES_UPLOAD_CLOUDS = "files:upload:clouds"
     # member management
     MEMBERS_INVITE = "members:invite"
+    MEMBERS_INVITE_REFRESH = "members:invite:refresh"
     MEMBERS_REMOVE = "members:remove"
     MEMBERS_EDIT_ROLE = "members:edit_role"
     # workspace management

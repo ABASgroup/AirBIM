@@ -13,7 +13,7 @@ class InviteLinkCRUD(BaseCRUD[InviteLink]):
     @classmethod
     async def delete_by_workspace_id(cls, workspace_id, session: AsyncSession) -> Iterable[InviteLink]:
         """Delete all invite links for the workspace"""
-        stmt = delete(cls).where(cls._model.workspace_id == workspace_id)
+        stmt = delete(cls._model).where(cls._model.workspace_id == workspace_id)
         result = await session.execute(stmt)
         return result.scalars().all()
 

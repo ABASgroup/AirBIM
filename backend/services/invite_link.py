@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from models.workspace import Workspace
 from roles import Role, InviteableRole
 from crud.invite_link import InviteLinkCRUD
-from schemas.invite_link import InviteLinkCreate
+from schemas.invite_link import InviteLinkCreate, InviteLinkPublic
 from security import generate_link_token, hash_link_token
 from models.invite_link import InviteLink
 
@@ -13,7 +13,7 @@ async def generate_invite_link(
     workspace_id: int,
     role: InviteableRole,
     session: AsyncSession
-) -> InviteLink:
+) -> InviteLinkPublic:
     """
     Generates new unique role invite link
 
@@ -23,26 +23,34 @@ async def generate_invite_link(
     while True:
         try:
             # hide token!
-            token = hash_link_token(generate_link_token())
+            token = generate_link_token()
+            token_hashed = hash_link_token(token)
 
-            invite_link_data = InviteLinkCreate(token_hashed=token,
+            invite_link_data = InviteLinkCreate(token_hashed=token_hashed,
                                                 workspace_id=workspace_id,
                                                 role=Role(role))
 
-            link = await InviteLinkCRUD.create(invite_link_data, session=session)
-            return link
+            await InviteLinkCRUD.create(invite_link_data, session=session)
+
+            # output public information
+            link_out = InviteLinkPublic(
+                token=token, workspace_id=workspace_id, role=role)
+            return link_out
         except IntegrityError:
             # the token was not unique
+            # strange, but let's
             # try again
             await session.rollback()
             continue
 
 
-async def create_new_invite_links(workspace_id: int, session: AsyncSession) -> list[InviteLink]:
+async def refresh_links(workspace_id: int, session: AsyncSession) -> list[InviteLinkPublic]:
     """
     Create new invite links for the team workspace
 
     All previous links will be removed
+    
+    Use to secure access to the workspace
     """
     try:
         # delete old links
@@ -62,21 +70,7 @@ async def create_new_invite_links(workspace_id: int, session: AsyncSession) -> l
         raise Exception from exc
 
 
-async def get_invite_link(workspace_id: int, role: InviteableRole, session: AsyncSession) -> InviteLink:
-    """
-    Get role invite link for the workspace
-    """
-    try:
-        converted_role = Role(role.value)
-        link = await InviteLinkCRUD.get_by_workspace_id_and_role(
-            workspace_id, converted_role, session=session
-        )
-        return link
-    except Exception as exc:
-        raise Exception from exc
-
-
-async def validate_invite_link(token: str, session: AsyncSession) -> Workspace:
+async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
     """
     Validates invite link using its token
 

@@ -5,6 +5,15 @@ from models.workspace import Workspace, WorkspaceType
 from schemas.workspace import WorkspaceCreate
 
 
+async def get_workspace(workspace_id: int, session: AsyncSession):
+    """Get workspace using its ID"""
+    try:
+        project = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
+        return project
+    except Exception as exc:
+        raise Exception from exc
+
+
 async def create_workspace(workspace_data: WorkspaceCreate, session: AsyncSession):
     """
     Create a new workspace
