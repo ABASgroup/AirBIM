@@ -1,12 +1,11 @@
 """Service layer logic for InviteLink."""
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from models.workspace import Workspace
 from roles import Role, InviteableRole
+from exceptions.exceptions import InvalidInvitationError
 from crud.invite_link import InviteLinkCRUD
 from schemas.invite_link import InviteLinkCreate, InviteLinkPublic
 from security import generate_link_token, hash_link_token
-from models.invite_link import InviteLink
 
 
 async def generate_invite_link(
@@ -57,9 +56,9 @@ async def revoke_links(workspace_id: int, session: AsyncSession):
         # delete old links
         await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
         await session.commit()
-    except Exception as exc:
+    except Exception:
         await session.rollback()
-        raise Exception from exc
+        raise
 
 
 async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkPublic:
@@ -76,12 +75,13 @@ async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkP
 
         # link is not found, token is invalid
         if link is None:
-            raise Exception
+            raise InvalidInvitationError("Invite link is invalid: token has not passed")
 
         public_link = InviteLinkPublic(
             token=token,
             workspace_id=link.workspace_id,
             role=InviteableRole(link.role))
         return public_link
-    except Exception as exc:
-        raise Exception from exc
+    except Exception:
+        await session.rollback()
+        raise

@@ -18,12 +18,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenPublic)
 async def register(data: UserRegisterRequest, session: AsyncSession = Depends(get_db_session)):
-    user_registered = await user_service.is_user_registered(data, session)
+    """
+    Registers user and creates their personal workspace
 
-    if user_registered:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = await user_service.create_user(data, session)
+    Users must use email and password
+    """
+    user = await user_service.register_user(data, session)
 
     workspace = WorkspaceCreate(
         name=data.workspace_name, type=WorkspaceType.PERSONAL)
@@ -42,6 +42,7 @@ async def login(
     data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_db_session)
 ):
+    """Logs user in, provides access token"""
     user = await user_service.authenticate_user(data.username, data.password, session)
     token = create_access_token(user.id)
     return TokenPublic(access_token=token)

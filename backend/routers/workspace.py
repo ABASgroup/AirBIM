@@ -37,6 +37,7 @@ async def access(
     membership = await membership_service.get_membership(
         user_id, workspace_id, session=session
     )
+
     permissions = get_role_permissions(membership.role)
     return MembershipPermissionsPublic(
         workspace_id=membership.workspace_id,

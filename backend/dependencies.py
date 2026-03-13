@@ -7,6 +7,7 @@ from config import api_config
 from roles import ROLE_PERMISSIONS, Permission
 from crud.membership import MembershipCRUD
 from database import session_maker
+from exceptions.exceptions import NoRequiredPermissionError, NotMemberError
 
 
 async def get_db_session():
@@ -51,9 +52,9 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)):
 def require_membership_permission(permission: Permission):
     """
     Require certain membership permission from user to access an endpoint
-    
+
     Requires membership in the workspace
-    
+
     You can use it instead of :func:`get_current_user_id` to
     protect an endpoint
     """
@@ -62,9 +63,15 @@ def require_membership_permission(permission: Permission):
         user_id: int = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session)
     ):
-        membership = await MembershipCRUD.get_user_workspace_membership(user_id, workspace_id, session)
+        membership = await MembershipCRUD.get_user_workspace_membership(
+            user_id,
+            workspace_id,
+            session)
+        
+        if membership is None:
+            raise NotMemberError()
+        
         if permission not in ROLE_PERMISSIONS[membership.role]:
-            raise HTTPException(
-                status_code=403, detail="No permission")
+            raise NoRequiredPermissionError(permission.value)
         return membership
     return checker

@@ -20,4 +20,4 @@ class MembershipPermissionsPublic(BaseModel):
     workspace_id: int
     user_id: int
     role: Role
-    permissions: tuple[Permission]
+    permissions: list[Permission]

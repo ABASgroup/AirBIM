@@ -36,16 +36,16 @@ class Permission(enum.StrEnum):
 
 
 ROLE_PERMISSIONS = {
-    Role.VIEWER: (
+    Role.VIEWER: [
         Permission.PROJECT_VIEW,
-    ),
-    Role.MEMBER: (
+    ],
+    Role.MEMBER: [
         Permission.PROJECT_VIEW,
         Permission.PROJECT_EDIT,
         Permission.FILES_UPLOAD_CLOUDS,
         Permission.MEMBERS_INVITE
-    ),
-    Role.ADMIN: (
+    ],
+    Role.ADMIN: [
         Permission.PROJECT_VIEW,
         Permission.PROJECT_CREATE,
         Permission.PROJECT_EDIT,
@@ -56,12 +56,12 @@ ROLE_PERMISSIONS = {
         Permission.MEMBERS_REMOVE,
         Permission.MEMBERS_EDIT_ROLE,
         Permission.WORKSPACE_EDIT
-    ),
+    ],
     # all rights to the owner, no matter what
     Role.OWNER: [member.value for member in Permission],
 }
 
 
-def get_role_permissions(role: Role) -> tuple[Permission]:
+def get_role_permissions(role: Role) -> list[Permission]:
     """Get permissions for some role"""
     return ROLE_PERMISSIONS[role]

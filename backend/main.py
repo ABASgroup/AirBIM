@@ -1,9 +1,14 @@
 """Entry point to the app."""
 from typing import Annotated
 import uvicorn
-from fastapi import Depends, FastAPI
+
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+
 from config import api_config
 from dependencies import oauth2_scheme
+from exceptions.handlers import add_exception_handlers
+
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
 
@@ -17,6 +22,8 @@ app = FastAPI(root_path="/api")
 app.include_router(auth_router)
 app.include_router(workspace_router)
 
+# add exception handlers
+add_exception_handlers(app)
 
 @app.get('/test/')
 async def test(token: Annotated[str, Depends(oauth2_scheme)]):
