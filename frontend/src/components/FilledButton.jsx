@@ -14,6 +14,7 @@ export const FilledButton = ({ children, color = "purple", className = "", ...pr
         min-w-[100px] px-6 py-3
         rounded-[10px] font-bold 
         transition-all active:scale-95
+        cursor-pointer
         ${colorMap[color] || colorMap.purple}
         ${className}
       `}

@@ -56,6 +56,12 @@ h3 {
         font-family: "PTSansCaption", Arial, sans-serif;
         @apply text-main-white
     }
+    i {
+        @apply text-main-purple
+    }
+    h1 {
+        @apply text-main-white
+    }
 }
 
 a { 
