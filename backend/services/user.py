@@ -39,12 +39,8 @@ async def authenticate_user(email: str, password: str, session: AsyncSession) ->
     """Checks user data (email, password)"""
     user = await UserCRUD.get_by_email(email, session)
 
-    # check if user exists
-    if user is None:
-        raise NotFoundError("No user with this email")
-
-    # check password
-    if not verify_password(password, user.password_hashed):
+    # check email and password
+    if user is None or not verify_password(password, user.password_hashed):
         raise InvalidLoginInfoError("Email or password is incorrect")
 
     return user

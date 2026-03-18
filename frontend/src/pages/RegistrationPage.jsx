@@ -31,7 +31,11 @@ function RegistrationPage() {
       localStorage.setItem("access_token", response.data.access_token);
       navigate("/app/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Ошибка регистрации");
+      if (err.response?.status === 409) {
+        setError("Данная почта уже зарегистрирована");
+      } else {
+        setError("Ошибка регистрации");
+      }
     }
   };
 
