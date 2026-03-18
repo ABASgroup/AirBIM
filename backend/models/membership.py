@@ -1,14 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Enum, ForeignKey
+from sqlalchemy import Enum, ForeignKey, UniqueConstraint
 from .base import BaseModel
-import enum
-
-
-class Role(enum.StrEnum):
-    OWNER = "owner"
-    ADMIN = "admin"
-    MEMBER = "member"
-    VIEWER = "viewer"
+from roles import Role
 
 
 class Membership(BaseModel):
@@ -30,4 +23,8 @@ class Membership(BaseModel):
         Enum(Role, name="roles", create_constraint=True),
         nullable=False,
         default=Role.OWNER
+    )
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'workspace_id', name='unique_user_per_workspace'),
     )

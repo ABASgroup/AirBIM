@@ -70,16 +70,21 @@ class BaseCRUD(Generic[ModelT]):
         update_data_dict = update_data.model_dump(exclude_unset=True)
         entry = await session.get(cls._model, entry_id)
 
-        if entry is None:
-            raise ValueError(
-                f"There is no {cls._model.__name__.lower()} entry with such ID: {entry_id}.")
-
         for key, value in update_data_dict.items():
             setattr(entry, key, value)
+
         await session.flush()
+        return entry
 
     @classmethod
-    async def delete_by_id(cls, entry_id: int, session: AsyncSession) -> ModelT:
+    async def delete(cls, entry: ModelT, session: AsyncSession):
+        """Delete entry using its object"""
+        await session.delete(entry)
+        await session.flush()
+        return entry
+
+    @classmethod
+    async def delete_by_id(cls, entry_id: int, session: AsyncSession) -> ModelT | None:
         """Delete an entry by its ID/primary key.
 
         Args:
@@ -87,10 +92,6 @@ class BaseCRUD(Generic[ModelT]):
             session (`AsyncSession`): an asynchronous database session
         """
         entry = await session.get(cls._model, entry_id)
-
-        if entry is None:
-            raise ValueError(
-                f"There is no {cls._model.__name__.lower()} entry with such ID: {entry_id}.")
 
         await session.delete(entry)
         await session.flush()
