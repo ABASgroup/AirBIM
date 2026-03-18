@@ -40,7 +40,7 @@ function RegistrationPage() {
       <LandingHeader />
       <main className="flex items-center justify-center min-h-[80vh]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Modal title="Регистрация">
+          <Modal title="Регистрация" className="z-10">
             <div>
               <p>Логин</p>
               <Input
@@ -69,6 +69,7 @@ function RegistrationPage() {
                 placeholder="Повторите пароль"
               />
             </div>
+            {error && <p className="text-warning">{error}</p>}
             <div className="flex justify-between mt-10">
               <FilledButton type="submit">
                 Подтвердить
