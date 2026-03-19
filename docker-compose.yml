@@ -4,8 +4,10 @@ services:
     image: quay.io/minio/minio:latest
     restart: unless-stopped
     environment:
-      - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY}
+      - MINIO_ENDPOINT=${STORAGE_ENDPOINT}
+      - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY_ID}
       - MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY}
+      - MINIO_BUCKET=${STORAGE_BUCKET}
     command: server /data --console-address ":9001"
     ports:
       - "${STORAGE_PORT}:9000"

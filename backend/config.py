@@ -25,11 +25,14 @@ class APIConfig(BaseSettings):
 class StorageConfig(BaseSettings):
     """S3 Storage configuration parameters."""
     # username
-    STORAGE_ACCESS_KEY: str
+    STORAGE_ACCESS_KEY_ID: str
     # password
     STORAGE_SECRET_KEY: str
     STORAGE_PORT: int
-    BUCKET_NAME: str = "airbim"
+    STORAGE_BUCKET: str = "airbim"
+    
+    # for presigned urls
+    STORAGE_URL_EXP_TIME: int = 3600
 
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
@@ -38,7 +41,7 @@ class StorageConfig(BaseSettings):
     @property
     def endpoint(self) -> str:
         """Endpoint for connection."""
-        return (f"http://localhost:{self.STORAGE_PORT}")
+        return (f"http://storage:{self.STORAGE_PORT}")
 
 
 class DBConfig(BaseSettings):

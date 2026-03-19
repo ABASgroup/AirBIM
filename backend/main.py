@@ -2,8 +2,7 @@
 from typing import Annotated
 import uvicorn
 
-from fastapi import Depends, FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, UploadFile
 
 from config import api_config
 from dependencies import oauth2_scheme
@@ -11,6 +10,9 @@ from exceptions.handlers import add_exception_handlers
 
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
+
+from storage import Storage
+from dependencies import get_storage
 
 # This app is published behind a proxy under "/api" (for users: https://example.com/api/...).
 # The proxy removes (strips) "/api" before sending the request to FastAPI, so our real routes stay like "/test", "/users", etc.
@@ -25,9 +27,25 @@ app.include_router(workspace_router)
 # add exception handlers
 add_exception_handlers(app)
 
+
 @app.get('/test/')
 async def test(token: Annotated[str, Depends(oauth2_scheme)]):
     return {"token": token}
+
+
+@app.post('/test/upload')
+async def test_upload(storage: Storage = Depends(get_storage)):
+    return storage.get_upload_link("test/4969-06-NWNE.las")
+
+
+@app.post('/test/download')
+async def test_download(storage: Storage = Depends(get_storage)):
+    return storage.get_download_link("test/4969-06-NWNE.las")
+
+@app.post('/test/delete')
+async def test_delete(storage: Storage = Depends(get_storage)):
+    result = storage.delete_file("test/12syk21002100.laz")
+    return result
 
 # launch
 if __name__ == "__main__":
