@@ -1,4 +1,23 @@
 services:
+  storage:
+    container_name: airbim-storage
+    image: quay.io/minio/minio:latest
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER=${STORAGE_USER}
+      - MINIO_ROOT_PASSWORD=${STORAGE_PASSWORD}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - storage_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   database:
     container_name: airbim-database
     image: postgres:15-alpine
@@ -13,10 +32,51 @@ services:
     volumes:
       - database_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    depends_on:
+      storage:
+        condition: service_healthy
+
+  cache:
+    container_name: airbim-cache
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--requirepass ${CACHE_PASSWORD} --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - cache_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$CACHE_PASSWORD", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      database:
+        condition: service_healthy
+
+  broker:
+    container_name: airbim-broker
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--requirepass ${BROKER_PASSWORD} --appendonly yes
+    ports:
+      - "${BROKER_PORT:-6380}:6380"
+    volumes:
+      - broker_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$BROKER_PASSWORD", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      cache:
+        condition: service_healthy
 
   backend:
     container_name: airbim-backend
@@ -34,8 +94,11 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
-      database:
+      broker:
         condition: service_healthy
 
 volumes:
   database_data:
+  storage_data:
+  cache_data:
+  broker_data:

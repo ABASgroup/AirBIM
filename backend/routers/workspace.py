@@ -71,6 +71,21 @@ async def remove_user_from_workspace(
     return removed_membership
 
 
+@router.get("", response_model=list[WorkspacePublic])
+async def get_user_workspaces(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Get all workspaces where current user is the member.
+
+    - Personal workspace
+    - Team workspaces
+    """
+    workspaces = await workspace_service.get_user_workspaces(user_id, session=session)
+    return workspaces
+
+
 @router.post("", response_model=WorkspacePublic)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
