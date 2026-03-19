@@ -18,18 +18,34 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    container_name: airbim-redis
+  cache:
+    container_name: airbim-cache
     image: redis:latest
     restart: unless-stopped
     environment:
-      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD} --appendonly yes
+      - REDIS_ARGS=--requirepass ${CACHE_PASSWORD} --appendonly yes
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping" ]
+      test: [ "CMD", "redis-cli", "-a", "$CACHE_PASSWORD", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  broker:
+    container_name: airbim-broker
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--requirepass ${BROKER_PASSWORD} --appendonly yes
+    ports:
+      - "${BROKER_PORT:-6380}:6380"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$BROKER_PASSWORD", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,7 +68,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      redis:
+      cache:
         condition: service_healthy
 
 volumes:

@@ -266,7 +266,7 @@ cmd_clean() {
     fi
     echo ""
 
-    local containers=("airbim-frontend-dev" "airbim-frontend" "airbim-backend" "airbim-database")
+    local containers=("airbim-frontend-dev" "airbim-frontend" "airbim-backend" "airbim-database" "airbim-cache" "airbim-broker")
     local volumes=("airbim_database_data" "airbim_frontend_node_modules")
     local networks=("airbim_default")
 
