@@ -13,7 +13,39 @@ services:
     volumes:
       - database_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    container_name: airbim-cache
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--requirepass ${CACHE_PASSWORD} --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$CACHE_PASSWORD", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  broker:
+    container_name: airbim-broker
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--requirepass ${BROKER_PASSWORD} --appendonly yes
+    ports:
+      - "${BROKER_PORT:-6380}:6380"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$BROKER_PASSWORD", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -36,6 +68,9 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      cache:
+        condition: service_healthy
 
 volumes:
   database_data:
+  redis-data:
