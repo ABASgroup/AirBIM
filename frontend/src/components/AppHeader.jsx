@@ -6,7 +6,7 @@ import { Logo } from "../components/Logo";
 export const AppHeader = () => {
   return (
     <header className="h-15 flex items-center justify-between sticky top-0 z-50 px-5 
-    bg-light-dark/70 backdrop-blur-md border-main-white/10 border-b-3">
+    bg-surface/70 backdrop-blur-md border-border-color border-b-3">
 
       <Logo />
 

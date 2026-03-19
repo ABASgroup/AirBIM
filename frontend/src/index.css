@@ -28,7 +28,7 @@
 /* Общий фон для всех страниц*/
 @layer base {
   body {
-    @apply bg-main-dark text-main-purple;
+    @apply bg-background-color text-primary-color;
     font-family: "PTSansCaption", Arial, sans-serif;
     margin: 0px;
   }
@@ -54,13 +54,13 @@ h3 {
     p, a, ::placeholder {
         font-size: 16px;
         font-family: "PTSansCaption", Arial, sans-serif;
-        @apply text-main-white
+        @apply text-text-color
     }
     i {
-        @apply text-main-purple
+        @apply text-primary-color
     }
     h1 {
-        @apply text-main-white
+        @apply text-text-color
     }
 }
 

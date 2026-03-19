@@ -2,9 +2,9 @@
 
 export const FilledButton = ({ children, color = "purple", className = "", ...props }) => {
   const colorMap = {
-    purple: "bg-main-purple text-main-white",
-    white: "bg-main-white text-main-purple",
-    warning: "bg-warning text-main-white",
+    purple: "bg-primary-color text-text-color",
+    white: "bg-text-color text-primary-color",
+    warning: "bg-warning text-text-color",
   };
 
   return (

@@ -14,8 +14,8 @@ export const Logo = () => {
       </div>
 
       <div className="flex items-center gap-0">
-        <span className="text-main-white text-2xl tracking-tight">Air</span>
-        <span className="text-main-purple font-bold text-2xl tracking-tight">BIM</span>
+        <span className="text-text-color text-2xl tracking-tight">Air</span>
+        <span className="text-primary-color font-bold text-2xl tracking-tight">BIM</span>
       </div>
     </div>
   );

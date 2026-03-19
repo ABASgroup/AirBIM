@@ -11,36 +11,36 @@ const steps = [
     title: "Генерация облака точек",
     desc: "Вы загружаете проектную BIM-модель (IFC/Revit) и данные сканирования — облака точек в форматах .las или .laz. Система поддерживает данные как с LiDAR-сканеров, так и полученные методом фотограмметрии.",
     image: pic1,
-    bgColor: "bg-main-dark",
-    textColor: "text-main-white"
+    bgColor: "bg-background-color",
+    textColor: "text-text-color"
   },
   {
     title: "Интеллектуальная обработка",
     desc: "ИИ-алгоритмы AirBIM автоматически очищают облако от «шумов»: строительной техники, временных лесов и людей. Система сегментирует данные, оставляя только конструктивные элементы здания.",
     image: pic2,
-    bgColor: "bg-main-white",
-    textColor: "text-main-dark"
+    bgColor: "bg-text-color",
+    textColor: "text-background-color"
   },
   {
     title: "Автоматическое сопоставление",
     desc: "Сервис накладывает реальное облако точек на цифровую модель. Благодаря собственному модулю обработки, AirBIM с высокой точностью сопоставляет факт с планом.",
     image: pic3,
-    bgColor: "bg-main-dark",
-    textColor: "text-main-white"
+    bgColor: "bg-background-color",
+    textColor: "text-text-color"
   },
   {
     title: "Анализ отклонений",
     desc: "Система автоматически выявляет любые расхождения геометрии: смещение стен, колонн или перекрытий. Вы видите распределение отклонений в метрах прямо на 3D-модели.",
     image: pic4,
-    bgColor: "bg-main-white",
-    textColor: "text-main-dark"
+    bgColor: "bg-text-color",
+    textColor: "text-background-color"
   },
   {
     title: "Моментальная отчетность",
     desc: "На основе сопоставления AirBIM формирует отчет о строительных отклонениях и фиксирует реальный прогресс работ. Вы получаете готовую документацию для принятия решений без ручной рутины.",
     image: pic5,
-    bgColor: "bg-main-dark",
-    textColor: "text-main-white"
+    bgColor: "bg-background-color",
+    textColor: "text-text-color"
   },
 ];
 
@@ -52,7 +52,7 @@ const StepSection = ({ step, index }) => {
       <div className={`max-w-6xl h-80 flex flex-row items-center gap-12 ${isEven ? "" : "flex-row-reverse"} ${isEven ? "ml-auto" : "mr-auto"}`}>
 
         <div className="flex-1 space-y-5 items-center text-center">
-          <h2 className={`text-4xl font-extrabold leading-tight text-main-purple`}>
+          <h2 className={`text-4xl font-extrabold leading-tight text-primary-color`}>
             {step.title}
           </h2>
           <p className={`text-md max-w-xl mx-auto ${step.textColor}`}>
@@ -69,7 +69,7 @@ const StepSection = ({ step, index }) => {
             }}
           />
                   <div 
-            className={`absolute inset-0 pointer-events-none bg-gradient-to-${isEven ? "l" : "r"} from-main-dark via-transparent to-transparent`} 
+            className={`absolute inset-0 pointer-events-none bg-gradient-to-${isEven ? "l" : "r"} from-background-color via-transparent to-transparent`} 
           />
         </div>
       </div>

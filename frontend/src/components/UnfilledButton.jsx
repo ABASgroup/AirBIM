@@ -2,8 +2,8 @@
 
 export const UnfilledButton = ({ children, color = "purple", className = "", ...props }) => {
   const colorMap = {
-    purple: "border-main-purple text-main-purple bg-transparent",
-    white: "border-main-white text-main-white",
+    purple: "border-primary-color text-primary-color bg-transparent",
+    white: "border-text-color text-text-color",
     warning: "border-warning text-warning",
   };
 
