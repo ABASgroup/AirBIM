@@ -49,7 +49,7 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
             user_id,
             workspace_id,
             session=session)
-        
+
         if membership is None:
             raise NotMemberError()
 
