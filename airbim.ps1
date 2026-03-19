@@ -235,8 +235,8 @@ function Cmd-Clean {
     }
     Write-Host ""
 
-    $containers = @("airbim-frontend-dev", "airbim-frontend", "airbim-backend", "airbim-database", "airbim-cache", "airbim-broker")
-    $volumes    = @("airbim_database_data", "airbim_frontend_node_modules")
+    $containers = @("airbim-frontend-dev", "airbim-frontend", "airbim-backend", "airbim-database", "airbim-cache", "airbim-broker", "airbim-storage")
+    $volumes    = @("airbim_database_data", "airbim_frontend_node_modules", "airbim_cache_data", "airbim_storage_data", "airbim_broker_data")
     $networks   = @("airbim_default")
 
     info "Removing containers..."
