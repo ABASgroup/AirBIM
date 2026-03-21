@@ -6,6 +6,7 @@ from config import storage_config
 
 
 class Storage:
+    """App S3 storage."""
     def __init__(self):
         """Establish connection to the storage"""
         self.client = boto3.client(
@@ -18,11 +19,12 @@ class Storage:
         self.url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
 
         # create bucket only if it doesn't exists
+        # safe measure
         if not self._bucket_exists():
             self.client.create_bucket(Bucket=self.bucket_name)
 
     def _bucket_exists(self):
-        """Check if storage bucket exists"""
+        """Check if storage bucket exists."""
         try:
             self.client.head_bucket(Bucket=self.bucket_name)
             return True

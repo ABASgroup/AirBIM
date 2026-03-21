@@ -15,7 +15,7 @@ services:
     volumes:
       - storage_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:${STORAGE_PORT}/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 5

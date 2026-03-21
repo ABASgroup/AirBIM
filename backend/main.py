@@ -33,20 +33,6 @@ async def test(token: Annotated[str, Depends(oauth2_scheme)]):
     return {"token": token}
 
 
-@app.post('/test/upload')
-async def test_upload(storage: Storage = Depends(get_storage)):
-    return storage.get_upload_link("test/4969-06-NWNE.las")
-
-
-@app.post('/test/download')
-async def test_download(storage: Storage = Depends(get_storage)):
-    return storage.get_download_link("test/4969-06-NWNE.las")
-
-@app.post('/test/delete')
-async def test_delete(storage: Storage = Depends(get_storage)):
-    result = storage.delete_file("test/12syk21002100.laz")
-    return result
-
 # launch
 if __name__ == "__main__":
     uvicorn.run("main:app",
