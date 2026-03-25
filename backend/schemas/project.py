@@ -3,6 +3,11 @@ from datetime import datetime
 from models.project import ProjectStatus
 
 
+class ProjectCreateRequest(BaseModel):
+    name: str = "New project"
+    description: str
+
+
 class ProjectCreate(BaseModel):
     """Create in DB schema"""
     workspace_id: int
