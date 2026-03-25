@@ -1,3 +1,4 @@
+from storage import Storage
 from services import project as project_service
 from schemas.project import ProjectCreate, ProjectPublic, ProjectUpdate
 from roles import Permission
@@ -6,14 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import (
     get_db_session,
-    require_project_permission
+    require_project_permission,
+    get_storage
 )
-from roles import Role, get_role_permissions, Permission
 
-from models.membership import Membership
-from models.workspace import WorkspaceType
+from roles import Permission
 
 from schemas.files import FileLinkPublic, FileUploadRequest
+
+from services.files import FileService
 
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -75,15 +77,15 @@ async def delete_project(
 
 
 @router.post(
-    "/{project_id}/files/download",
+    "/{project_id}/files/upload",
     response_model=FileLinkPublic,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_DOWNLOAD))],
 )
-async def get_file_download_link(
+async def get_file_upload_link(
     project_id: int,
     file_data: FileUploadRequest,
-    session: AsyncSession = Depends(get_db_session)
+    storage: Storage = Depends(get_storage)
 ):
     """
     Get a temporary link to download file.
@@ -92,23 +94,13 @@ async def get_file_download_link(
 
     Requires permission.
     """
+    url = FileService.generate_file_upload_link(
+        project_id, file_data, storage=storage)
 
+    link_data = FileLinkPublic(
+        project_id=project_id,
+        presigned_url=url,
+        filename=file_data.filename
+    )
 
-@router.post(
-    "/{project_id}/files/upload/confirm",
-    response_model=FileLinkPublic,
-    dependencies=[
-        Depends(require_project_permission(Permission.FILES_UPLOAD_CLOUDS))],
-)
-async def confirm_point_cloud_upload(
-    project_id: int,
-    file_data: FileUploadRequest,
-    session: AsyncSession = Depends(get_db_session)
-):
-    """
-    Get a temporary link to upload point cloud.
-
-    Use this when you've finished uploading file.
-
-    Requires permission.
-    """
+    return link_data

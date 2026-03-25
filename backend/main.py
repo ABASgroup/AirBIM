@@ -10,7 +10,7 @@ from exceptions.handlers import add_exception_handlers
 
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
-from backend.routers.project import router as project_router
+from routers.project import router as project_router
 
 from storage import Storage
 from dependencies import get_storage
@@ -30,9 +30,9 @@ app.include_router(project_router)
 add_exception_handlers(app)
 
 
-@app.get('/test/')
-async def test(token: Annotated[str, Depends(oauth2_scheme)]):
-    return {"token": token}
+@app.get('/ping')
+async def ping():
+    return {"message": "I'm fine, thank you!"}
 
 
 # launch

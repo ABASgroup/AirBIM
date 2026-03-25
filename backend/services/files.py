@@ -1,68 +1,58 @@
 """Service layer logic for files."""
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from schemas.files import FileUploadRequest, PointCloudCreate
+from crud.files import BimFileCRUD, PointCloudFileCRUD
+from storage import Storage
 
 
-def validate_file_request(filename: str, extension: str, size: int):
-    """
-    Runs checks on the file request:
-    
-    - file extension
-    
-    """
-    pass    
-filename: str
-    extension: str
-    size: str
+class FileService:
+    def __init__(self):
+        pass
 
-async def generate_invite_link(
-    workspace_id: int,
-    creator_id: int,
-    role: InviteableRole,
-    session: AsyncSession
-) -> InviteLinkPublic:
-    """
-    Generates new unique role invite link
+    @classmethod
+    def create_file_key(cls, project_id: int, filename: str):
+        """
+        Provides a key for the file in the fixed format.
 
-    DB requires all links to be unique, tries to generate token again
-    if there :class:`~sqlalchemy.exc.IntegrityError`
-    """
-    while True:
-        try:
-            # hide token!
-            token = generate_link_token()
-            token_hashed = hash_link_token(token)
+        **Never** create keys on your own for consistency.
+        """
+        key = f"project_{project_id}/{filename}"
+        return key
 
-            invite_link_data = InviteLinkCreate(token_hashed=token_hashed,
-                                                workspace_id=workspace_id,
-                                                creator_id=creator_id,
-                                                role=Role(role))
+    @classmethod
+    def validate_file_request(cls):
+        """
+        Runs checks on the file request.
+        """
+        pass
 
-            link = await InviteLinkCRUD.create(invite_link_data, session=session)
+    @classmethod
+    def generate_file_upload_link(
+        cls,
+        project_id: int,
+        file_data: FileUploadRequest,
+        storage: Storage
+    ):
+        # create key
+        key = cls.create_file_key(project_id, file_data.filename)
 
-            # output public information
-            link_out = InviteLinkPublic(
-                token=token, workspace_id=workspace_id, role=role)
-            await session.commit()
-            return link_out
-        except IntegrityError:
-            # the token was not unique
-            # strange, but let's
-            # try again
-            await session.rollback()
-            continue
+        # generate temporary upload link
+        link = storage.get_upload_link(key)
 
+        return link
 
-async def revoke_links(workspace_id: int, session: AsyncSession):
-    """
-    All previous links will be removed
+    @classmethod
+    def generate_file_download_link(
+        cls,
+        project_id: int,
+        file_data: FileUploadRequest,
+        storage: Storage
+    ):
+        # create key
+        key = cls.create_file_key(project_id, file_data.filename)
 
-    Use to secure access to the workspace
-    """
-    try:
-        # delete old links
-        await InviteLinkCRUD.delete_by_workspace_id(workspace_id, session=session)
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
+        # generate temporary download link
+        link = storage.get_download_link(key)
+
+        return link

@@ -5,12 +5,9 @@ class FileUploadRequest(BaseModel):
     filename: str
     size: int
 
-    @model_validator(mode='after')
-    def format_extension(self):
-        "Adds point in extension."
-        if self.extension[0] != ".":
-            self.extension = "." + self.extension
-        return self
+
+class FileDeleteRequest(BaseModel):
+    filename: str
 
 
 class FileLinkPublic(BaseModel):
@@ -18,5 +15,11 @@ class FileLinkPublic(BaseModel):
     project_id: int
     presigned_url: str
     filename: str
+
+
+class PointCloudCreate(BaseModel):
+    """Create in DB schema"""
+    project_id: int
+    path: str
     extension: str
     size: int

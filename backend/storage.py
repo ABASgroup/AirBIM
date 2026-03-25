@@ -10,24 +10,24 @@ class Storage:
 
     def __init__(self):
         """Establish connection to the storage"""
-        self.client = boto3.client(
+        self._client = boto3.client(
             "s3",
             endpoint_url=storage_config.endpoint,
             aws_access_key_id=storage_config.STORAGE_ACCESS_KEY_ID,
             aws_secret_access_key=storage_config.STORAGE_SECRET_KEY,
         )
-        self.bucket_name = storage_config.STORAGE_BUCKET
-        self.url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
+        self._bucket_name = storage_config.STORAGE_BUCKET
+        self._url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
 
         # create bucket only if it doesn't exists
         # safe measure
         if not self._bucket_exists():
-            self.client.create_bucket(Bucket=self.bucket_name)
+            self._client.create_bucket(Bucket=self._bucket_name)
 
     def _bucket_exists(self):
         """Check if storage bucket exists."""
         try:
-            self.client.head_bucket(Bucket=self.bucket_name)
+            self._client.head_bucket(Bucket=self._bucket_name)
             return True
         except ClientError as e:
             error_code = int(e.response['Error']['Code'])
@@ -53,7 +53,7 @@ class Storage:
             prefix (str): prefix for the save path (added to filename)
             filename (str): name you want to use for the file
         """
-        response = self.client.upload_fileobj(file, self.bucket_name, key)
+        response = self._client.upload_fileobj(file, self._bucket_name, key)
         return response
 
     def download_file_object(self, key: str) -> BinaryIO:
@@ -66,7 +66,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        response = self.client.get_object(Bucket=self.bucket_name, Key=key)
+        response = self._client.get_object(Bucket=self._bucket_name, Key=key)
         content = response['Body']
         return content
 
@@ -77,10 +77,10 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        url = self.client.generate_presigned_url(
+        url = self._client.generate_presigned_url(
             ClientMethod='put_object',
-            Params={'Bucket': self.bucket_name, 'Key': key},
-            ExpiresIn=self.url_expiration_time
+            Params={'Bucket': self._bucket_name, 'Key': key},
+            ExpiresIn=self._url_expiration_time
         )
         return url
 
@@ -92,10 +92,10 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        url = self.client.generate_presigned_url(
+        url = self._client.generate_presigned_url(
             ClientMethod='get_object',
-            Params={'Bucket': self.bucket_name, 'Key': key},
-            ExpiresIn=self.url_expiration_time
+            Params={'Bucket': self._bucket_name, 'Key': key},
+            ExpiresIn=self._url_expiration_time
         )
         return url
 
@@ -106,7 +106,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        response = self.client.delete_object(Bucket=self.bucket_name, Key=key)
+        response = self._client.delete_object(Bucket=self._bucket_name, Key=key)
         return response
 
     def file_exists(self, key: str):
@@ -117,7 +117,7 @@ class Storage:
             key (str): key/path of the file in the storage
         """
         try:
-            self.client.head_object(Bucket=self.bucket_name, Key=key)
+            self._client.head_object(Bucket=self._bucket_name, Key=key)
             return True
         except ClientError as e:
             if e.response['Error']['Code'] == '404':
