@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { AppHeader } from "../src/components/AppHeader.jsx"
-import { AppSidebar } from "./components/AppSidebar.jsx";
-import { WorkspaceProvider } from "./context/WorkspaceContext.jsx";
+import { AppHeader } from "@app/layout/AppHeader.jsx"
+import { AppSidebar } from "@app/layout/AppSidebar.jsx";
+import { WorkspaceProvider } from "@/context/WorkspaceContext.jsx";
 
 const AppLayout = () => {
   const location = useLocation();

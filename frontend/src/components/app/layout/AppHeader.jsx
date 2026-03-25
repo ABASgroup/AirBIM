@@ -1,7 +1,7 @@
 // Header для приложения
 
 import { Link, useLocation } from "react-router-dom";
-import { Logo } from "../components/Logo";
+import { Logo } from "@ui/Logo";
 
 export const AppHeader = () => {
   return (

@@ -1,4 +1,4 @@
-import { UnfilledButton } from "../../components/UnfilledButton";
+import { UnfilledButton } from "@ui/UnfilledButton";
 import { useNavigate } from 'react-router-dom';
 
 function Settings() {

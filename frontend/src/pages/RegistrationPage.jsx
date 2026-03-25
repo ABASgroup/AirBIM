@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import api from "../api/index";
 
-import { LandingHeader } from "../components/landing/LandingHeader";
-import { Modal } from "../components/Modal";
-import { FilledButton } from "../components/FilledButton";
-import { Input } from "../components/Input";
+import { LandingHeader } from "@landing/LandingHeader";
+import { Modal } from "@ui/Modal";
+import { FilledButton } from "@ui/FilledButton";
+import { Input } from "@ui/Input";
 
 function RegistrationPage() {
   const { register, handleSubmit, watch } = useForm();

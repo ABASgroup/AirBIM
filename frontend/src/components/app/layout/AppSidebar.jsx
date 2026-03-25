@@ -1,0 +1,95 @@
+import { useState, useRef } from "react";
+import { Dropdown } from "@ui/Dropdown";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { FilledButton } from "@ui/FilledButton";
+import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
+import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
+import { ActionMenu } from "@ui/ActionMenu";
+
+export const AppSidebar = () => {
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const actionBtnRefs = useRef({});
+  const [isCreateWorkspaceModalOpen, setIsCreateWorkspaceModalOpen] = useState(false);
+  const { workspaces, currentWorkspace, switchWorkspace, setWorkspaces } = useWorkspace();
+  const [isOpen, setIsOpen] = useState(false);
+  const handleSelect = (ws) => {
+    switchWorkspace(ws.id);
+    setIsOpen(false);
+    setActiveMenuId(null);
+  };
+  const handleCreateWorkspace = async (name) => {
+    await createWorkspace(name);
+    const res = await getWorkspaces();
+    setWorkspaces(res.data);
+    setIsCreateWorkspaceModalOpen(false);
+  };
+  const trigger = (
+    <div className="h-15 px-4 flex items-center justify-between cursor-pointer border-border-color border-b-3">
+      <span className="truncate">{currentWorkspace?.name || "Загрузка..."}</span>
+      <i className={`fa-solid fa-chevron-down transition-transform text-text-color ${isOpen ? "rotate-180" : ""}`}></i>
+    </div>
+  );
+  const handleDeleteWorkspace = async (id) => {
+    await deleteWorkspace(id);
+    const res = await getWorkspaces();
+    setWorkspaces(res.data);
+    setActiveMenuId(null);
+  };
+
+  return (
+    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3">
+      <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
+        <Dropdown trigger={trigger} isOpen={isOpen} onToggle={(open) => {setIsOpen(open); if (!open) setActiveMenuId(null)}}>
+          {workspaces.map((ws) => (
+            <div
+              key={ws.id}
+              onClick={() => handleSelect(ws)}
+              className={`w-100 px-4 py-2 text-left cursor-pointer gap-2 flex items-center border-none select-none justify-between
+                ${currentWorkspace?.id === ws.id ? "bg-mute-text-color rounded-[5px]" : "bg-transparent"
+                }`}
+            >
+              <div className="flex items-center gap-2 grow min-w-0 overflow-hidden">
+                <i className={`fa-solid w-5 text-center ${ws.type === "personal" ? "fa-user" : "fa-users"}`}></i>
+                <div className="flex flex-col items-start min-w-0">
+                  <span className="truncate">{ws.name}</span>
+                  <span className="text-xs text-text-color/30">
+                    {ws.type === "personal" ? "Ваше личное пространство" : "Командное пространство"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-2" ref={(el) => actionBtnRefs.current[ws.id] = el}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMenuId(activeMenuId === ws.id ? null : ws.id);
+                }}>
+                <i className="fa-solid fa-bars flex justify-end shrink-0 text-text-color"></i>
+              </div>
+
+              {activeMenuId === ws.id && (
+                <ActionMenu
+                  isOpen={true}
+                  onClose={() => setActiveMenuId(null)}
+                  buttonRef={{ current: actionBtnRefs.current[ws.id] }}
+                >
+                  <button
+                    className="w-full px-4 py-2 text-left hover:bg-mute-text-color flex items-center gap-2"
+                    onClick={() => handleDeleteWorkspace(ws.id)}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                    Удалить
+                  </button>
+                </ActionMenu>
+              )}
+            </div>
+          ))}
+          <FilledButton className="mx-auto my-2" onClick={() => setIsCreateWorkspaceModalOpen(true)}>
+            <i className="fa-solid fa-plus text-text-color"></i>
+            Создать новое пространство
+          </FilledButton>
+        </Dropdown>
+      </div>
+      <CreateWorkspaceForm isOpen={isCreateWorkspaceModalOpen} onClose={() => setIsCreateWorkspaceModalOpen(false)} onCreate={handleCreateWorkspace} />
+    </aside>
+  );
+};

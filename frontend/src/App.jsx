@@ -1,11 +1,11 @@
 // Routing for the app
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import LandingPage from "./pages/LandingPage"
-import LoginPage from "./pages/LoginPage"
-import RegistrationPage from "./pages/RegistrationPage"
-import Dashboard from "./pages/app/Dashboard"
-import Settings from "./pages/app/Settings"
-import AppLayout from "./AppLayout"
+import LandingPage from "@/pages/LandingPage"
+import LoginPage from "@/pages/LoginPage"
+import RegistrationPage from "@/pages/RegistrationPage"
+import Dashboard from "@/pages/app/Dashboard"
+import Settings from "@/pages/app/Settings"
+import AppLayout from "@app/layout/AppLayout"
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("access_token");

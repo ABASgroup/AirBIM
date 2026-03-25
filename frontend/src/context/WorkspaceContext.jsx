@@ -28,7 +28,7 @@ export const WorkspaceProvider = ({ children }) => {
   };
 
   return (
-    <WorkspaceContext.Provider value={{ workspaces, currentWorkspace, loading, switchWorkspace }}>
+    <WorkspaceContext.Provider value={{ workspaces, setWorkspaces, currentWorkspace, loading, switchWorkspace }}>
       {children}
     </WorkspaceContext.Provider>
   );

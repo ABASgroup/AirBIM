@@ -1,4 +1,4 @@
-import { UnfilledButton } from "../UnfilledButton";
+import { UnfilledButton } from "../ui/UnfilledButton";
 
 export const PricingCard = ({ tariff, isFeatured }) => {
   return (

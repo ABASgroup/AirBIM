@@ -1,10 +1,10 @@
 // Таблица с промо приложения
 
-import pic1 from "../../assets/images/landing/landing_pic1.png"
-import pic2 from "../../assets/images/landing/landing_pic2.png"
-import pic3 from "../../assets/images/landing/landing_pic3.png"
-import pic4 from "../../assets/images/landing/landing_pic4.png"
-import pic5 from "../../assets/images/landing/landing_pic5.png"
+import pic1 from "@/assets/images/landing/landing_pic1.png"
+import pic2 from "@/assets/images/landing/landing_pic2.png"
+import pic3 from "@/assets/images/landing/landing_pic3.png"
+import pic4 from "@/assets/images/landing/landing_pic4.png"
+import pic5 from "@/assets/images/landing/landing_pic5.png"
 
 const steps = [
   {

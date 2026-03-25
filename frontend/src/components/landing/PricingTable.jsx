@@ -1,4 +1,4 @@
-import { PricingCard } from "../landing/PricingCard";
+import { PricingCard } from "@landing/PricingCard";
 
 const tariffs = [
   {

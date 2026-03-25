@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import api from "../api/index";
+import api from "@/api/index";
 
-import { LandingHeader } from "../components/landing/LandingHeader";
-import { Modal } from "../components/Modal";
-import { FilledButton } from "../components/FilledButton";
-import { UnfilledButton } from "../components/UnfilledButton";
-import { Input } from "../components/Input";
+import { LandingHeader } from "@landing/LandingHeader";
+import { Modal } from "@ui/Modal";
+import { FilledButton } from "@ui/FilledButton";
+import { UnfilledButton } from "@ui/UnfilledButton";
+import { Input } from "@ui/Input";
 
 const LoginPage = () => {
   const { register, handleSubmit } = useForm();

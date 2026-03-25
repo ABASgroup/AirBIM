@@ -1,6 +1,6 @@
-import { LandingHeader } from "../components/landing/LandingHeader";
-import { PromoTable } from "../components/landing/PromoTable";
-import { PricingTable } from "../components/landing/PricingTable";
+import { LandingHeader } from "@landing/LandingHeader";
+import { PromoTable } from "@landing/PromoTable";
+import { PricingTable } from "@landing/PricingTable";
 
 function LandingPage() {
   return (
