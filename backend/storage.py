@@ -7,6 +7,7 @@ from config import storage_config
 
 class Storage:
     """App S3 storage."""
+
     def __init__(self):
         """Establish connection to the storage"""
         self.client = boto3.client(
@@ -70,7 +71,12 @@ class Storage:
         return content
 
     def get_upload_link(self, key: str):
-        """Get temporary link for uploading file to the storage"""
+        """
+        Get temporary link for uploading file to the storage
+
+        Args:
+            key (str): key/path of the file in the storage
+        """
         url = self.client.generate_presigned_url(
             ClientMethod='put_object',
             Params={'Bucket': self.bucket_name, 'Key': key},
@@ -78,8 +84,14 @@ class Storage:
         )
         return url
 
-    def get_download_link(self, key: str):
-        """Get temporary link for downloading file to the storage"""
+    def get_download_link(self, key: str, ):
+        """
+        Get temporary link for downloading file to the storage.
+
+
+        Args:
+            key (str): key/path of the file in the storage
+        """
         url = self.client.generate_presigned_url(
             ClientMethod='get_object',
             Params={'Bucket': self.bucket_name, 'Key': key},
@@ -96,3 +108,20 @@ class Storage:
         """
         response = self.client.delete_object(Bucket=self.bucket_name, Key=key)
         return response
+
+    def file_exists(self, key: str):
+        """
+        Checks if a file with this key exists.
+
+        Args:
+            key (str): key/path of the file in the storage
+        """
+        try:
+            self.client.head_object(Bucket=self.bucket_name, Key=key)
+            return True
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                return False
+            else:
+                # something's wrong
+                raise

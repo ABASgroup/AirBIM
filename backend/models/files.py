@@ -12,7 +12,7 @@ class BimFile(BaseModel):
 
     path: Mapped["str"] = mapped_column(nullable=False)
     extension: Mapped["str"] = mapped_column(nullable=False)
-    size: Mapped["str"] = mapped_column(nullable=False)
+    size: Mapped["int"] = mapped_column(nullable=False)
 
 
 class PointCloudFile(BaseModel):
@@ -25,4 +25,4 @@ class PointCloudFile(BaseModel):
 
     path: Mapped["str"] = mapped_column(nullable=False)
     extension: Mapped["str"] = mapped_column(nullable=False)
-    size: Mapped["str"] = mapped_column(nullable=False)
+    size: Mapped["int"] = mapped_column(nullable=False)

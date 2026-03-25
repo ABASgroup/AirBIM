@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies import (
     get_db_session,
     get_current_user_id,
-    require_membership_permission,
+    require_workspace_permission,
 )
 from roles import Role, get_role_permissions, Permission
 
@@ -12,17 +12,20 @@ from models.membership import Membership
 from models.workspace import WorkspaceType
 
 from schemas.invite_link import InviteLinkRequest, InviteLinkPublic
+from schemas.project import ProjectPublic
 from schemas.workspace import WorkspaceCreate, WorkspaceCreateRequest, WorkspacePublic
-from schemas.project import ProjectCreate, ProjectPublic, ProjectUpdate
-from schemas.membership import MembershipPermissionsPublic, MembershipCreate, MembershipPublic
+from schemas.membership import (
+    MembershipPermissionsPublic,
+    MembershipCreate,
+    MembershipPublic,
+)
 
 from services import project as project_service
 from services import membership as membership_service
 from services import workspace as workspace_service
 from services import invite_link as invite_link_service
 
-router = APIRouter(prefix="/workspace",
-                   tags=["workspaces, projects, memberships"])
+router = APIRouter(prefix="/workspace", tags=["workspaces"])
 
 
 @router.get("/{workspace_id}/access", response_model=MembershipPermissionsPublic)
@@ -50,13 +53,11 @@ async def access(
 @router.delete(
     "/{workspace_id}/membership/{user_id}",
     response_model=MembershipPublic,
-    dependencies=[Depends(require_membership_permission(
-        Permission.MEMBERS_REMOVE))]
+    dependencies=[
+        Depends(require_workspace_permission(Permission.MEMBERS_REMOVE))],
 )
 async def remove_user_from_workspace(
-    workspace_id: int,
-    user_id: int,
-    session: AsyncSession = Depends(get_db_session)
+    workspace_id: int, user_id: int, session: AsyncSession = Depends(get_db_session)
 ):
     """
     Remove user from the workspace
@@ -65,9 +66,8 @@ async def remove_user_from_workspace(
     - You can't remove the owner from his own workspace
     """
     removed_membership = await membership_service.delete_membership(
-        user_id,
-        workspace_id,
-        session=session)
+        user_id, workspace_id, session=session
+    )
     return removed_membership
 
 
@@ -94,7 +94,7 @@ async def create_workspace(
 @router.delete(
     "/{workspace_id}",
     response_model=WorkspacePublic,
-    dependencies=[Depends(require_membership_permission(
+    dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_DELETE))],
 )
 async def delete_team_workspace(
@@ -112,19 +112,38 @@ async def delete_team_workspace(
     return workspace
 
 
+@router.get(
+    "",
+    response_model=list[ProjectPublic],
+    dependencies=[
+        Depends(require_workspace_permission(Permission.PROJECT_VIEW))],
+)
+async def get_workspace_projects(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+):
+    """Get all projects related to the workspace"""
+    projects = await project_service.get_workspace_projects(
+        workspace_id, session=session
+    )
+    return projects
+
+
 @router.post(
     "/{workspace_id}/invite/revoke",
-    dependencies=[Depends(require_membership_permission(
-        Permission.MEMBERS_INVITE_REFRESH))]
+    dependencies=[
+        Depends(require_workspace_permission(
+            Permission.MEMBERS_INVITE_REFRESH))
+    ],
 )
-async def revoke_invite_links(workspace_id: int, session: AsyncSession = Depends(get_db_session)):
+async def revoke_invite_links(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+):
     """
     Revoke invite links for the workspace
 
     Old links (created before call) will become obsolete and invalid
     """
-    await invite_link_service.revoke_links(
-        workspace_id, session=session)
+    await invite_link_service.revoke_links(workspace_id, session=session)
 
 
 @router.post("/{workspace_id}/invite", response_model=InviteLinkPublic)
@@ -132,8 +151,9 @@ async def get_invite_link(
     workspace_id: int,
     link_data: InviteLinkRequest,
     membership: Membership = Depends(
-        require_membership_permission(Permission.PROJECT_CREATE)),
-    session: AsyncSession = Depends(get_db_session)
+        require_workspace_permission(Permission.PROJECT_CREATE)
+    ),
+    session: AsyncSession = Depends(get_db_session),
 ):
     """
     Get invite link for the workspace associated with that role
@@ -141,19 +161,14 @@ async def get_invite_link(
     Use if you need a new link
     """
     link = await invite_link_service.generate_invite_link(
-        workspace_id,
-        membership.user_id,
-        link_data.role,
-        session=session)
+        workspace_id, membership.user_id, link_data.role, session=session
+    )
     return link
 
 
-@router.get(
-    "/invite/{token}"
-)
+@router.get("/invite/{token}")
 async def validate_invite_link(
-    token: str,
-    session: AsyncSession = Depends(get_db_session)
+    token: str, session: AsyncSession = Depends(get_db_session)
 ):
     """
     Use invite link to the workspace
@@ -164,10 +179,7 @@ async def validate_invite_link(
     return link
 
 
-@router.post(
-    '/invite/{token}/accept',
-    response_model=MembershipPermissionsPublic
-)
+@router.post("/invite/{token}/accept", response_model=MembershipPermissionsPublic)
 async def accept_link_invitation(
     token: str,
     user_id: int = Depends(get_current_user_id),
@@ -181,9 +193,8 @@ async def accept_link_invitation(
     link = await invite_link_service.validate_invite_link(token, session=session)
 
     membership = MembershipCreate(
-        workspace_id=link.workspace_id,
-        user_id=user_id,
-        role=link.role)
+        workspace_id=link.workspace_id, user_id=user_id, role=link.role
+    )
 
     await membership_service.create_membership(membership, session)
 
@@ -194,74 +205,3 @@ async def accept_link_invitation(
         role=membership.role,
         permissions=permissions,
     )
-
-
-@router.post(
-    "/projects",
-    response_model=ProjectPublic,
-    dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_CREATE))]
-)
-async def create_project(
-    project_data: ProjectCreate, session: AsyncSession = Depends(get_db_session)
-):
-    project = await project_service.create_project(project_data, session=session)
-    return project
-
-
-@router.get(
-    "/{workspace_id}/projects",
-    response_model=list[ProjectPublic],
-    dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_VIEW))],
-)
-async def get_workspace_projects(
-    workspace_id: int, session: AsyncSession = Depends(get_db_session)
-):
-    """Get all projects related to the workspace"""
-    projects = await project_service.get_workspace_projects(
-        workspace_id, session=session
-    )
-    return projects
-
-
-@router.get(
-    "/{workspace_id}/projects/{project_id}",
-    response_model=ProjectPublic,
-    dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_VIEW))],
-)
-async def get_project(project_id: int, session: AsyncSession = Depends(get_db_session)):
-    project = await project_service.get_project(project_id, session=session)
-    return project
-
-
-@router.patch(
-    "/{workspace_id}/projects/{project_id}",
-    response_model=ProjectPublic,
-    dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_EDIT))],
-)
-async def update_project(
-    project_id: int,
-    project_data: ProjectUpdate,
-    session: AsyncSession = Depends(get_db_session),
-):
-    project = await project_service.update_project(
-        project_id, project_data, session=session
-    )
-    return project
-
-
-@router.delete(
-    "/{workspace_id}/projects/{project_id}",
-    response_model=ProjectPublic,
-    dependencies=[
-        Depends(require_membership_permission(Permission.PROJECT_DELETE))],
-)
-async def delete_project(
-    project_id: int,
-    session: AsyncSession = Depends(get_db_session),
-):
-    project = await project_service.delete_project(project_id, session=session)
-    return project

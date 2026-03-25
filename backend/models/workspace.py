@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, relationship, mapped_column
-from sqlalchemy import Enum, Index
+from sqlalchemy import Enum
 from .base import BaseModel
 import enum
 

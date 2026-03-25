@@ -10,6 +10,7 @@ from exceptions.handlers import add_exception_handlers
 
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
+from backend.routers.project import router as project_router
 
 from storage import Storage
 from dependencies import get_storage
@@ -23,6 +24,7 @@ app = FastAPI(root_path="/api")
 # include routers here
 app.include_router(auth_router)
 app.include_router(workspace_router)
+app.include_router(project_router)
 
 # add exception handlers
 add_exception_handlers(app)
