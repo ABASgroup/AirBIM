@@ -12,7 +12,7 @@ from models.membership import Membership
 from models.workspace import WorkspaceType
 
 from schemas.invite_link import InviteLinkRequest, InviteLinkPublic
-from schemas.project import ProjectPublic
+from schemas.project import ProjectCreate, ProjectCreateRequest, ProjectPublic
 from schemas.workspace import WorkspaceCreate, WorkspaceCreateRequest, WorkspacePublic
 from schemas.membership import (
     MembershipPermissionsPublic,
@@ -112,22 +112,6 @@ async def delete_team_workspace(
     return workspace
 
 
-@router.get(
-    "",
-    response_model=list[ProjectPublic],
-    dependencies=[
-        Depends(require_workspace_permission(Permission.PROJECT_VIEW))],
-)
-async def get_workspace_projects(
-    workspace_id: int, session: AsyncSession = Depends(get_db_session)
-):
-    """Get all projects related to the workspace"""
-    projects = await project_service.get_workspace_projects(
-        workspace_id, session=session
-    )
-    return projects
-
-
 @router.post(
     "/{workspace_id}/invite/revoke",
     dependencies=[
@@ -205,3 +189,37 @@ async def accept_link_invitation(
         role=membership.role,
         permissions=permissions,
     )
+
+
+@router.get(
+    "/{workspace_id}/projects",
+    response_model=list[ProjectPublic],
+    dependencies=[
+        Depends(require_workspace_permission(Permission.PROJECT_VIEW))],
+)
+async def get_workspace_projects(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+):
+    """Get all projects related to the workspace"""
+    projects = await project_service.get_workspace_projects(
+        workspace_id, session=session
+    )
+    return projects
+
+
+@router.post(
+    "/{workspace_id}/projects",
+    response_model=ProjectPublic,
+    dependencies=[
+        Depends(require_workspace_permission(Permission.PROJECT_CREATE))],
+)
+async def create_project(
+    workspace_id: int,
+    project_data: ProjectCreateRequest, 
+    session: AsyncSession = Depends(get_db_session)
+):
+    project_data_db = ProjectCreate(workspace_id=workspace_id,
+                                    name=project_data.name,
+                                    description=project_data.description)
+    project = await project_service.create_project(project_data_db, session=session)
+    return project

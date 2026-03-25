@@ -1,19 +1,14 @@
 """Entry point to the app."""
-from typing import Annotated
 import uvicorn
 
-from fastapi import Depends, FastAPI, UploadFile
+from fastapi import FastAPI
 
 from config import api_config
-from dependencies import oauth2_scheme
 from exceptions.handlers import add_exception_handlers
 
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
 from routers.project import router as project_router
-
-from storage import Storage
-from dependencies import get_storage
 
 # This app is published behind a proxy under "/api" (for users: https://example.com/api/...).
 # The proxy removes (strips) "/api" before sending the request to FastAPI, so our real routes stay like "/test", "/users", etc.

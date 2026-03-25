@@ -1,6 +1,6 @@
 from storage import Storage
 from services import project as project_service
-from schemas.project import ProjectCreate, ProjectPublic, ProjectUpdate
+from schemas.project import ProjectPublic, ProjectUpdate
 from roles import Permission
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,19 +19,6 @@ from services.files import FileService
 
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-
-
-@router.post(
-    "",
-    response_model=ProjectPublic,
-    dependencies=[
-        Depends(require_project_permission(Permission.PROJECT_CREATE))],
-)
-async def create_project(
-    project_data: ProjectCreate, session: AsyncSession = Depends(get_db_session)
-):
-    project = await project_service.create_project(project_data, session=session)
-    return project
 
 
 @router.get(

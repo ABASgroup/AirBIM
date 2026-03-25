@@ -14,6 +14,7 @@ from models.invite_link import InviteLink
 from models.membership import Membership
 from models.project import Project
 from models.user import User
+from models.stage import Stage
 
 from alembic import context
 
