@@ -10,7 +10,8 @@ class InviteLink(BaseModel):
 
     token_hashed: Mapped[str] = mapped_column(index=True, unique=True)
 
-    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
+    workspace_id: Mapped[int] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"))
     workspace: Mapped["Workspace"] = relationship(
         back_populates="invite_links")
 

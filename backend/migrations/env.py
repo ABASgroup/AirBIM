@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from models.base import BaseModel
 from database import db_config
 # !!!IMPORT OUR MODELS HERE!!!
+from models.files import BimFile, PointCloudFile
 from models.workspace import Workspace
 from models.invite_link import InviteLink
 from models.membership import Membership
 from models.project import Project
 from models.user import User
+from models.stage import Stage
 
 from alembic import context
 
