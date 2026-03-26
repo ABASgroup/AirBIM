@@ -18,9 +18,9 @@ class BimFile(BaseModel):
 class PointCloudFile(BaseModel):
     __tablename__ = "point_cloud_files"
 
-    project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"))
-    project: Mapped["Project"] = relationship(
+    stage_id: Mapped[int] = mapped_column(
+        ForeignKey("stages.id", ondelete="CASCADE"))
+    stage: Mapped["Stage"] = relationship(
         back_populates="point_cloud_files")
 
     path: Mapped["str"] = mapped_column(nullable=False)
