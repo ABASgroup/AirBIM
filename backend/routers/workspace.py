@@ -207,7 +207,7 @@ async def accept_link_invitation(
 
 
 @router.get(
-    "/{workspace_id}/projects",
+    "/{workspace_id}/project",
     response_model=list[ProjectPublic],
     dependencies=[
         Depends(require_workspace_permission(Permission.PROJECT_VIEW))],
@@ -223,7 +223,7 @@ async def get_workspace_projects(
 
 
 @router.post(
-    "/{workspace_id}/projects",
+    "/{workspace_id}/project",
     response_model=ProjectPublic,
     dependencies=[
         Depends(require_workspace_permission(Permission.PROJECT_CREATE))],
