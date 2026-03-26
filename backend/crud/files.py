@@ -1,5 +1,10 @@
 from .base import BaseCRUD
-from models.files import BimFile, PointCloudFile
+from models.files import File, BimFile, PointCloudFile
+
+
+class FileCRUD(BaseCRUD[File]):
+    """DAO class for CRUD operations with File model."""
+    _model = File
 
 
 class BimFileCRUD(BaseCRUD[BimFile]):

@@ -1,6 +1,9 @@
+from storage import Storage
 from services import project as project_service
+from services.file import FileService
 from services import stage as stage_service
 
+from schemas.files import FileLinkPublic, FileUploadRequest
 from schemas.project import ProjectPublic, ProjectUpdate
 from schemas.stage import StageCreate, StagePublic
 
@@ -10,7 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import (
     get_db_session,
-    require_project_permission
+    require_project_permission,
+    get_storage
 )
 
 from roles import Permission
@@ -90,3 +94,33 @@ async def create_stage(
     stage_data_db = StageCreate(project_id=project_id)
     stage = await stage_service.create_stage(stage_data_db, session=session)
     return stage
+
+
+@router.post(
+    "/{project_id}/files/bim/upload",
+    response_model=FileLinkPublic,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_DOWNLOAD))],
+)
+async def get_point_cloud_upload_link(
+    project_id: int,
+    file_data: FileUploadRequest,
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Get a temporary link to upload file.
+
+    Use this link to upload file.
+
+    Requires permission.
+    """
+    url = FileService.generate_file_upload_link(
+        project_id, file_data, storage=storage)
+
+    link_data = FileLinkPublic(
+        project_id=project_id,
+        presigned_url=url,
+        filename=file_data.filename
+    )
+
+    return link_data

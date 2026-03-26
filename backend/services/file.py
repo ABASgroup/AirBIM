@@ -2,7 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from schemas.files import FileUploadRequest, PointCloudCreate
-from crud.files import BimFileCRUD, PointCloudFileCRUD
+from crud.files import FileCRUD
 from storage import Storage
 
 
