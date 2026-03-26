@@ -11,13 +11,18 @@ class FileService:
         pass
 
     @classmethod
-    def create_file_key(cls, project_id: int, filename: str):
+    def create_file_key(
+        cls,
+        workspace_id: int,
+        project_id: int,
+        filename: str
+    ):
         """
         Provides a key for the file in the fixed format.
 
         **Never** create keys on your own for consistency.
         """
-        key = f"project_{project_id}/{filename}"
+        key = f"workspace_{workspace_id}/project_{project_id}/{filename}"
         return key
 
     @classmethod

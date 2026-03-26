@@ -142,7 +142,7 @@ def require_stage_permission(permission: Permission):
         user_id: int = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session)
     ):
-        stage = await StageCRUD.get_by_id(stage_id, session=session)
+        stage = await StageCRUD.get_by_id_with_project(stage_id, session=session)
 
         if stage is None:
             raise NotFoundError("No stage with this ID.")

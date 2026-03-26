@@ -22,7 +22,7 @@ class MembershipCRUD(BaseCRUD[Membership]):
             .where(cls._model.user_id == user_id)
         )
         return result.scalars().one_or_none()
-    
+
     @classmethod
     async def get_all_user_memberships(cls, user_id: int, session: AsyncSession):
         """Get all user memberships using their ID."""
@@ -31,6 +31,7 @@ class MembershipCRUD(BaseCRUD[Membership]):
             .where(cls._model.user_id == user_id)
         )
         return result.scalars().all()
+
     @classmethod
     async def delete_user_workspace_membership(
         cls,
