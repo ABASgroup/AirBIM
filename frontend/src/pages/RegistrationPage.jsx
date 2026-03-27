@@ -74,7 +74,7 @@ function RegistrationPage() {
               />
             </div>
             {error && <p className="text-warning">{error}</p>}
-            <div className="flex justify-between mt-10">
+            <div className="flex justify-end mt-5">
               <FilledButton type="submit">
                 Подтвердить
               </FilledButton>

@@ -52,7 +52,7 @@ const LoginPage = () => {
               />
             </div>
             {error && <p className="text-warning">{error}</p>}
-            <div className="flex justify-between mt-10">
+            <div className="flex justify-between mt-5">
               <UnfilledButton type="button">
                 Забыл пароль
               </UnfilledButton>

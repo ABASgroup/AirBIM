@@ -36,7 +36,7 @@ export const CreateWorkspaceForm = ({ isOpen, onClose, onCreate }) => {
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="flex justify-end gap-3 mt-5">
           <UnfilledButton onClick={onClose}>
             Отмена
           </UnfilledButton>
