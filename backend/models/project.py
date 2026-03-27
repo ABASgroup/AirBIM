@@ -12,9 +12,9 @@ class ProjectStatus(enum.StrEnum):
 class Project(BaseModel):
     __tablename__ = "projects"
 
-    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
-    workspace: Mapped["Workspace"] = relationship(
-        back_populates="projects", cascade="delete")
+    workspace_id: Mapped[int] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"))
+    workspace: Mapped["Workspace"] = relationship(back_populates="projects")
 
     name: Mapped["str"] = mapped_column(nullable=False)
     description: Mapped["str"]
@@ -23,4 +23,11 @@ class Project(BaseModel):
         Enum(ProjectStatus, name="project_statuses", create_constraint=True),
         nullable=False,
         default=ProjectStatus.ACTIVE
+    )
+
+    bim_files: Mapped[list["BimFile"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    point_cloud_files: Mapped[list["PointCloudFile"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
     )

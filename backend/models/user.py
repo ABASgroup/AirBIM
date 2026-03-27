@@ -16,5 +16,6 @@ class User(BaseModel):
     )
 
     invite_links: Mapped[list["InviteLink"]] = relationship(
-        back_populates="created_by", cascade="all, delete-orphan"
+        back_populates="created_by",
+        cascade="all, delete-orphan"
     )

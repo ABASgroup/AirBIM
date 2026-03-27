@@ -16,6 +16,7 @@ class InviteLinkCreate(BaseModel):
 
 
 class InviteLinkPublic(BaseModel):
+    """API Response schema"""
     token: str
     workspace_id: int
     role: InviteableRole
