@@ -12,14 +12,12 @@ class FileStatus(StrEnum):
 class File(BaseModel):
     """
     Represents every single file in the storage without extra specification.
-
-    Every single file model you create must have relation to this model (one to one).
     """
-    __tablename__ = "files"
+    __abstract__ = True
 
     filename: Mapped["str"] = mapped_column(nullable=False)
     key: Mapped["str"] = mapped_column(nullable=False, unique=True)
-    extension: Mapped["str"] = mapped_column(nullable=False)
+    content_type: Mapped["str"] = mapped_column(nullable=False)
     size: Mapped["int"] = mapped_column(nullable=False)
 
     status: Mapped[FileStatus] = mapped_column(
@@ -29,24 +27,16 @@ class File(BaseModel):
     )
 
 
-class BimFile(BaseModel):
+class BimFile(File):
     __tablename__ = "bim_files"
-
-    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"), unique=True)
-    file: Mapped["File"] = relationship(
-        back_populates="bim_file", cascade="all, delete")
 
     project_id: Mapped[int] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"))
     project: Mapped["Project"] = relationship(back_populates="bim_files")
 
 
-class PointCloudFile(BaseModel):
+class PointCloudFile(File):
     __tablename__ = "point_cloud_files"
-
-    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"), unique=True)
-    file: Mapped["File"] = relationship(
-        back_populates="point_cloud", cascade="all, delete")
 
     stage_id: Mapped[int] = mapped_column(
         ForeignKey("stages.id", ondelete="CASCADE"))

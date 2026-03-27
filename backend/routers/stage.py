@@ -1,7 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.stage import StagePublic
 from storage import Storage
-from schemas.files import FileUploadRequest, FileLinkPublic
+from schemas.files import (
+    FileLinkPublic,
+    FileUploadConfirmRequest,
+    FileUploadLinkRequest,
+    PointCloudFileCreate,
+    PointCloudFilePublic,
+)
 from services import stage as stage_service
 from services.file import FileService
 from roles import Permission
@@ -36,7 +42,7 @@ async def get_stage(stage_id: int, session: AsyncSession = Depends(get_db_sessio
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_DELETE))],
 )
-async def delete_project(
+async def delete_stage(
     stage_id: int,
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -48,11 +54,12 @@ async def delete_project(
     "/{stage_id}/files/point_cloud/upload",
     response_model=FileLinkPublic,
     dependencies=[
-        Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
+        Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
 )
 async def get_point_cloud_upload_link(
-    project_id: int,
-    file_data: FileUploadRequest,
+    stage_id: int,
+    file_data: FileUploadLinkRequest,
+    session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -62,13 +69,51 @@ async def get_point_cloud_upload_link(
 
     Requires permission.
     """
-    url = FileService.generate_file_upload_link(
-        project_id, file_data, storage=storage)
+    stage = await stage_service.get_stage(stage_id, session=session)
+
+    url, key = await FileService.generate_point_cloud_upload_link(
+        stage.project_id,
+        stage.id,
+        file_data,
+        storage=storage,
+        session=session
+    )
 
     link_data = FileLinkPublic(
-        project_id=project_id,
-        presigned_url=url,
-        filename=file_data.filename
+        key=key,
+        url=url,
+        filename=file_data.filename,
+        size=file_data.size,
+        content_type=file_data.content_type
     )
 
     return link_data
+
+
+@router.post(
+    "/{stage_id}/files/point_cloud/confirm",
+    response_model=PointCloudFilePublic,
+    dependencies=[
+        Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
+)
+async def confirm_point_cloud_upload(
+    stage_id: int,
+    file_data: FileUploadConfirmRequest,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Confirm finishing uploading a point cloud file.
+
+    You can't confirm file upload if file is not uploaded.
+
+    Requires permission.
+    """
+    file = await FileService.confirm_point_cloud_upload(
+        stage_id,
+        file_data,
+        storage=storage,
+        session=session
+    )
+
+    return file
