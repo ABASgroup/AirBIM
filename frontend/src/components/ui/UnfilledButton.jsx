@@ -10,8 +10,8 @@ export const UnfilledButton = ({ children, color = "purple", className = "", ...
   return (
     <button
       className={`
-        min-w-[100px] px-6 py-3
-        border-2 rounded-[10px] font-bold
+        min-w-[100px] px-3 py-2
+        border-2 rounded-[10px]
         transition-all active:scale-95
         cursor-pointer
         items-center justify-center

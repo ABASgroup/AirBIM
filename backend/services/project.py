@@ -21,9 +21,6 @@ async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> li
     projects = await ProjectCRUD.get_by_workspace_id(workspace_id, session=session)
     projects = list(projects)
 
-    if len(projects) == 0:
-        raise NotFoundError("Workspace doesn't have any projects")
-
     return projects
 
 
@@ -45,6 +42,7 @@ async def update_project(project_id: int, project_data: ProjectUpdate, session: 
     try:
         project = await ProjectCRUD.update_by_id(project_id, project_data, session=session)
         await session.commit()
+        await session.refresh(project)
         return project
     except AttributeError as exc:
         await session.rollback()

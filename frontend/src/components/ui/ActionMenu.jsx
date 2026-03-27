@@ -20,7 +20,20 @@ export const ActionMenu = ({ isOpen, onClose, buttonRef, children }) => {
 
   const getPosition = () => {
     if (!buttonRef.current) return {};
+
     const rect = buttonRef.current.getBoundingClientRect();
+    const menuHeight = 80;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+      return {
+        top: rect.top - menuHeight - 8,
+        right: window.innerWidth - rect.right,
+      };
+    }
+
     return {
       top: rect.bottom + 8,
       right: window.innerWidth - rect.right,
@@ -33,7 +46,7 @@ export const ActionMenu = ({ isOpen, onClose, buttonRef, children }) => {
     <div
       ref={menuRef}
       onClick={(e) => e.stopPropagation()}
-      className="fixed z-50 min-w-40 bg-surface rounded-[5px] border-primary-color border-2 py-2"
+      className="fixed z-50 min-w-40 bg-surface rounded-[5px] border-primary-color border-2"
       style={{ top: pos.top, right: pos.right }}
     >
       {children}

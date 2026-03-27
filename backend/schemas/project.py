@@ -20,11 +20,12 @@ class ProjectUpdate(BaseModel):
     """Update in DB schema"""
     name: str
     description: str
-    role: ProjectStatus
+    status: ProjectStatus
 
 
 class ProjectPublic(BaseModel):
     """API Response schema"""
+    id: int
     workspace_id: int
     name: str
     description: str
