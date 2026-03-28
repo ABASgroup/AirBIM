@@ -2,7 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from crud.workspace import WorkspaceCRUD
 from crud.membership import MembershipCRUD
-from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceAction
+from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
 from schemas.workspace import WorkspaceCreate
 
@@ -59,7 +59,7 @@ async def delete_team_workspace(workspace_id, session: AsyncSession):
 
         # check type
         if workspace.type != WorkspaceType.TEAM:
-            raise ProhibitedWorkspaceAction("deleting personal workspace")
+            raise ProhibitedWorkspaceActionError("deleting personal workspace")
 
         # it's team workspace, deletion is safe
         await WorkspaceCRUD.delete(workspace, session=session)

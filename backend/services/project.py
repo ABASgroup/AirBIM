@@ -21,9 +21,6 @@ async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> li
     projects = await ProjectCRUD.get_by_workspace_id(workspace_id, session=session)
     projects = list(projects)
 
-    if len(projects) == 0:
-        raise NotFoundError("Workspace doesn't have any projects")
-
     return projects
 
 

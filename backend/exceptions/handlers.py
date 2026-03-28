@@ -69,7 +69,7 @@ async def invalid_login_info_handler(request: Request, exc: InvalidLoginInfoErro
     )
 
 
-async def prohibited_workspace_action_handler(request: Request, exc: ProhibitedWorkspaceAction):
+async def prohibited_workspace_action_handler(request: Request, exc: ProhibitedWorkspaceActionError):
     logger.exception(f"App exception: {exc}")
     return JSONResponse(
         status_code=409,
@@ -83,7 +83,11 @@ def add_exception_handlers(app: FastAPI):
     app.add_exception_handler(NotFoundError, not_found_handler)
     app.add_exception_handler(NotMemberError, not_member_handler)
     app.add_exception_handler(AlreadyExistsError, already_exists_handler)
-    app.add_exception_handler(NoRequiredPermissionError, no_required_permission_handler)
-    app.add_exception_handler(InvalidInvitationError, invalid_invitation_handler)
-    app.add_exception_handler(InvalidLoginInfoError, invalid_login_info_handler)
-    app.add_exception_handler(ProhibitedWorkspaceAction, prohibited_workspace_action_handler)
+    app.add_exception_handler(
+        NoRequiredPermissionError, no_required_permission_handler)
+    app.add_exception_handler(InvalidInvitationError,
+                              invalid_invitation_handler)
+    app.add_exception_handler(InvalidLoginInfoError,
+                              invalid_login_info_handler)
+    app.add_exception_handler(
+        ProhibitedWorkspaceActionError, prohibited_workspace_action_handler)

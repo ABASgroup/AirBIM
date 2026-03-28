@@ -4,7 +4,7 @@ from roles import Role
 from crud.membership import MembershipCRUD
 from models.membership import Membership
 from schemas.membership import MembershipCreate
-from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceAction
+from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
 
 
 async def get_membership(user_id: int, workspace_id: int, session: AsyncSession) -> Membership:
@@ -55,7 +55,7 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
 
         # check role first
         if membership.role == Role.OWNER:
-            raise ProhibitedWorkspaceAction("deleting owner from workspace")
+            raise ProhibitedWorkspaceActionError("deleting owner from workspace")
 
         # not an owner, delete
         await MembershipCRUD.delete(membership, session=session)
