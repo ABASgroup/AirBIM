@@ -103,6 +103,8 @@ class Storage:
     def delete_files_by_prefix(self, prefix: str):
         """Delete all files that contain the provided prefix.
 
+        Returns the amount of files deleted.
+
         Args:
             prefix (str): key prefix of files you want to delete
         """
@@ -111,11 +113,24 @@ class Storage:
 
         bucket = self._resource.Bucket(self._bucket_name)
 
-        objects_to_delete = list(
-            bucket.objects.filter(Prefix=prefix))
+        keys_to_delete = [{'Key': obj.key}
+                          for obj in bucket.objects.filter(Prefix=prefix)]
 
-        if objects_to_delete:
-            objects_to_delete.delete()
+        if not keys_to_delete:
+            return 0
+
+        response = bucket.delete_objects(
+            Delete={
+                'Objects': keys_to_delete,
+                'Quiet': False
+            }
+        )
+
+        if 'Errors' in response:
+            for error in response['Errors']:
+                print(f"Error {error['Key']}: {error['Code']}")
+
+        return len(keys_to_delete)
 
     def delete_file(self, key: str):
         """

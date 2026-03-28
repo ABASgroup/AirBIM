@@ -5,7 +5,6 @@ from schemas.files import (
     FileLinkPublic,
     FileUploadConfirmRequest,
     FileUploadLinkRequest,
-    PointCloudFileCreate,
     PointCloudFilePublic,
 )
 from services import stage as stage_service
@@ -45,8 +44,14 @@ async def get_stage(stage_id: int, session: AsyncSession = Depends(get_db_sessio
 async def delete_stage(
     stage_id: int,
     session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
 ):
-    stage = await stage_service.delete_stage(stage_id, session=session)
+    """
+    Delete stage and all related data and files.
+    
+    Requires permission.
+    """
+    stage = await stage_service.delete_stage(stage_id, session=session, storage=storage)
     return stage
 
 

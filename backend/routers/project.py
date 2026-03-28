@@ -1,9 +1,7 @@
 from storage import Storage
 from services import project as project_service
-from services.file import FileService
 from services import stage as stage_service
 
-from schemas.files import FileLinkPublic
 from schemas.project import ProjectPublic, ProjectUpdate
 from schemas.stage import StageCreate, StagePublic
 
@@ -60,8 +58,14 @@ async def update_project(
 async def delete_project(
     project_id: int,
     session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
 ):
-    project = await project_service.delete_project(project_id, session=session)
+    """
+    Delete project and all related data and files.
+
+    Requires permission.
+    """
+    project = await project_service.delete_project(project_id, session=session, storage=storage)
     return project
 
 

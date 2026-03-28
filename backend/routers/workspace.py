@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from storage import Storage
 from dependencies import (
     get_db_session,
     get_current_user_id,
+    get_storage,
     require_workspace_permission,
 )
 from roles import Role, get_role_permissions, Permission
@@ -113,16 +115,21 @@ async def create_workspace(
         Permission.WORKSPACE_DELETE))],
 )
 async def delete_team_workspace(
-    workspace_id: int, session: AsyncSession = Depends(get_db_session)
+    workspace_id: int,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
 ):
     """
-    Deletes team workspace using its ID
+    Delete workspace and all related data and files.
 
-    - You need permission to do so
-    - You can't delete personal workspace
+    You can't delete personal workspace.
+
+    Requires permission.
     """
     workspace = await workspace_service.delete_team_workspace(
-        workspace_id, session=session
+        workspace_id,
+        session=session,
+        storage=storage
     )
     return workspace
 
@@ -230,7 +237,7 @@ async def get_workspace_projects(
 )
 async def create_project(
     workspace_id: int,
-    project_data: ProjectCreateRequest, 
+    project_data: ProjectCreateRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
     project_data_db = ProjectCreate(workspace_id=workspace_id,
