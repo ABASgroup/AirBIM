@@ -21,6 +21,7 @@ class FileService:
     @classmethod
     def create_file_key(
         cls,
+        workspace_id: int,
         project_id: int,
         filename: str,
         stage_id: int | None = None
@@ -28,13 +29,32 @@ class FileService:
         """
         Provides a key for the file in the fixed format.
 
-        **Never** create keys on your own for consistency.
+        **Never** create file keys on your own for consistency.
         """
+        base = f"workspace_{workspace_id}/project_{project_id}/"
         if stage_id:
-            key = f"project_{project_id}/stage_{stage_id}/{filename}"
+            key = f"{base}stage_{stage_id}/{filename}"
+            return key
         else:
-            key = f"project_{project_id}/{filename}"
-        return key
+            return base
+
+    @classmethod
+    def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
+        """Clear all files related to the stage from the storage."""
+        prefix = f"workspace_{workspace_id}/project_{project_id}/stage_{stage_id}/"
+        storage.delete_files_by_prefix(prefix)
+
+    @classmethod
+    def clear_project_files(cls, workspace_id, project_id, storage: Storage):
+        """Clear all files related to the project from the storage."""
+        prefix = f"workspace_{workspace_id}/project_{project_id}/"
+        storage.delete_files_by_prefix(prefix)
+
+    @classmethod
+    def clear_workspace_files(cls, workspace_id, storage: Storage):
+        """Clear all files related to the workspace from the storage."""
+        prefix = f"workspace_{workspace_id}/"
+        storage.delete_files_by_prefix(prefix)
 
     @classmethod
     def generate_bim_upload_link(cls):
@@ -43,6 +63,7 @@ class FileService:
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
+        workspace_id: int,
         project_id: int,
         stage_id: int,
         file_data: FileUploadLinkRequest,

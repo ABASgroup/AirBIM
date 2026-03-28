@@ -69,10 +69,11 @@ async def get_point_cloud_upload_link(
 
     Requires permission.
     """
-    stage = await stage_service.get_stage(stage_id, session=session)
+    stage = await stage_service.get_stage_with_project(stage_id, session=session)
 
     url, key = await FileService.generate_point_cloud_upload_link(
-        stage.project_id,
+        stage.project.workspace_id,
+        stage.project.id,
         stage.id,
         file_data,
         storage=storage,

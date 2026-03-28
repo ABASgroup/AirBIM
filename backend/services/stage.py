@@ -16,6 +16,16 @@ async def get_stage(stage_id: int, session: AsyncSession) -> Stage:
     return stage
 
 
+async def get_stage_with_project(stage_id: int, session: AsyncSession) -> Stage:
+    """Get stage using its ID, additionally loading the project."""
+    stage = await StageCRUD.get_by_id_with_project(stage_id, session=session)
+
+    if stage is None:
+        raise NotFoundError("No stage with this ID.")
+
+    return stage
+
+
 async def get_project_stages(project_id: int, session: AsyncSession) -> list[Stage]:
     """Get all stages related to the project."""
     stages = await StageCRUD.get_by_project_id(project_id, session=session)
