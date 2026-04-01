@@ -1,9 +1,12 @@
 """Service layer logic for Project."""
 from sqlalchemy.ext.asyncio import AsyncSession
+from storage import Storage
 from exceptions.exceptions import NotFoundError
 from crud.project import ProjectCRUD
 from models.project import Project
 from schemas.project import ProjectCreate, ProjectUpdate
+
+from services.file import FileService
 
 
 async def get_project(project_id: int, session: AsyncSession) -> Project:
@@ -52,19 +55,27 @@ async def update_project(project_id: int, project_data: ProjectUpdate, session: 
         raise
 
 
-async def delete_project(project_id: int, session: AsyncSession) -> Project:
+async def delete_project(project_id: int, session: AsyncSession, storage: Storage) -> Project:
     """
-    Delete project using its ID
+    Delete project using its ID.
 
-    Make sure to check permission
+    Make sure to check permission.
     """
     try:
-        project = await ProjectCRUD.delete_by_id(project_id, session=session)
+        project = await ProjectCRUD.get_by_id(project_id, session=session)
+
+        if project is None:
+            raise NotFoundError("Project was not found.")
+
+        # clear project files first
+        FileService.clear_project_files(
+            project.workspace_id, project.id, storage)
+
+        # drop entry and related entries
+        await ProjectCRUD.delete(project, session=session)
+
         await session.commit()
         return project
-    except AttributeError as exc:
-        await session.rollback()
-        raise NotFoundError("Project was not found") from exc
     except Exception:
         await session.rollback()
         raise

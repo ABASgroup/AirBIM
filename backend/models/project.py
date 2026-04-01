@@ -25,9 +25,10 @@ class Project(BaseModel):
         default=ProjectStatus.ACTIVE
     )
 
-    bim_files: Mapped[list["BimFile"]] = relationship(
+    stages: Mapped[list["Stage"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
-    point_cloud_files: Mapped[list["PointCloudFile"]] = relationship(
+
+    bim_files: Mapped[list["BimFile"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )

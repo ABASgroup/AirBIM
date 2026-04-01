@@ -10,12 +10,13 @@ class Storage:
 
     def __init__(self):
         """Establish connection to the storage"""
-        self._client = boto3.client(
+        self._resource = boto3.resource(
             "s3",
             endpoint_url=storage_config.endpoint,
             aws_access_key_id=storage_config.STORAGE_ACCESS_KEY_ID,
             aws_secret_access_key=storage_config.STORAGE_SECRET_KEY,
         )
+        self._client = self._resource.meta.client
         self._bucket_name = storage_config.STORAGE_BUCKET
         self._url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
 
@@ -99,6 +100,38 @@ class Storage:
         )
         return url
 
+    def delete_files_by_prefix(self, prefix: str):
+        """Delete all files that contain the provided prefix.
+
+        Returns the amount of files deleted.
+
+        Args:
+            prefix (str): key prefix of files you want to delete
+        """
+        if not prefix.endswith("/"):
+            prefix += "/"
+
+        bucket = self._resource.Bucket(self._bucket_name)
+
+        keys_to_delete = [{'Key': obj.key}
+                          for obj in bucket.objects.filter(Prefix=prefix)]
+
+        if not keys_to_delete:
+            return 0
+
+        response = bucket.delete_objects(
+            Delete={
+                'Objects': keys_to_delete,
+                'Quiet': False
+            }
+        )
+
+        if 'Errors' in response:
+            for error in response['Errors']:
+                print(f"Error {error['Key']}: {error['Code']}")
+
+        return len(keys_to_delete)
+
     def delete_file(self, key: str):
         """
         Delete file from the storage.
@@ -106,7 +139,8 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        response = self._client.delete_object(Bucket=self._bucket_name, Key=key)
+        response = self._client.delete_object(
+            Bucket=self._bucket_name, Key=key)
         return response
 
     def file_exists(self, key: str):

@@ -1,8 +1,10 @@
 """Service layer logic for Workspace."""
 from sqlalchemy.ext.asyncio import AsyncSession
+from storage import Storage
+from services.file import FileService
 from crud.workspace import WorkspaceCRUD
 from crud.membership import MembershipCRUD
-from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceAction
+from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
 from schemas.workspace import WorkspaceCreate
 
@@ -45,11 +47,11 @@ async def create_workspace(workspace_data: WorkspaceCreate, session: AsyncSessio
         raise
 
 
-async def delete_team_workspace(workspace_id, session: AsyncSession):
+async def delete_team_workspace(workspace_id, session: AsyncSession, storage: Storage):
     """
-    Delete team workspace using its id
+    Delete team workspace using its id.
 
-    You can't delete personal workspace no matter what
+    You can't delete personal workspace no matter what.
     """
     try:
         workspace = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
@@ -59,7 +61,10 @@ async def delete_team_workspace(workspace_id, session: AsyncSession):
 
         # check type
         if workspace.type != WorkspaceType.TEAM:
-            raise ProhibitedWorkspaceAction("deleting personal workspace")
+            raise ProhibitedWorkspaceActionError("deleting personal workspace")
+
+        # delete all files first
+        FileService.clear_workspace_files(workspace_id, storage=storage)
 
         # it's team workspace, deletion is safe
         await WorkspaceCRUD.delete(workspace, session=session)

@@ -74,6 +74,7 @@ class BaseCRUD(Generic[ModelT]):
             setattr(entry, key, value)
 
         await session.flush()
+        await session.refresh(entry)
         return entry
 
     @classmethod

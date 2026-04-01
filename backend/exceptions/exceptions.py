@@ -45,7 +45,7 @@ class InvalidLoginInfoError(BaseAppError):
     """Email or password is invalid"""
 
 
-class ProhibitedWorkspaceAction(BaseAppError):
+class ProhibitedWorkspaceActionError(BaseAppError):
     """Workspace prohibits this behavior or action"""
 
     def __init__(self, action: str):

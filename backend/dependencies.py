@@ -6,8 +6,11 @@ from jose import jwt, JWTError
 from storage import Storage
 from config import api_config
 from roles import ROLE_PERMISSIONS, Permission
+
 from crud.membership import MembershipCRUD
 from crud.project import ProjectCRUD
+from crud.stage import StageCRUD
+
 from database import session_maker
 from exceptions.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
 
@@ -112,6 +115,41 @@ def require_project_permission(permission: Permission):
         membership = await MembershipCRUD.get_user_workspace_membership(
             user_id,
             project.workspace_id,
+            session)
+
+        if membership is None:
+            raise NotMemberError()
+
+        if permission not in ROLE_PERMISSIONS[membership.role]:
+            raise NoRequiredPermissionError(permission.value)
+        return membership
+    return checker
+
+
+def require_stage_permission(permission: Permission):
+    """
+    Require certain membership permission from user to access an endpoint.
+
+    Uses stage to validate permission.
+
+    Requires membership in the workspace.
+
+    You can use it instead of :func:`get_current_user_id` to
+    protect an endpoint.
+    """
+    async def checker(
+        stage_id: int,
+        user_id: int = Depends(get_current_user_id),
+        session: AsyncSession = Depends(get_db_session)
+    ):
+        stage = await StageCRUD.get_by_id_with_project(stage_id, session=session)
+
+        if stage is None:
+            raise NotFoundError("No stage with this ID.")
+
+        membership = await MembershipCRUD.get_user_workspace_membership(
+            user_id,
+            stage.project.workspace_id,
             session)
 
         if membership is None:

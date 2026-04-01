@@ -9,6 +9,7 @@ from exceptions.handlers import add_exception_handlers
 from routers.auth import router as auth_router
 from routers.workspace import router as workspace_router
 from routers.project import router as project_router
+from routers.stage import router as stage_router
 
 # This app is published behind a proxy under "/api" (for users: https://example.com/api/...).
 # The proxy removes (strips) "/api" before sending the request to FastAPI, so our real routes stay like "/test", "/users", etc.
@@ -20,6 +21,7 @@ app = FastAPI(root_path="/api")
 app.include_router(auth_router)
 app.include_router(workspace_router)
 app.include_router(project_router)
+app.include_router(stage_router)
 
 # add exception handlers
 add_exception_handlers(app)
