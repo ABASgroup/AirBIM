@@ -33,6 +33,7 @@ class FilePublic(BaseModel):
     size: int
     status: FileStatus
     created_at: datetime
+    updated_at: datetime
 
 
 class FileCreate(BaseModel):
