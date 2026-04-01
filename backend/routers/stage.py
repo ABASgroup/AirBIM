@@ -21,7 +21,7 @@ from dependencies import (
 from roles import Permission
 
 
-router = APIRouter(prefix="/stage", tags=["project stages"])
+router = APIRouter(prefix="/stages", tags=["project stages"])
 
 
 @router.get(
@@ -56,7 +56,7 @@ async def delete_stage(
 
 
 @router.post(
-    "/{stage_id}/files/point_cloud/upload",
+    "/{stage_id}/files/point_clouds/upload",
     response_model=FileLinkPublic,
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
@@ -97,7 +97,7 @@ async def get_point_cloud_upload_link(
 
 
 @router.post(
-    "/{stage_id}/files/point_cloud/confirm",
+    "/{stage_id}/files/point_clouds/confirm",
     response_model=PointCloudFilePublic,
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],

@@ -7,6 +7,16 @@ from schemas.membership import MembershipCreate
 from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
 
 
+async def get_workspace_members(workspace_id: int, session: AsyncSession) -> list[Membership]:
+    """Get all memberships related to this workspace with user data."""
+    memberships = await MembershipCRUD.get_all_workspace_users(
+        workspace_id,
+        session=session
+    )
+
+    return list(memberships)
+
+
 async def get_membership(user_id: int, workspace_id: int, session: AsyncSession) -> Membership:
     """
     Get user membership in the workspace.
@@ -55,7 +65,8 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
 
         # check role first
         if membership.role == Role.OWNER:
-            raise ProhibitedWorkspaceActionError("deleting owner from workspace")
+            raise ProhibitedWorkspaceActionError(
+                "deleting owner from workspace")
 
         # not an owner, delete
         await MembershipCRUD.delete(membership, session=session)

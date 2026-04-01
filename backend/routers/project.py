@@ -18,7 +18,7 @@ from dependencies import (
 from roles import Permission
 
 
-router = APIRouter(prefix="/project", tags=["workspace projects"])
+router = APIRouter(prefix="/projects", tags=["workspace projects"])
 
 
 @router.get(
@@ -70,7 +70,7 @@ async def delete_project(
 
 
 @router.get(
-    "/{project_id}/stage",
+    "/{project_id}/stages",
     response_model=list[StagePublic],
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_VIEW))],
@@ -86,7 +86,7 @@ async def get_project_stages(
 
 
 @router.post(
-    "/{project_id}/stage",
+    "/{project_id}/stages",
     response_model=StagePublic,
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_CREATE))],

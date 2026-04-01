@@ -21,3 +21,5 @@ class InviteLinkPublic(BaseModel):
     workspace_id: int
     role: InviteableRole
     expires_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime

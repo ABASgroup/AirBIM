@@ -18,13 +18,15 @@ class InviteableRole(enum.StrEnum):
 class Permission(enum.StrEnum):
     """
     Permissions stated in the app.
-    
+
     Registry of all permissions.
     """
     # workspace management
+    WORKSPACE_VIEW = "workspace:view"
     WORKSPACE_DELETE = "workspace:delete"
     WORKSPACE_EDIT = "workspace:edit"
     # member management
+    MEMBERS_VIEW = "members:view"
     MEMBERS_INVITE = "members:invite"
     MEMBERS_INVITE_REFRESH = "members:invite:refresh"
     MEMBERS_REMOVE = "members:remove"
@@ -50,11 +52,13 @@ class Permission(enum.StrEnum):
 # assign permissions here
 ROLE_PERMISSIONS = {
     Role.VIEWER: [
+        Permission.WORKSPACE_VIEW,
         Permission.PROJECT_VIEW,
         Permission.STAGE_VIEW,
         Permission.FILES_DOWNLOAD,
     ],
     Role.MEMBER: [
+        Permission.WORKSPACE_VIEW,
         Permission.PROJECT_VIEW,
         Permission.PROJECT_EDIT,
         Permission.STAGE_VIEW,
@@ -65,6 +69,7 @@ ROLE_PERMISSIONS = {
         Permission.MEMBERS_INVITE,
     ],
     Role.ADMIN: [
+        Permission.WORKSPACE_VIEW,
         Permission.PROJECT_VIEW,
         Permission.PROJECT_CREATE,
         Permission.PROJECT_EDIT,
@@ -80,6 +85,7 @@ ROLE_PERMISSIONS = {
         Permission.MEMBERS_REMOVE,
         Permission.MEMBERS_EDIT_ROLE,
         Permission.WORKSPACE_EDIT,
+        Permission.MEMBERS_VIEW,
     ],
     # all rights to the owner, no matter what
     Role.OWNER: [member.value for member in Permission],
