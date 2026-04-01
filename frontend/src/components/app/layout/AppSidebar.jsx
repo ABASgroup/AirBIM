@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dropdown } from "@ui/Dropdown";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { FilledButton } from "@ui/FilledButton";
@@ -12,6 +13,7 @@ export const AppSidebar = () => {
   const [isCreateWorkspaceModalOpen, setIsCreateWorkspaceModalOpen] = useState(false);
   const { workspaces, currentWorkspace, switchWorkspace, setWorkspaces } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate()
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -39,12 +41,12 @@ export const AppSidebar = () => {
   return (
     <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3">
       <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
-        <Dropdown trigger={trigger} isOpen={isOpen} onToggle={(open) => {setIsOpen(open); if (!open) setActiveMenuId(null)}}>
+        <Dropdown trigger={trigger} isOpen={isOpen} onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}>
           {workspaces.map((ws) => (
             <div
               key={ws.id}
               onClick={() => handleSelect(ws)}
-              className={`w-100 px-4 py-2 text-left cursor-pointer gap-2 flex items-center border-none select-none justify-between
+              className={`w-70 px-4 py-2 text-left cursor-pointer gap-2 flex items-center border-none select-none justify-between
                 ${currentWorkspace?.id === ws.id ? "bg-mute-text-color rounded-[5px]" : "bg-transparent"
                 }`}
             >
@@ -72,12 +74,18 @@ export const AppSidebar = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[ws.id] }}
                 >
-                  <button
-                    className="w-full px-4 py-2 text-left hover:bg-mute-text-color flex items-center gap-2"
-                    onClick={() => handleDeleteWorkspace(ws.id)}
-                  >
+                  <button onClick={() => handleDeleteWorkspace(ws.id)}>
                     <i className="fa-solid fa-trash"></i>
                     Удалить
+                  </button>
+
+                  <button onClick={() => {
+                    setIsOpen(null);
+                    setActiveMenuId(null);
+                    navigate(`/app/workspace/${ws.id}`)
+                  }}>
+                    <i className="fa-solid fa-building"></i>
+                    Управление
                   </button>
                 </ActionMenu>
               )}

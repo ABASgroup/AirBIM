@@ -91,17 +91,11 @@ export const ProjectsList = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[project.id] }}
                 >
-                  <button
-                    className="w-full px-4 py-2 text-left hover:bg-mute-text-color flex items-center gap-2"
-                    onClick={() => openEditModal(project)}
-                  >
+                  <button onClick={() => openEditModal(project)} >
                     <i className="fa-solid fa-pen"></i>
                     Редактировать
                   </button>
-                  <button
-                    className="w-full px-4 py-2 text-left hover:bg-mute-text-color flex items-center gap-2"
-                    onClick={() => handleDelete(project.id)}
-                  >
+                  <button onClick={() => handleDelete(project.id)}>
                     <i className="fa-solid fa-trash"></i>
                     Удалить
                   </button>

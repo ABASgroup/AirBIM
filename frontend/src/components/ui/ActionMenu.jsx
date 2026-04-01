@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 
 export const ActionMenu = ({ isOpen, onClose, buttonRef, children }) => {
   const menuRef = useRef(null);
@@ -49,7 +49,13 @@ export const ActionMenu = ({ isOpen, onClose, buttonRef, children }) => {
       className="fixed z-50 min-w-40 bg-surface rounded-[5px] border-primary-color border-2"
       style={{ top: pos.top, right: pos.right }}
     >
-      {children}
+      <div className="flex flex-col">
+        {React.Children.map(children, (child) =>
+          React.cloneElement(child, {
+            className: `${child.props.className || ""} w-full px-4 py-2 text-left hover:bg-mute-text-color flex items-center gap-2`
+          })
+        )}
+      </div>
     </div>
   );
 };

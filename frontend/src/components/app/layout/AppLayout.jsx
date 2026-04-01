@@ -5,8 +5,8 @@ import { WorkspaceProvider } from "@/context/WorkspaceContext.jsx";
 
 const AppLayout = () => {
   const location = useLocation();
-  const hideSidebarPaths = ["/app/settings"];
-  const isSidebarVisible = !hideSidebarPaths.includes(location.pathname);
+  const hideSidebarPaths = ["/app/settings", "/app/workspace"];
+  const isSidebarVisible = !hideSidebarPaths.some(path => location.pathname.startsWith(path));
 
   return (
     <WorkspaceProvider>

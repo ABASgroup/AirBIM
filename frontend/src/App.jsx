@@ -5,6 +5,7 @@ import LoginPage from "@/pages/LoginPage"
 import RegistrationPage from "@/pages/RegistrationPage"
 import Dashboard from "@/pages/app/Dashboard"
 import Settings from "@/pages/app/Settings"
+import Workspace from "@/pages/app/Workspace"
 import AppLayout from "@app/layout/AppLayout"
 
 const ProtectedRoute = ({ children }) => {
@@ -46,6 +47,7 @@ function App() {
         }>
           <Route path="settings" element={<Settings />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="workspace/:workspaceId" element={<Workspace />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
