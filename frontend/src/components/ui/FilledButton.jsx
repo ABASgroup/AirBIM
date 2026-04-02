@@ -1,5 +1,4 @@
 // Компонент заполненной цветом кнопки
-
 export const FilledButton = ({ children, color = "purple", className = "", ...props }) => {
   const colorMap = {
     purple: "bg-primary-color text-text-color",

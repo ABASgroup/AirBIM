@@ -1,9 +1,9 @@
+// Обертка всего приложения (App)
 import { Outlet, useLocation } from "react-router-dom";
-import { AppHeader } from "@app/layout/AppHeader.jsx"
-import { AppSidebar } from "@app/layout/AppSidebar.jsx";
+import { AppHeader, AppSidebar } from "@app/layout";
 import { WorkspaceProvider } from "@/context/WorkspaceContext.jsx";
 
-const AppLayout = () => {
+export const AppLayout = () => {
   const location = useLocation();
   const hideSidebarPaths = ["/app/settings", "/app/workspace"];
   const isSidebarVisible = !hideSidebarPaths.some(path => location.pathname.startsWith(path));
@@ -23,4 +23,3 @@ const AppLayout = () => {
 
   );
 }
-export default AppLayout;

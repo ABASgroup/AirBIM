@@ -1,3 +1,4 @@
+// Контекст для управлением состояния воркспейсов во всем приложении
 import { createContext, useContext, useState, useEffect } from "react";
 import { getWorkspaces } from "../api/workspace";
 

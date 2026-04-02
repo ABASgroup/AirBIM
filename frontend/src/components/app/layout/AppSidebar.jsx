@@ -1,11 +1,10 @@
+// Sidebar приложения
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dropdown } from "@ui/Dropdown";
+import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { FilledButton } from "@ui/FilledButton";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
-import { ActionMenu } from "@ui/ActionMenu";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);

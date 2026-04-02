@@ -1,3 +1,4 @@
+// Общий компонент выпадающего окна
 import { useRef, useEffect } from "react";
 
 export const Dropdown = ({ trigger, children, isOpen, onToggle }) => {

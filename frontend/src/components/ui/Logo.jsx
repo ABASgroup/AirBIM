@@ -1,5 +1,4 @@
 // Логотип AirBIM с изображением и названием
-
 import logoImage from "@/assets/images/logo.png";
 
 export const Logo = () => {

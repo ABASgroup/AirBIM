@@ -1,3 +1,4 @@
+// Компонент меню действий
 import React, { useRef, useEffect } from "react";
 
 export const ActionMenu = ({ isOpen, onClose, buttonRef, children }) => {

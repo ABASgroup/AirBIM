@@ -1,9 +1,6 @@
+// Модальное окно для создания и редактирования проектов
 import { useState, useEffect } from "react";
-import { Modal } from "@ui/Modal";
-import { FilledButton } from "@ui/FilledButton";
-import { UnfilledButton } from "@ui/UnfilledButton";
-import { Input } from "@ui/Input";
-import { Select } from "@ui/Select";
+import { Modal, FilledButton, UnfilledButton, Input, Select } from "@ui";
 import { createPortal } from "react-dom";
 
 export const ProjectModal = ({ isOpen, onClose, onSubmit, mode = "create", project = null }) => {

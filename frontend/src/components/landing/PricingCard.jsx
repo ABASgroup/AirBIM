@@ -1,4 +1,5 @@
-import { UnfilledButton } from "../ui/UnfilledButton";
+// Панель для таблицы с ценами продукта
+import { UnfilledButton } from "@ui";
 
 export const PricingCard = ({ tariff, isFeatured }) => {
   return (

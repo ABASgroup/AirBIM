@@ -1,6 +1,5 @@
-import { LandingHeader } from "@landing/LandingHeader";
-import { PromoTable } from "@landing/PromoTable";
-import { PricingTable } from "@landing/PricingTable";
+// Страница лендинг
+import { LandingHeader, PromoTable, PricingTable } from "@landing";
 
 function LandingPage() {
   return (

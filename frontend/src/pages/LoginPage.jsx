@@ -1,13 +1,10 @@
+// Страница логина
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { LandingHeader } from "@landing";
+import { Modal, FilledButton, UnfilledButton, Input } from "@ui";
 import api from "@/api/index";
-
-import { LandingHeader } from "@landing/LandingHeader";
-import { Modal } from "@ui/Modal";
-import { FilledButton } from "@ui/FilledButton";
-import { UnfilledButton } from "@ui/UnfilledButton";
-import { Input } from "@ui/Input";
 
 const LoginPage = () => {
   const { register, handleSubmit } = useForm();

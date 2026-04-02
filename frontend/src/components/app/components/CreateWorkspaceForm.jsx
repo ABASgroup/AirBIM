@@ -1,9 +1,7 @@
+// Окно создания воркспейсов
 import { createPortal } from "react-dom";
 import { useState } from "react";
-import { Modal } from "@ui/Modal"
-import { FilledButton } from "@ui/FilledButton"
-import { UnfilledButton } from "@ui/UnfilledButton"
-import { Input } from "@ui/Input"
+import { Modal, FilledButton, UnfilledButton, Input } from "@ui"
 
 export const CreateWorkspaceForm = ({ isOpen, onClose, onCreate }) => {
   const [workspaceName, setWorkspaceName] = useState("");

@@ -1,5 +1,4 @@
 // Компонент кнопки с контуром
-
 export const UnfilledButton = ({ children, color = "purple", className = "", ...props }) => {
   const colorMap = {
     purple: "border-primary-color text-primary-color bg-transparent",

@@ -1,9 +1,7 @@
-// Header исключительно для лендинга
+// Header лендинга
+import { Link } from "react-router-dom";
+import { FilledButton, UnfilledButton, Logo } from "@ui";
 
-import { Link, useLocation } from "react-router-dom";
-import { Logo } from "@ui/Logo.jsx";
-import { FilledButton } from "@ui/FilledButton";
-import { UnfilledButton } from "@ui/UnfilledButton";
 
 export const LandingHeader = () => {
 

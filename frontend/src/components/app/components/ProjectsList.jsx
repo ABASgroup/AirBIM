@@ -1,9 +1,9 @@
+// Список проектов на дашборде
 import { useState, useRef, useEffect } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { getProjects, createProject, deleteProject, updateProject } from "@/api/project";
-import { FilledButton } from "@ui/FilledButton";
-import { ActionMenu } from "@ui/ActionMenu";
-import { ProjectModal } from "./ProjectModal";
+import { FilledButton, ActionMenu } from "@ui";
+import { ProjectModal } from "@app/components/ProjectModal";
 
 export const ProjectsList = () => {
   const { currentWorkspace } = useWorkspace();

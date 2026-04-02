@@ -1,6 +1,7 @@
+// Страница Дашборда
 import { ProjectsList } from "@app/components/ProjectsList";
 
-function Dashboard() {
+function DashboardPage() {
     return (
         <>
             <h1>Дашборд</h1>
@@ -9,4 +10,4 @@ function Dashboard() {
     )
 }
 
-export default Dashboard;
+export default DashboardPage;

@@ -1,5 +1,4 @@
 // Таблица с промо приложения
-
 import pic1 from "@/assets/images/landing/landing_pic1.png"
 import pic2 from "@/assets/images/landing/landing_pic2.png"
 import pic3 from "@/assets/images/landing/landing_pic3.png"

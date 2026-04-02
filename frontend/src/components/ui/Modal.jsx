@@ -1,5 +1,4 @@
 // Общий компонент модальных окон 
-
 export const Modal = ({children, title, showBackdrop}) => {
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-5 pointer-events-none">
