@@ -1,7 +1,7 @@
 """Service layer logic for Membership."""
 from sqlalchemy.ext.asyncio import AsyncSession
 from roles import Role
-from crud.membership import MembershipCRUD
+from repositories.membership import MembershipRepository
 from models.membership import Membership
 from schemas.membership import MembershipCreate
 from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
@@ -9,7 +9,7 @@ from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
 
 async def get_workspace_members(workspace_id: int, session: AsyncSession) -> list[Membership]:
     """Get all memberships related to this workspace with user data."""
-    memberships = await MembershipCRUD.get_all_workspace_users(
+    memberships = await MembershipRepository.get_all_workspace_users(
         workspace_id,
         session=session
     )
@@ -21,7 +21,7 @@ async def get_membership(user_id: int, workspace_id: int, session: AsyncSession)
     """
     Get user membership in the workspace.
     """
-    membership = await MembershipCRUD.get_user_workspace_membership(
+    membership = await MembershipRepository.get_user_workspace_membership(
         user_id,
         workspace_id,
         session=session
@@ -38,7 +38,7 @@ async def create_membership(membership_data: MembershipCreate, session: AsyncSes
     Create a new membership for the workspace.
     """
     try:
-        workspace = await MembershipCRUD.create(membership_data, session=session)
+        workspace = await MembershipRepository.create(membership_data, session=session)
         await session.commit()
         return workspace
     except Exception:
@@ -55,7 +55,7 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
     You can't remove the owner from the workspace
     """
     try:
-        membership = await MembershipCRUD.get_user_workspace_membership(
+        membership = await MembershipRepository.get_user_workspace_membership(
             user_id,
             workspace_id,
             session=session)
@@ -69,7 +69,7 @@ async def delete_membership(user_id: int, workspace_id: int, session: AsyncSessi
                 "deleting owner from workspace")
 
         # not an owner, delete
-        await MembershipCRUD.delete(membership, session=session)
+        await MembershipRepository.delete(membership, session=session)
         await session.commit()
         return membership
     except Exception:

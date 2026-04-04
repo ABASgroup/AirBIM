@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from roles import Role, InviteableRole
 from exceptions.exceptions import InvalidInvitationError
-from crud.invite_link import InviteLinkCRUD
+from repositories.invite_link import InviteLinkRepository
 from schemas.invite_link import InviteLinkCreate, InviteLinkPublic
 from security import generate_link_token, hash_link_token
 

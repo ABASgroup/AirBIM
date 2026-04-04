@@ -2,8 +2,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from storage import Storage
 from services.file import FileService
-from crud.workspace import WorkspaceCRUD
-from crud.membership import MembershipCRUD
+from repositories.workspace import WorkspaceRepository
+from repositories.membership import MembershipRepository
 from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
 from schemas.workspace import WorkspaceCreate
@@ -11,14 +11,14 @@ from schemas.workspace import WorkspaceCreate
 
 async def get_workspace(workspace_id: int, session: AsyncSession):
     """Get workspace using its ID"""
-    workspace = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
+    workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
     return workspace
 
 
 async def get_user_workspaces(user_id: int, session: AsyncSession) -> list[Workspace]:
     """Get all workspaces where the user is a member"""
     try:
-        memberships = await MembershipCRUD.get_all_user_memberships(user_id, session=session)
+        memberships = await MembershipRepository.get_all_user_memberships(user_id, session=session)
 
         # extract all workspace IDs
         workspace_ids = [membership.workspace_id for membership in memberships]
@@ -26,7 +26,7 @@ async def get_user_workspaces(user_id: int, session: AsyncSession) -> list[Works
         # get workspaces
         workspaces = []
         for workspace_id in workspace_ids:
-            workspace = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
+            workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
             workspaces.append(workspace)
         return workspaces
     except Exception:
@@ -39,7 +39,7 @@ async def create_workspace(workspace_data: WorkspaceCreate, session: AsyncSessio
     Create a new workspace
     """
     try:
-        workspace = await WorkspaceCRUD.create(workspace_data, session=session)
+        workspace = await WorkspaceRepository.create(workspace_data, session=session)
         await session.commit()
         return workspace
     except Exception:
@@ -54,7 +54,7 @@ async def delete_team_workspace(workspace_id, session: AsyncSession, storage: St
     You can't delete personal workspace no matter what.
     """
     try:
-        workspace = await WorkspaceCRUD.get_by_id(workspace_id, session=session)
+        workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
 
         if workspace is None:
             raise NotFoundError("Workspace was not found")
@@ -67,7 +67,7 @@ async def delete_team_workspace(workspace_id, session: AsyncSession, storage: St
         FileService.clear_workspace_files(workspace_id, storage=storage)
 
         # it's team workspace, deletion is safe
-        await WorkspaceCRUD.delete(workspace, session=session)
+        await WorkspaceRepository.delete(workspace, session=session)
         await session.commit()
         return workspace
     except Exception:

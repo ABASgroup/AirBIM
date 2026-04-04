@@ -1,4 +1,4 @@
-"""Base Database Access Object for CRUD operations."""
+"""Base repository for CRUD operations."""
 from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,9 +9,9 @@ from models.base import BaseModel
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
-class BaseCRUD(Generic[ModelT]):
+class BaseRepository(Generic[ModelT]):
     """
-    Base DAO class for CRUD operations for any model.
+    Base repository class for CRUD operations for any model.
 
     Override '_model' property to use with some specific model.
     """

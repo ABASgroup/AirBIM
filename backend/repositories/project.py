@@ -1,11 +1,11 @@
-from .base import BaseCRUD
+from .base import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models.project import Project
 
 
-class ProjectCRUD(BaseCRUD[Project]):
-    """DAO class for CRUD operations with Project model."""
+class ProjectRepository(BaseRepository[Project]):
+    """Repository class for CRUD operations with Project model."""
     _model = Project
 
     @classmethod

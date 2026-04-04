@@ -10,7 +10,7 @@ from exceptions.exceptions import NotFoundError
 
 from models.files import PointCloudFile, FileStatus
 
-from crud.files import PointCloudFileCRUD
+from repositories.files import PointCloudFileRepository
 from storage import Storage
 
 
@@ -77,9 +77,12 @@ class FileService:
         """
         try:
             # create key
-            key = cls.create_file_key(project_id=project_id,
-                                      filename=file_data.filename,
-                                      stage_id=stage_id)
+            key = cls.create_file_key(
+                workspace_id=workspace_id,
+                project_id=project_id,
+                filename=file_data.filename,
+                stage_id=stage_id
+            )
 
             # make pending file
             file_data_db = PointCloudFileCreate(
@@ -90,7 +93,7 @@ class FileService:
                 stage_id=stage_id
             )
 
-            await PointCloudFileCRUD.create(file_data_db, session=session)
+            await PointCloudFileRepository.create(file_data_db, session=session)
 
             # generate temporary upload link
             link = storage.get_upload_link(key)
@@ -117,7 +120,7 @@ class FileService:
         try:
             # in the database
             # check fields we want to check
-            file_db = await PointCloudFileCRUD.get_file_by_metadata(
+            file_db = await PointCloudFileRepository.get_file_by_metadata(
                 file_data.filename,
                 file_data.content_type,
                 file_data.size,
@@ -135,7 +138,10 @@ class FileService:
                     "File not found: not uploaded to the storage")
 
             # everything seems clear, set new status
-            await PointCloudFileCRUD.update_status(file_db, FileStatus.UPLOADED, session=session)
+            await PointCloudFileRepository.update_status(
+                file_db, 
+                FileStatus.UPLOADED, 
+                session=session)
             await session.commit()
             return file_db
         except:

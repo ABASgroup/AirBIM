@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from .base import BaseCRUD
+from .base import BaseRepository
 from sqlalchemy.orm import selectinload
 from models.stage import Stage
 
 
-class StageCRUD(BaseCRUD[Stage]):
-    """DAO class for CRUD operations with Stage model."""
+class StageRepository(BaseRepository[Stage]):
+    """Repository class for CRUD operations with Stage model."""
     _model = Stage
 
     @classmethod

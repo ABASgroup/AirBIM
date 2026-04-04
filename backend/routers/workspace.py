@@ -38,7 +38,9 @@ async def access(
     session: AsyncSession = Depends(get_db_session),
 ):
     """
-    Get current user access, including permissions and role in the workspace
+    Get current user access, including permissions and role in the workspace.
+    
+    Use if you need to specify permissions.
     """
     membership = await membership_service.get_membership(
         user_id, workspace_id, session=session
@@ -110,11 +112,11 @@ async def get_user_workspaces(
 
 
 @router.get(
-    "/{workspace_id}", 
+    "/{workspace_id}",
     response_model=WorkspacePublic,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_VIEW))],
-    )
+)
 async def get_workspace(
     workspace_id: int,
     session: AsyncSession = Depends(get_db_session),
@@ -172,24 +174,6 @@ async def delete_team_workspace(
     return workspace
 
 
-@router.post(
-    "/{workspace_id}/invites/revoke",
-    dependencies=[
-        Depends(require_workspace_permission(
-            Permission.MEMBERS_INVITE_REFRESH))
-    ],
-)
-async def revoke_invite_links(
-    workspace_id: int, session: AsyncSession = Depends(get_db_session)
-):
-    """
-    Revoke invite links for the workspace
-
-    Old links (created before call) will become obsolete and invalid
-    """
-    await invite_link_service.revoke_links(workspace_id, session=session)
-
-
 @router.post("/{workspace_id}/invites", response_model=InviteLinkPublic)
 async def get_invite_link(
     workspace_id: int,
@@ -210,45 +194,22 @@ async def get_invite_link(
     return link
 
 
-@router.get("/invites/{token}")
-async def validate_invite_link(
-    token: str, session: AsyncSession = Depends(get_db_session)
+@router.post(
+    "/{workspace_id}/invites/revoke",
+    dependencies=[
+        Depends(require_workspace_permission(
+            Permission.MEMBERS_INVITE_REFRESH))
+    ],
+)
+async def revoke_invite_links(
+    workspace_id: int, session: AsyncSession = Depends(get_db_session)
 ):
     """
-    Use invite link to the workspace
+    Revoke invite links for the workspace
 
-    The link will be validated, if valid - get information related to the link
+    Old links (created before call) will become obsolete and invalid
     """
-    link = await invite_link_service.validate_invite_link(token, session=session)
-    return link
-
-
-@router.post("/invites/{token}/accept", response_model=MembershipPermissionsPublic)
-async def accept_link_invitation(
-    token: str,
-    user_id: int = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
-):
-    """
-    Accept invitation to the workspace and become its member
-
-    You can't become a part of workspace if not authorized first
-    """
-    link = await invite_link_service.validate_invite_link(token, session=session)
-
-    membership = MembershipCreate(
-        workspace_id=link.workspace_id, user_id=user_id, role=link.role
-    )
-
-    await membership_service.create_membership(membership, session)
-
-    permissions = get_role_permissions(membership.role)
-    return MembershipPermissionsPublic(
-        workspace_id=membership.workspace_id,
-        user_id=membership.user_id,
-        role=membership.role,
-        permissions=permissions,
-    )
+    await invite_link_service.revoke_links(workspace_id, session=session)
 
 
 @router.get(

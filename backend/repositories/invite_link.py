@@ -1,12 +1,12 @@
-from .base import BaseCRUD
+from .base import BaseRepository
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from roles import Role
 
 
-class InviteLinkCRUD(BaseCRUD[InviteLink]):
-    """DAO class for CRUD operations with InviteLink model."""
+class InviteLinkRepository(BaseRepository[InviteLink]):
+    """Repository class for CRUD operations with InviteLink model."""
     _model = InviteLink
 
     @classmethod

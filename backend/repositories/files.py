@@ -1,16 +1,16 @@
-from .base import BaseCRUD
+from .base import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.files import BimFile, PointCloudFile, FileStatus
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 
-class BimFileCRUD(BaseCRUD[BimFile]):
-    """DAO class for CRUD operations with BimFile model."""
+class BimFileRepository(BaseRepository[BimFile]):
+    """Repository class for CRUD operations with BimFile model."""
     _model = BimFile
 
 
-class PointCloudFileCRUD(BaseCRUD[PointCloudFile]):
-    """DAO class for CRUD operations with PointCloudFile model."""
+class PointCloudFileRepository(BaseRepository[PointCloudFile]):
+    """Repository class for CRUD operations with PointCloudFile model."""
     _model = PointCloudFile
 
     @classmethod
