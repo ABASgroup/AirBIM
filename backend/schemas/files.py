@@ -64,3 +64,14 @@ class PointCloudFileModel(FileModel):
 class PointCloudFileResponse(FileResponse):
     """API response schema."""
     stage_id: uuid.UUID
+
+
+# schemas for bims
+class BIMFileModel(FileModel):
+    """Schema in DB. Use to create in DB."""
+    project_id: uuid.UUID
+
+
+class BIMFileResponse(FileResponse):
+    """API response schema."""
+    project_id: uuid.UUID
