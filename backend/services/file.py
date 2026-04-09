@@ -33,12 +33,13 @@ class FileService:
 
         **Never** create file keys on your own for consistency.
         """
-        base = f"workspace_{workspace_id}/project_{project_id}/"
+        key = f"workspace_{workspace_id}/project_{project_id}/"
         if stage_id:
             # append stage related part if stage_id is provided
-            key = f"{base}stage_{stage_id}/{filename}"
-            return key
-        return base
+            key = f"{key}stage_{stage_id}/{filename}"
+        else:
+            key = f"{key}{filename}"
+        return key
 
     @classmethod
     def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
@@ -57,6 +58,24 @@ class FileService:
         """Clear all files related to the workspace from the storage."""
         prefix = f"workspace_{workspace_id}/"
         storage.delete_files_by_prefix(prefix)
+
+    @classmethod
+    async def delete_bim_file(cls, project_id: uuid.UUID, storage: Storage, session: AsyncSession):
+        """Delete BIM file from the storage and remove entry from the database."""
+        try:
+            file = await BimFileRepository.get_by_project_id(project_id, session=session)
+            if not file:
+                raise NotFoundError("BIM file not found for the project.")
+
+            # delete from storage
+            storage.delete_file(file.key)
+
+            # delete from database
+            await BimFileRepository.delete(file, session=session)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     @classmethod
     async def generate_bim_upload_link(
