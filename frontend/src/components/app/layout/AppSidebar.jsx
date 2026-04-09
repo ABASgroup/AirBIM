@@ -17,6 +17,7 @@ export const AppSidebar = () => {
     switchWorkspace(ws.id);
     setIsOpen(false);
     setActiveMenuId(null);
+    navigate("/app/dashboard");
   };
   const handleCreateWorkspace = async (name) => {
     await createWorkspace(name);

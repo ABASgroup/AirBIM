@@ -1,5 +1,6 @@
 // Список проектов на дашборде
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { getProjects, createProject, deleteProject, updateProject } from "@/api/project";
 import { FilledButton, ActionMenu } from "@ui";
@@ -13,6 +14,7 @@ export const ProjectsList = () => {
   const [editingProject, setEditingProject] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const actionBtnRefs = useRef({});
+  const navigate = useNavigate();
   useEffect(() => {
     setProjects([]);
     if (currentWorkspace?.id) {
@@ -65,7 +67,10 @@ export const ProjectsList = () => {
       )}
       <div className="grid gap-3">
         {projects.map((project) => (
-          <div key={project.id} className="flex items-center justify-between rounded-[5px] p-5 bg-surface">
+          <div
+            key={project.id}
+            className="flex items-center justify-between rounded-[5px] p-5 bg-surface"
+            onClick={() => navigate(`/app/projects/${project.id}`)}>
             <div>
               <h3 className="font-bold">{project.name}</h3>
               {project.description ? (

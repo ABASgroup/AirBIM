@@ -35,7 +35,7 @@ export const Select = ({
           ${disabled ? "cursor-default text-mute-text-color" : "cursor-pointer"}
         `}
       >
-        <span className={`${disabled ? 'text-mute-text-color' : ''}`}>{selectedOption?.label || placeholder}</span>
+        <span className={`${disabled ? "text-mute-text-color" : ""}`}>{selectedOption?.label || placeholder}</span>
 
         {disabled ? (
           <i className="fa-solid fa-lock text-mute-text-color" />

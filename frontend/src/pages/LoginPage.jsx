@@ -6,7 +6,7 @@ import { LandingHeader } from "@landing";
 import { Modal, FilledButton, UnfilledButton, Input } from "@ui";
 import api from "@/api/index";
 
-const LoginPage = () => {
+function LoginPage() {
   const { register, handleSubmit } = useForm();
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ const LoginPage = () => {
       }
     }
   };
+  
   return (
     <>
       <LandingHeader />
