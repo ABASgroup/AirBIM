@@ -67,7 +67,7 @@ async def get_point_cloud_upload_link(
     storage: Storage = Depends(get_storage)
 ):
     """
-    Get a temporary link to upload file.
+    Get a temporary link to upload point cloud file.
 
     Use this link to upload file.
 

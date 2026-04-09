@@ -4,13 +4,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from storage import Storage
 from services import project as project_service
 from services import stage as stage_service
+from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StagePublic
+from schemas.files import (
+    FileUploadLinkRequest,
+    FileUploadConfirmRequest,
+    FileLinkResponse,
+    BIMFileResponse
+)
 from roles import Permission
 from dependencies import (
     get_db_session,
     require_project_permission,
-    get_storage
+    get_storage,
 )
 
 
@@ -86,7 +93,7 @@ async def get_project_stages(
 ):
     """
     Get all stages related to the project.
-    
+
     Requires permission.
     """
     stages = await stage_service.get_project_stages(
@@ -107,9 +114,77 @@ async def create_stage(
 ):
     """
     Create new stage related to the project.
-    
+
     Requires permission.
     """
     stage_data_db = StageModel(project_id=project_id)
     stage = await stage_service.create_stage(stage_data_db, session=session)
     return stage
+
+
+@router.post(
+    "/{project_id}/files/bim/upload",
+    response_model=FileLinkResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
+)
+async def get_bim_upload_link(
+    project_id: uuid.UUID,
+    file_data: FileUploadLinkRequest,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Get a temporary link to upload BIM file.
+
+    Use this link to upload file.
+
+    Requires permission.
+    """
+    project = await project_service.get_project(project_id, session=session)
+
+    url, key = await FileService.generate_bim_upload_link(
+        project_id=project_id,
+        workspace_id=project.workspace_id,
+        file_data=file_data,
+        storage=storage,
+        session=session
+    )
+
+    link_data = FileLinkResponse(
+        key=key,
+        url=url,
+        filename=file_data.filename,
+        size=file_data.size,
+        content_type=file_data.content_type
+    )
+
+    return link_data
+
+
+@router.post(
+    "/{project_id}/files/bim/confirm",
+    response_model=BIMFileResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
+)
+async def confirm_bim_upload(
+    project_id: uuid.UUID,
+    file_data: FileUploadConfirmRequest,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Confirm finishing uploading a BIM file.
+
+    You can't confirm file upload if file is not uploaded.
+
+    Requires permission.
+    """
+    file = await FileService.confirm_bim_upload(
+        file_data=file_data,
+        storage=storage,
+        session=session
+    )
+
+    return file
