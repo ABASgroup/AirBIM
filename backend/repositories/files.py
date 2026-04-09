@@ -1,22 +1,25 @@
-from .base import BaseRepository
+from typing import TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.files import BimFile, PointCloudFile, FileStatus
+from models.files import BimFile, PointCloudFile, FileStatus, File
 from sqlalchemy import select
+from .base import BaseRepository
 
 
-class BimFileRepository(BaseRepository[BimFile]):
-    """Repository class for CRUD operations with BimFile model."""
-    _model = BimFile
+# type parameter for File children
+ModelT = TypeVar("ModelT", bound=File)
 
 
-class PointCloudFileRepository(BaseRepository[PointCloudFile]):
-    """Repository class for CRUD operations with PointCloudFile model."""
-    _model = PointCloudFile
+class BaseFileRepository(BaseRepository[ModelT]):
+    """
+    Base repository for file models.
+
+    This class is not meant to be used directly. It provides common methods for file repositories.
+    """
 
     @classmethod
     async def update_status(
         cls,
-        file: PointCloudFile,
+        file: ModelT,
         status: FileStatus,
         session: AsyncSession
     ):
@@ -42,3 +45,13 @@ class PointCloudFileRepository(BaseRepository[PointCloudFile]):
             .where(cls._model.content_type == content_type)
         )
         return result.scalar_one_or_none()
+
+
+class BimFileRepository(BaseFileRepository[BimFile]):
+    """Repository class for CRUD operations with BimFile model."""
+    _model = BimFile
+
+
+class PointCloudFileRepository(BaseFileRepository[PointCloudFile]):
+    """Repository class for CRUD operations with PointCloudFile model."""
+    _model = PointCloudFile

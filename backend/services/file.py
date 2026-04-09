@@ -4,14 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.files import (
     FileUploadConfirmRequest,
     PointCloudFileModel,
+    BIMFileModel,
     FileUploadLinkRequest
 )
 
 from exceptions.exceptions import NotFoundError
 
-from models.files import PointCloudFile, FileStatus
+from models.files import PointCloudFile, BimFile, FileStatus
 
-from repositories.files import PointCloudFileRepository
+from repositories.files import PointCloudFileRepository, BimFileRepository
 from storage import Storage
 
 
@@ -34,6 +35,7 @@ class FileService:
         """
         base = f"workspace_{workspace_id}/project_{project_id}/"
         if stage_id:
+            # append stage related part if stage_id is provided
             key = f"{base}stage_{stage_id}/{filename}"
             return key
         return base
@@ -57,8 +59,89 @@ class FileService:
         storage.delete_files_by_prefix(prefix)
 
     @classmethod
-    def generate_bim_upload_link(cls):
-        pass
+    async def generate_bim_upload_link(
+        cls,
+        workspace_id: uuid.UUID,
+        project_id: uuid.UUID,
+        file_data: FileUploadLinkRequest,
+        storage: Storage,
+        session: AsyncSession
+    ) -> tuple[str, str]:
+        """
+        Creates presigned URL for BIM upload and makes reservation in DB.
+
+        Returns url and file key.
+        """
+        try:
+            # create key
+            key = cls.create_file_key(
+                workspace_id=workspace_id,
+                project_id=project_id,
+                filename=file_data.filename
+            )
+
+            # make pending file
+            file_data_db = BIMFileModel(
+                filename=file_data.filename,
+                key=key,
+                content_type=file_data.content_type,
+                size=file_data.size,
+                project_id=project_id
+            )
+
+            await BimFileRepository.create(file_data_db, session=session)
+
+            # generate temporary upload link
+            link = storage.get_upload_link(key)
+
+            await session.commit()
+            return link, key
+        except Exception:
+            await session.rollback()
+            raise
+
+    @classmethod
+    async def confirm_bim_upload(
+        cls,
+        file_data: FileUploadConfirmRequest,
+        storage: Storage,
+        session: AsyncSession
+    ) -> BimFile:
+        """
+        Runs checks on the file.
+
+        If everything is fine, returns file entry in DB.
+        """
+        try:
+            # in the database
+            # check fields we want to check
+            file_db = await BimFileRepository.get_file_by_metadata(
+                file_data.filename,
+                file_data.content_type,
+                file_data.size,
+                session=session
+            )
+
+            if file_db is None:
+                raise NotFoundError(
+                    "File not found: no entry in the database.")
+
+            # in the storage
+            exists = storage.file_exists(file_db.key)
+            if not exists:
+                raise NotFoundError(
+                    "File not found: not uploaded to the storage")
+
+            # everything seems clear, set new status
+            await BimFileRepository.update_status(
+                file_db,
+                FileStatus.UPLOADED,
+                session=session)
+            await session.commit()
+            return file_db
+        except:
+            await session.rollback()
+            raise
 
     @classmethod
     async def generate_point_cloud_upload_link(
@@ -107,7 +190,6 @@ class FileService:
     @classmethod
     async def confirm_point_cloud_upload(
         cls,
-        stage_id: uuid.UUID,
         file_data: FileUploadConfirmRequest,
         storage: Storage,
         session: AsyncSession
