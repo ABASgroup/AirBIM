@@ -1,8 +1,9 @@
 """Service layer logic for files."""
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.files import (
     FileUploadConfirmRequest,
-    PointCloudFileCreate,
+    PointCloudFileModel,
     FileUploadLinkRequest
 )
 
@@ -10,7 +11,7 @@ from exceptions.exceptions import NotFoundError
 
 from models.files import PointCloudFile, FileStatus
 
-from crud.files import PointCloudFileCRUD
+from repositories.files import PointCloudFileRepository
 from storage import Storage
 
 
@@ -21,10 +22,10 @@ class FileService:
     @classmethod
     def create_file_key(
         cls,
-        workspace_id: int,
-        project_id: int,
+        workspace_id: uuid.UUID,
+        project_id: uuid.UUID,
         filename: str,
-        stage_id: int | None = None
+        stage_id: uuid.UUID | None = None
     ):
         """
         Provides a key for the file in the fixed format.
@@ -35,8 +36,7 @@ class FileService:
         if stage_id:
             key = f"{base}stage_{stage_id}/{filename}"
             return key
-        else:
-            return base
+        return base
 
     @classmethod
     def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
@@ -63,9 +63,9 @@ class FileService:
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
-        workspace_id: int,
-        project_id: int,
-        stage_id: int,
+        workspace_id: uuid.UUID,
+        project_id: uuid.UUID,
+        stage_id: uuid.UUID,
         file_data: FileUploadLinkRequest,
         storage: Storage,
         session: AsyncSession
@@ -77,12 +77,15 @@ class FileService:
         """
         try:
             # create key
-            key = cls.create_file_key(project_id=project_id,
-                                      filename=file_data.filename,
-                                      stage_id=stage_id)
+            key = cls.create_file_key(
+                workspace_id=workspace_id,
+                project_id=project_id,
+                filename=file_data.filename,
+                stage_id=stage_id
+            )
 
             # make pending file
-            file_data_db = PointCloudFileCreate(
+            file_data_db = PointCloudFileModel(
                 filename=file_data.filename,
                 key=key,
                 content_type=file_data.content_type,
@@ -90,7 +93,7 @@ class FileService:
                 stage_id=stage_id
             )
 
-            await PointCloudFileCRUD.create(file_data_db, session=session)
+            await PointCloudFileRepository.create(file_data_db, session=session)
 
             # generate temporary upload link
             link = storage.get_upload_link(key)
@@ -104,7 +107,7 @@ class FileService:
     @classmethod
     async def confirm_point_cloud_upload(
         cls,
-        stage_id: int,
+        stage_id: uuid.UUID,
         file_data: FileUploadConfirmRequest,
         storage: Storage,
         session: AsyncSession
@@ -117,7 +120,7 @@ class FileService:
         try:
             # in the database
             # check fields we want to check
-            file_db = await PointCloudFileCRUD.get_file_by_metadata(
+            file_db = await PointCloudFileRepository.get_file_by_metadata(
                 file_data.filename,
                 file_data.content_type,
                 file_data.size,
@@ -135,7 +138,10 @@ class FileService:
                     "File not found: not uploaded to the storage")
 
             # everything seems clear, set new status
-            await PointCloudFileCRUD.update_status(file_db, FileStatus.UPLOADED, session=session)
+            await PointCloudFileRepository.update_status(
+                file_db,
+                FileStatus.UPLOADED,
+                session=session)
             await session.commit()
             return file_db
         except:

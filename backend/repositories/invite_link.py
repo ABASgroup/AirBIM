@@ -1,16 +1,17 @@
-from .base import BaseCRUD
+import uuid
+from .base import BaseRepository
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from roles import Role
 
 
-class InviteLinkCRUD(BaseCRUD[InviteLink]):
-    """DAO class for CRUD operations with InviteLink model."""
+class InviteLinkRepository(BaseRepository[InviteLink]):
+    """Repository class for CRUD operations with InviteLink model."""
     _model = InviteLink
 
     @classmethod
-    async def delete_by_workspace_id(cls, workspace_id, session: AsyncSession):
+    async def delete_by_workspace_id(cls, workspace_id: uuid.UUID, session: AsyncSession):
         """Delete all invite links for the workspace"""
         stmt = delete(cls._model).where(
             cls._model.workspace_id == workspace_id)
@@ -18,7 +19,7 @@ class InviteLinkCRUD(BaseCRUD[InviteLink]):
 
     @classmethod
     async def get_by_workspace_id_and_role(
-            cls, workspace_id: int, role: Role, session: AsyncSession) -> InviteLink | None:
+            cls, workspace_id: uuid.UUID, role: Role, session: AsyncSession) -> InviteLink | None:
         """Get invite link by workspace ID and role"""
         result = await session.execute(
             select(cls._model)

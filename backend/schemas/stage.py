@@ -1,15 +1,13 @@
+import uuid
 from pydantic import BaseModel
-from datetime import datetime
+from .base import Response
 
 
-class StageCreate(BaseModel):
-    """Create in DB schema"""
-    project_id: int
+class StageModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
+    project_id: uuid.UUID
 
 
-class StagePublic(BaseModel):
-    """API Response schema"""
-    id: int
-    project_id: int
-    created_at: datetime
-    updated_at: datetime
+class StagePublic(Response):
+    """API Response schema."""
+    project_id: uuid.UUID

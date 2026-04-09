@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Enum
 from enum import StrEnum
@@ -30,7 +31,7 @@ class File(BaseModel):
 class BimFile(File):
     __tablename__ = "bim_files"
 
-    project_id: Mapped[int] = mapped_column(
+    project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"))
     project: Mapped["Project"] = relationship(back_populates="bim_files")
 
@@ -38,7 +39,7 @@ class BimFile(File):
 class PointCloudFile(File):
     __tablename__ = "point_cloud_files"
 
-    stage_id: Mapped[int] = mapped_column(
+    stage_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("stages.id", ondelete="CASCADE"))
     stage: Mapped["Stage"] = relationship(
         back_populates="point_cloud_files")

@@ -1,11 +1,11 @@
-from .base import BaseCRUD
+from .base import BaseRepository
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class UserCRUD(BaseCRUD[User]):
-    """DAO class for CRUD operations with User model."""
+class UserRepository(BaseRepository[User]):
+    """Repository class for CRUD operations with User model."""
     _model = User
 
     @classmethod

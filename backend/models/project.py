@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Enum, ForeignKey
 from .base import BaseModel
@@ -12,7 +13,7 @@ class ProjectStatus(enum.StrEnum):
 class Project(BaseModel):
     __tablename__ = "projects"
 
-    workspace_id: Mapped[int] = mapped_column(
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"))
     workspace: Mapped["Workspace"] = relationship(back_populates="projects")
 

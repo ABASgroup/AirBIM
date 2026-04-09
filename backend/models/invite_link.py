@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Enum
 from datetime import datetime
@@ -10,7 +11,7 @@ class InviteLink(BaseModel):
 
     token_hashed: Mapped[str] = mapped_column(index=True, unique=True)
 
-    workspace_id: Mapped[int] = mapped_column(
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"))
     workspace: Mapped["Workspace"] = relationship(
         back_populates="invite_links")
@@ -21,7 +22,7 @@ class InviteLink(BaseModel):
         default=Role.MEMBER
     )
 
-    creator_id: Mapped[int] = mapped_column(
+    creator_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
