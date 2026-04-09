@@ -33,12 +33,13 @@ class FileService:
 
         **Never** create file keys on your own for consistency.
         """
-        base = f"workspace_{workspace_id}/project_{project_id}/"
+        key = f"workspace_{workspace_id}/project_{project_id}/"
         if stage_id:
             # append stage related part if stage_id is provided
-            key = f"{base}stage_{stage_id}/{filename}"
-            return key
-        return base
+            key = f"{key}stage_{stage_id}/{filename}"
+        else:
+            key = f"{key}{filename}"
+        return key
 
     @classmethod
     def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
