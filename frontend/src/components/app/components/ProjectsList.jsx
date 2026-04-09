@@ -73,7 +73,6 @@ export const ProjectsList = () => {
               ) : (
                 <p className="text-mute-text-color">Описание отсутствует</p>
               )}
-
             </div>
             <div>
               <button

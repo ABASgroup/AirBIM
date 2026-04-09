@@ -1,0 +1,1 @@
+export { normalizeExtension, getSelectedFiles, formatFileSize } from "./filesUtils";
