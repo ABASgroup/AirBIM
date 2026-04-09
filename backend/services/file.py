@@ -1,8 +1,9 @@
 """Service layer logic for files."""
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.files import (
     FileUploadConfirmRequest,
-    PointCloudFileCreate,
+    PointCloudFileModel,
     FileUploadLinkRequest
 )
 
@@ -21,10 +22,10 @@ class FileService:
     @classmethod
     def create_file_key(
         cls,
-        workspace_id: int,
-        project_id: int,
+        workspace_id: uuid.UUID,
+        project_id: uuid.UUID,
         filename: str,
-        stage_id: int | None = None
+        stage_id: uuid.UUID | None = None
     ):
         """
         Provides a key for the file in the fixed format.
@@ -35,8 +36,7 @@ class FileService:
         if stage_id:
             key = f"{base}stage_{stage_id}/{filename}"
             return key
-        else:
-            return base
+        return base
 
     @classmethod
     def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
@@ -63,9 +63,9 @@ class FileService:
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
-        workspace_id: int,
-        project_id: int,
-        stage_id: int,
+        workspace_id: uuid.UUID,
+        project_id: uuid.UUID,
+        stage_id: uuid.UUID,
         file_data: FileUploadLinkRequest,
         storage: Storage,
         session: AsyncSession
@@ -85,7 +85,7 @@ class FileService:
             )
 
             # make pending file
-            file_data_db = PointCloudFileCreate(
+            file_data_db = PointCloudFileModel(
                 filename=file_data.filename,
                 key=key,
                 content_type=file_data.content_type,
@@ -107,7 +107,7 @@ class FileService:
     @classmethod
     async def confirm_point_cloud_upload(
         cls,
-        stage_id: int,
+        stage_id: uuid.UUID,
         file_data: FileUploadConfirmRequest,
         storage: Storage,
         session: AsyncSession
@@ -139,8 +139,8 @@ class FileService:
 
             # everything seems clear, set new status
             await PointCloudFileRepository.update_status(
-                file_db, 
-                FileStatus.UPLOADED, 
+                file_db,
+                FileStatus.UPLOADED,
                 session=session)
             await session.commit()
             return file_db

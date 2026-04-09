@@ -1,6 +1,6 @@
 """Database related tools."""
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from config import db_config
+from configs import db_config
 
 
 # SQLAlchemy asynchronous engine

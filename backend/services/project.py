@@ -1,15 +1,16 @@
 """Service layer logic for Project."""
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from storage import Storage
 from exceptions.exceptions import NotFoundError
 from repositories.project import ProjectRepository
 from models.project import Project
-from schemas.project import ProjectCreate, ProjectUpdate
+from schemas.project import ProjectModel, ProjectUpdate
 
 from services.file import FileService
 
 
-async def get_project(project_id: int, session: AsyncSession) -> Project:
+async def get_project(project_id: uuid.UUID, session: AsyncSession) -> Project:
     """Get project using its ID"""
     project = await ProjectRepository.get_by_id(project_id, session=session)
 
@@ -19,7 +20,7 @@ async def get_project(project_id: int, session: AsyncSession) -> Project:
     return project
 
 
-async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> list[Project]:
+async def get_workspace_projects(workspace_id: uuid.UUID, session: AsyncSession) -> list[Project]:
     """Get all projects related to the workspace"""
     projects = await ProjectRepository.get_by_workspace_id(workspace_id, session=session)
     projects = list(projects)
@@ -27,7 +28,7 @@ async def get_workspace_projects(workspace_id: int, session: AsyncSession) -> li
     return projects
 
 
-async def create_project(project_data: ProjectCreate, session: AsyncSession) -> Project:
+async def create_project(project_data: ProjectModel, session: AsyncSession) -> Project:
     """
     Create a new project for the workspace.
     """
@@ -40,7 +41,7 @@ async def create_project(project_data: ProjectCreate, session: AsyncSession) -> 
         raise
 
 
-async def update_project(project_id: int, project_data: ProjectUpdate, session: AsyncSession) -> Project:
+async def update_project(project_id: uuid.UUID, project_data: ProjectUpdate, session: AsyncSession) -> Project:
     """Update information about project using its ID"""
     try:
         project = await ProjectRepository.update_by_id(project_id, project_data, session=session)
@@ -54,7 +55,7 @@ async def update_project(project_id: int, project_data: ProjectUpdate, session: 
         raise
 
 
-async def delete_project(project_id: int, session: AsyncSession, storage: Storage) -> Project:
+async def delete_project(project_id: uuid.UUID, session: AsyncSession, storage: Storage) -> Project:
     """
     Delete project using its ID.
 

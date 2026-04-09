@@ -1,3 +1,4 @@
+import uuid
 from .base import BaseRepository
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
@@ -10,7 +11,7 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
     _model = InviteLink
 
     @classmethod
-    async def delete_by_workspace_id(cls, workspace_id, session: AsyncSession):
+    async def delete_by_workspace_id(cls, workspace_id: uuid.UUID, session: AsyncSession):
         """Delete all invite links for the workspace"""
         stmt = delete(cls._model).where(
             cls._model.workspace_id == workspace_id)
@@ -18,7 +19,7 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
 
     @classmethod
     async def get_by_workspace_id_and_role(
-            cls, workspace_id: int, role: Role, session: AsyncSession) -> InviteLink | None:
+            cls, workspace_id: uuid.UUID, role: Role, session: AsyncSession) -> InviteLink | None:
         """Get invite link by workspace ID and role"""
         result = await session.execute(
             select(cls._model)

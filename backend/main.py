@@ -5,7 +5,7 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from config import api_config
+from configs import api_config
 from exceptions.handlers import add_exception_handlers
 
 from routers.auth import router as auth_router
@@ -22,8 +22,6 @@ async def lifespan(app: FastAPI):
     yield
 
     # shutdown: resource cleanup
-    await app.state.redis.close()
-    await app.state.db_engine.dispose()
 
 
 # This app is published behind a proxy under "/api" (for users: https://example.com/api/...).
@@ -45,6 +43,7 @@ add_exception_handlers(app)
 
 @app.get('/ping')
 async def ping():
+    """Simple API check endpoint."""
     return {"message": "I'm fine, thank you!"}
 
 

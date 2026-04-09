@@ -1,3 +1,4 @@
+import uuid
 from .base import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,7 +12,7 @@ class ProjectRepository(BaseRepository[Project]):
     @classmethod
     async def get_by_workspace_id(
         cls,
-        workspace_id: int,
+        workspace_id: uuid.UUID,
         session: AsyncSession
     ):
         """Get projects related to some workspace using its ID"""

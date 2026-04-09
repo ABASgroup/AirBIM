@@ -7,14 +7,14 @@ from exceptions.exceptions import (
 from security import get_password_hash, verify_password
 from repositories.user import UserRepository
 from models.user import User
-from schemas.user import UserCreate, UserRegisterRequest
+from schemas.user import UserModel, UserRegisterRequest
 
 
 async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
     """
     Create a new user in the database.
-    
-    
+
+
     """
     try:
         # check if user exists
@@ -26,9 +26,9 @@ async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
         # hide password!
         password_hashed = get_password_hash(user_data.password)
 
-        user_data_db = UserCreate(username=user_data.username,
-                                  password_hashed=password_hashed,
-                                  email=user_data.email)
+        user_data_db = UserModel(username=user_data.username,
+                                 password_hashed=password_hashed,
+                                 email=user_data.email)
         user = await UserRepository.create(user_data_db, session=session)
         await session.commit()
         return user

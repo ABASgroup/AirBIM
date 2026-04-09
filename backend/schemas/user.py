@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from datetime import datetime
+from .base import Response
 
 
 class UserRegisterRequest(BaseModel):
@@ -10,15 +10,14 @@ class UserRegisterRequest(BaseModel):
         default_factory=lambda data: f"{data['username']} workspace")
 
 
-class UserCreate(BaseModel):
+class UserResponse(Response):
+    """API response schema."""
+    username: str
+    email: EmailStr
+
+
+class UserModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
     username: str
     email: EmailStr
     password_hashed: str
-
-
-class UserPublic(BaseModel):
-    """API response schema."""   
-    username: str
-    email: EmailStr
-    created_at: datetime
-    updated_at: datetime

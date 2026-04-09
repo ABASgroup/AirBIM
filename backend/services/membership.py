@@ -1,13 +1,14 @@
 """Service layer logic for Membership."""
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from roles import Role
 from repositories.membership import MembershipRepository
 from models.membership import Membership
-from schemas.membership import MembershipCreate
+from schemas.membership import MembershipModel
 from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
 
 
-async def get_workspace_members(workspace_id: int, session: AsyncSession) -> list[Membership]:
+async def get_workspace_members(workspace_id: uuid.UUID, session: AsyncSession) -> list[Membership]:
     """Get all memberships related to this workspace with user data."""
     memberships = await MembershipRepository.get_all_workspace_users(
         workspace_id,
@@ -17,7 +18,7 @@ async def get_workspace_members(workspace_id: int, session: AsyncSession) -> lis
     return list(memberships)
 
 
-async def get_membership(user_id: int, workspace_id: int, session: AsyncSession) -> Membership:
+async def get_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session: AsyncSession) -> Membership:
     """
     Get user membership in the workspace.
     """
@@ -33,7 +34,7 @@ async def get_membership(user_id: int, workspace_id: int, session: AsyncSession)
     return membership
 
 
-async def create_membership(membership_data: MembershipCreate, session: AsyncSession) -> Membership:
+async def create_membership(membership_data: MembershipModel, session: AsyncSession) -> Membership:
     """
     Create a new membership for the workspace.
     """
@@ -46,7 +47,7 @@ async def create_membership(membership_data: MembershipCreate, session: AsyncSes
         raise
 
 
-async def delete_membership(user_id: int, workspace_id: int, session: AsyncSession) -> Membership:
+async def delete_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session: AsyncSession) -> Membership:
     """
     Delete user's membership in the workspace
 

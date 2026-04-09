@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from .base import BaseRepository
@@ -12,7 +13,7 @@ class StageRepository(BaseRepository[Stage]):
     @classmethod
     async def get_by_project_id(
         cls,
-        project_id: int,
+        project_id: uuid.UUID,
         session: AsyncSession
     ):
         """Get stages related to some project using its ID."""
@@ -25,12 +26,12 @@ class StageRepository(BaseRepository[Stage]):
     @classmethod
     async def get_by_id_with_project(
         cls,
-        stage_id: int,
+        stage_id: uuid.UUID,
         session: AsyncSession
     ):
         """
         Modification that loads stage's project.
-        
+
         Use to avoid N+1 problem when you require project with a stage.
         """
         result = await session.execute(

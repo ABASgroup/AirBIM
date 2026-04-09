@@ -1,4 +1,5 @@
 """Service layer logic for Workspace."""
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from storage import Storage
 from services.file import FileService
@@ -6,16 +7,16 @@ from repositories.workspace import WorkspaceRepository
 from repositories.membership import MembershipRepository
 from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
-from schemas.workspace import WorkspaceCreate
+from schemas.workspace import WorkspaceModel
 
 
-async def get_workspace(workspace_id: int, session: AsyncSession):
+async def get_workspace(workspace_id: uuid.UUID, session: AsyncSession):
     """Get workspace using its ID"""
     workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
     return workspace
 
 
-async def get_user_workspaces(user_id: int, session: AsyncSession) -> list[Workspace]:
+async def get_user_workspaces(user_id: uuid.UUID, session: AsyncSession) -> list[Workspace]:
     """Get all workspaces where the user is a member"""
     try:
         memberships = await MembershipRepository.get_all_user_memberships(user_id, session=session)
@@ -34,7 +35,7 @@ async def get_user_workspaces(user_id: int, session: AsyncSession) -> list[Works
         raise
 
 
-async def create_workspace(workspace_data: WorkspaceCreate, session: AsyncSession):
+async def create_workspace(workspace_data: WorkspaceModel, session: AsyncSession):
     """
     Create a new workspace
     """
@@ -47,7 +48,7 @@ async def create_workspace(workspace_data: WorkspaceCreate, session: AsyncSessio
         raise
 
 
-async def delete_team_workspace(workspace_id, session: AsyncSession, storage: Storage):
+async def delete_team_workspace(workspace_id: uuid.UUID, session: AsyncSession, storage: Storage):
     """
     Delete team workspace using its id.
 

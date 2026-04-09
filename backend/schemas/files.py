@@ -1,9 +1,11 @@
-from pydantic import BaseModel
+import uuid
 from datetime import datetime
+from pydantic import BaseModel
 from models.files import FileStatus
+from .base import Response
 
 
-# universal request schemas
+# link schemas
 class FileUploadLinkRequest(BaseModel):
     filename: str
     content_type: str
@@ -16,8 +18,12 @@ class FileUploadConfirmRequest(BaseModel):
     size: int
 
 
-class FileLinkPublic(BaseModel):
-    """API response schema."""
+class FileLinkResponse(BaseModel):
+    """
+    API response schema.
+
+    Universal response for any file presigned URL.
+    """
     key: str
     filename: str
     url: str
@@ -25,9 +31,13 @@ class FileLinkPublic(BaseModel):
     content_type: str
 
 
-class FilePublic(BaseModel):
-    """API response schema. Use as a mixin."""
-    id: int
+# file schemas
+class FileResponse(Response):
+    """
+    API response schema. 
+
+    Use as a mixin for other file responses.
+    """
     filename: str
     content_type: str
     size: int
@@ -36,8 +46,8 @@ class FilePublic(BaseModel):
     updated_at: datetime
 
 
-class FileCreate(BaseModel):
-    """Create in DB schema. Use as a mixin."""
+class FileModel(BaseModel):
+    """Schema in DB. Use as a mixin."""
     filename: str
     key: str
     content_type: str
@@ -46,11 +56,11 @@ class FileCreate(BaseModel):
 
 
 # schemas for point clouds
-class PointCloudFileCreate(FileCreate):
-    """Create in DB schema."""
-    stage_id: int
+class PointCloudFileModel(FileModel):
+    """Schema in DB. Use to create in DB."""
+    stage_id: uuid.UUID
 
 
-class PointCloudFilePublic(FilePublic):
+class PointCloudFileResponse(FileResponse):
     """API response schema."""
-    stage_id: int
+    stage_id: uuid.UUID
