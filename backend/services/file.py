@@ -59,6 +59,24 @@ class FileService:
         storage.delete_files_by_prefix(prefix)
 
     @classmethod
+    async def delete_bim_file(cls, project_id: uuid.UUID, storage: Storage, session: AsyncSession):
+        """Delete BIM file from the storage and remove entry from the database."""
+        try:
+            file = await BimFileRepository.get_by_project_id(project_id, session=session)
+            if not file:
+                raise NotFoundError("BIM file not found for the project.")
+
+            # delete from storage
+            storage.delete_file(file.key)
+
+            # delete from database
+            await BimFileRepository.delete(file, session=session)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+    @classmethod
     async def generate_bim_upload_link(
         cls,
         workspace_id: uuid.UUID,

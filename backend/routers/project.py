@@ -188,3 +188,32 @@ async def confirm_bim_upload(
     )
 
     return file
+
+
+@router.delete(
+    "/{project_id}/files/bim/confirm",
+    response_model=BIMFileResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_DELETE_BIM))],
+)
+async def delete_bim_file(
+    project_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Delete project's BIM file.
+
+    This action deletes file from the storage and removes record from the database.
+
+    Be cautious, related reports, point clouds will become irrelevant without the BIM file.
+
+    Requires permission.
+    """
+    file = await FileService.delete_bim_file(
+        project_id=project_id,
+        storage=storage,
+        session=session
+    )
+
+    return file

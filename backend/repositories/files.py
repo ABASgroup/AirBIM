@@ -1,3 +1,4 @@
+import uuid
 from typing import TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.files import BimFile, PointCloudFile, FileStatus, File
@@ -27,6 +28,7 @@ class BaseFileRepository(BaseRepository[ModelT]):
         file.status = status
 
         await session.flush()
+        await session.refresh(file)
         return file
 
     @classmethod
@@ -50,6 +52,19 @@ class BaseFileRepository(BaseRepository[ModelT]):
 class BimFileRepository(BaseFileRepository[BimFile]):
     """Repository class for CRUD operations with BimFile model."""
     _model = BimFile
+
+    @classmethod
+    async def get_by_project_id(
+        cls,
+        project_id: uuid.UUID,
+        session: AsyncSession
+    ):
+        """Get BIM file by project ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.project_id == project_id)
+        )
+        return result.scalar_one_or_none()
 
 
 class PointCloudFileRepository(BaseFileRepository[PointCloudFile]):
