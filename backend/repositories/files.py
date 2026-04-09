@@ -27,6 +27,7 @@ class BaseFileRepository(BaseRepository[ModelT]):
         file.status = status
 
         await session.flush()
+        await session.refresh(file)
         return file
 
     @classmethod

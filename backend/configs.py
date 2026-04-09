@@ -30,7 +30,7 @@ class StorageConfig(BaseSettings):
     STORAGE_SECRET_KEY: str
     STORAGE_PORT: int
     STORAGE_BUCKET: str = "airbim"
-    
+
     # for presigned urls
     STORAGE_URL_EXP_TIME: int = 3600
 
@@ -39,9 +39,14 @@ class StorageConfig(BaseSettings):
                                       extra='ignore')
 
     @property
-    def endpoint(self) -> str:
-        """Endpoint for connection."""
+    def internal_endpoint(self) -> str:
+        """Endpoint for connection in internal network."""
         return (f"http://storage:{self.STORAGE_PORT}")
+
+    @property
+    def public_endpoint(self) -> str:
+        """Endpoint for connection from outside."""
+        return (f"http://localhost:{self.STORAGE_PORT}")
 
 
 class DBConfig(BaseSettings):

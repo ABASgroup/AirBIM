@@ -133,7 +133,7 @@ class FileService:
                     "File not found: not uploaded to the storage")
 
             # everything seems clear, set new status
-            await BimFileRepository.update_status(
+            file_db = await BimFileRepository.update_status(
                 file_db,
                 FileStatus.UPLOADED,
                 session=session)
@@ -220,7 +220,7 @@ class FileService:
                     "File not found: not uploaded to the storage")
 
             # everything seems clear, set new status
-            await PointCloudFileRepository.update_status(
+            file_db = await PointCloudFileRepository.update_status(
                 file_db,
                 FileStatus.UPLOADED,
                 session=session)

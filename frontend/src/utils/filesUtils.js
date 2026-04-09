@@ -33,3 +33,9 @@ export const formatFileSize = (sizeInBytes) => {
 
   return `${formattedSize.toFixed(formattedSize >= 10 || sizeIndex === 0 ? 0 : 1)} ${sizeUnits[sizeIndex]}`;
 };
+
+export async function isIFC(file) {
+  const buffer = await file.slice(0, 15).arrayBuffer();
+  const header = new TextDecoder().decode(buffer);
+  return header.startsWith("ISO-10303-21;");
+}

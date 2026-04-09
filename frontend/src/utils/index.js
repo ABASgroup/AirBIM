@@ -1,1 +1,1 @@
-export { normalizeExtension, getSelectedFiles, formatFileSize } from "./filesUtils";
+export { normalizeExtension, getSelectedFiles, formatFileSize, isIFC } from "./filesUtils";

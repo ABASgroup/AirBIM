@@ -41,12 +41,19 @@ const ProjectModalContent = ({ onClose, onSubmit, mode, project }) => {
 
   const handleSubmit = () => {
     if (formState.name.trim()) {
-      onSubmit({
+      const submitData = {
         name: formState.name,
         description: formState.description,
-        status: formState.status,
-        file: formState.projectFile,
-      });
+      };
+
+      if (mode === "create" && formState.projectFile) {
+        submitData.file = formState.projectFile;
+      } else if (mode === "edit") {
+        submitData.status = formState.status;
+      }
+
+      onSubmit(submitData);
+
       setFormState({
         name: "",
         description: "",

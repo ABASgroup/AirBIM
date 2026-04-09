@@ -2,6 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { getProjects, createProject, deleteProject, updateProject } from "@/api/project";
+import { getBimUploadLink, uploadFileWithPresignedLink, confirmBimUpload } from "@/api/file";
+import { isIFC } from "@utils";
 import { FilledButton, ActionMenu } from "@ui";
 import { ProjectModal } from "@app/components/ProjectModal";
 
@@ -12,6 +14,7 @@ export const ProjectsList = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const actionBtnRefs = useRef({});
   useEffect(() => {
     setProjects([]);
@@ -19,8 +22,45 @@ export const ProjectsList = () => {
       getProjects(currentWorkspace.id).then(res => setProjects(res.data));
     }
   }, [currentWorkspace?.id]);
+
+  const uploadProjectFile = async (projectId, file) => {
+    try {
+      setIsUploading(true);
+      const uploadLink = await getBimUploadLink(projectId, {
+        filename: file.name,
+        size: file.size,
+        content_type: isIFC(file) ? "application/x-step" : file.type,
+      });
+
+      const presignedUrl = uploadLink.data.url;
+      const confirmData = { filename: uploadLink.data.filename, size: uploadLink.data.size, content_type: uploadLink.data.content_type };
+
+      await uploadFileWithPresignedLink(presignedUrl, file);
+      await confirmBimUpload(projectId, confirmData);
+
+      return { success: true };
+    } catch (error) {
+      console.error("File upload failed:", error);
+      return { success: false, error };
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleCreate = async (data) => {
-    await createProject(currentWorkspace.id, data);
+    try {
+      const { file, ...projectData } = data;
+
+      const projectRes = await createProject(currentWorkspace.id, projectData);
+      const projectId = projectRes.data.id;
+
+      if (file) {
+        await uploadProjectFile(projectId, file);
+      }
+    } catch (error) {
+      console.error("Project creation failed:", error);
+    }
+
     const res = await getProjects(currentWorkspace.id);
     setProjects(res.data);
     setIsModalOpen(false);
