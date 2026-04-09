@@ -39,6 +39,8 @@ async def access(
     Get current user access, including permissions and role in the workspace.
 
     Use if you need to specify permissions.
+    
+    If user is not a member of the workspace, returns an error.
     """
     membership = await membership_service.get_membership(
         user_id, workspace_id, session=session
@@ -107,6 +109,7 @@ async def get_user_workspaces(
     """
     Get all workspaces where current user is the member.
 
+    Includes all types:
     - Personal workspace
     - Team workspaces
     """
@@ -137,7 +140,11 @@ async def create_workspace(
     user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-    """Creates a new workspace, making current user its owner"""
+    """
+    Creates a new workspace, making current user its owner.
+    
+    You can create only team workspace, personal workspace is created automatically during registration.
+    """
     workspace = WorkspaceModel(
         name=workspace_data.name, type=WorkspaceType.TEAM)
     workspace = await workspace_service.create_workspace(workspace, session)
@@ -187,9 +194,11 @@ async def get_invite_link(
     session: AsyncSession = Depends(get_db_session),
 ):
     """
-    Get invite link for the workspace associated with that role
+    Get invite link for the workspace associated with that role.
 
-    Use if you need a new link
+    Use if you need a new link.
+    
+    Always save token from the response, otherwise it will be lost.
     """
     link = await invite_link_service.generate_invite_link(
         workspace_id, membership.user_id, link_data.role, session=session
@@ -208,9 +217,9 @@ async def revoke_invite_links(
     workspace_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
 ):
     """
-    Revoke invite links for the workspace
+    Revoke invite links for the workspace.
 
-    Old links (created before call) will become obsolete and invalid
+    Old links (created before the call) will become obsolete and invalid.
     """
     await invite_link_service.revoke_links(workspace_id, session=session)
 
@@ -224,7 +233,7 @@ async def revoke_invite_links(
 async def get_workspace_projects(
     workspace_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
 ):
-    """Get all projects related to the workspace"""
+    """Get all projects related to the workspace."""
     projects = await project_service.get_workspace_projects(
         workspace_id, session=session
     )

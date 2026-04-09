@@ -1,12 +1,12 @@
 """Security related features."""
 import uuid
+from datetime import datetime, timedelta, timezone
 import hashlib
 import base64
 from secrets import token_urlsafe
 from jose import jwt
 from pwdlib import PasswordHash
 from configs import api_config
-from datetime import datetime, timedelta, timezone
 
 
 # password hashing context
@@ -20,6 +20,8 @@ def create_access_token(user_id: uuid.UUID, data: dict | None = None) -> str:
     Uses user ID for sub claim.
 
     Uses settings stated in the API config.
+    
+    You can optionally include additional data in the token by passing a dictionary to the `data` parameter.
     """
     to_encode = data.copy() if data else {}
     expire = datetime.now(timezone.utc) + \
@@ -42,12 +44,20 @@ def get_password_hash(password: str) -> str:
 
 
 def generate_link_token(byte_length: int = 32) -> str:
-    """Generates URL-friendly token for link."""
+    """
+    Generates URL-friendly random token for links.
+    
+    Use as a basic method to generate tokens for links.
+    """
     return token_urlsafe(byte_length)
 
 
 def hash_link_token(token: str) -> str:
-    """Hashes link token"""
+    """
+    Hashes link token.
+    
+    Uses SHA-256 and encodes the hash in URL-safe base64.
+    """
     hash_object = hashlib.sha256(token.encode())
     token_hash = base64.urlsafe_b64encode(hash_object.digest()).decode()
     return token_hash

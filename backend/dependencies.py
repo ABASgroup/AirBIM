@@ -45,6 +45,8 @@ def get_storage():
 def get_current_user_id(token: str = Depends(oauth2_scheme)):
     """
     Get current user ID using a JWT token.
+    
+    Will work only if user is authenticated and provides a valid token.
     """
     try:
         payload = jwt.decode(token,

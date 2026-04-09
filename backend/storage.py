@@ -1,12 +1,16 @@
 """App storage for files"""
+from typing import BinaryIO
 import boto3
 from botocore.exceptions import ClientError
-from typing import BinaryIO
 from configs import storage_config
 
 
 class Storage:
-    """App S3 storage."""
+    """
+    App S3 storage.
+    
+    Interface to interact with the S3 storage.
+    """
 
     def __init__(self):
         """Establish connection to the storage"""

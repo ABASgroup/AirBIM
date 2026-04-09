@@ -19,7 +19,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=TokenResponse)
 async def register(data: UserRegisterRequest, session: AsyncSession = Depends(get_db_session)):
     """
-    Registers user and creates their personal workspace.
+    Registers a new user and creates their personal workspace.
     """
     user = await user_service.register_user(data, session)
 
@@ -43,7 +43,7 @@ async def login(
     """
     Logs user in, provides access token.
 
-    Login data is email and password.
+    Login data is `email` and `password`, not username.
     """
     user = await user_service.authenticate_user(data.username, data.password, session)
     token = create_access_token(user.id)
@@ -53,7 +53,9 @@ async def login(
 @router.get("/permissions")
 async def permissions():
     """
-    Get all possible permissions in the system
+    Get all possible permissions in the system.
+    
+    Useful for client to know what users can do.
     """
     return [member.value for member in Permission]
 
@@ -61,6 +63,8 @@ async def permissions():
 @router.get("/roles")
 async def roles():
     """
-    Get all possible roles in the system
+    Get all possible roles in the system.
+    
+    Useful for client to know what users can be.
     """
     return [member.value for member in Role]

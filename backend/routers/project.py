@@ -24,6 +24,11 @@ router = APIRouter(prefix="/projects", tags=["workspace projects"])
         Depends(require_project_permission(Permission.PROJECT_VIEW))],
 )
 async def get_project(project_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)):
+    """
+    Get project information.
+
+    Requires permission.
+    """
     project = await project_service.get_project(project_id, session=session)
     return project
 
@@ -39,6 +44,11 @@ async def update_project(
     project_data: ProjectUpdate,
     session: AsyncSession = Depends(get_db_session),
 ):
+    """
+    Update project information.
+
+    Requires permission.
+    """
     project = await project_service.update_project(
         project_id, project_data, session=session
     )
@@ -74,7 +84,11 @@ async def delete_project(
 async def get_project_stages(
     project_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
 ):
-    """Get all stages related to the project."""
+    """
+    Get all stages related to the project.
+    
+    Requires permission.
+    """
     stages = await stage_service.get_project_stages(
         project_id, session=session
     )
@@ -91,6 +105,11 @@ async def create_stage(
     project_id: uuid.UUID,
     session: AsyncSession = Depends(get_db_session)
 ):
+    """
+    Create new stage related to the project.
+    
+    Requires permission.
+    """
     stage_data_db = StageModel(project_id=project_id)
     stage = await stage_service.create_stage(stage_data_db, session=session)
     return stage

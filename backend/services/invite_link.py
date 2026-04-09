@@ -17,10 +17,10 @@ async def generate_invite_link(
     session: AsyncSession
 ) -> InviteLinkResponse:
     """
-    Generates new unique role invite link
+    Generates new unique role invite link.
 
     DB requires all links to be unique, tries to generate token again
-    if there :class:`~sqlalchemy.exc.IntegrityError`
+    if there :class:`~sqlalchemy.exc.IntegrityError`.
     """
     while True:
         try:
@@ -51,9 +51,9 @@ async def generate_invite_link(
 
 async def revoke_links(workspace_id: uuid.UUID, session: AsyncSession):
     """
-    All previous links will be removed
+    Removes all previous (existing) invite links for the workspace.
 
-    Use to secure access to the workspace
+    Use to secure access to the workspace, when links are compromised.
     """
     try:
         # delete old links
@@ -66,9 +66,9 @@ async def revoke_links(workspace_id: uuid.UUID, session: AsyncSession):
 
 async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkResponse:
     """
-    Validates invite link using its token
+    Validates invite link using its token.
 
-    Invalid link's token will not be found in the DB
+    Invalid link's token will not be found in the DB.
     """
     try:
         # try to find hashed token
