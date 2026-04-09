@@ -12,15 +12,15 @@ class WorkspaceType(enum.StrEnum):
 class Workspace(BaseModel):
     __tablename__ = "workspaces"
 
-    name: Mapped[str] = mapped_column(nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(nullable=False)
 
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan")
 
-    invitations: Mapped[list["Invitation"]] = relationship(
+    invite_links: Mapped[list["InviteLink"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
-    
+
     projects: Mapped[list["Project"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )

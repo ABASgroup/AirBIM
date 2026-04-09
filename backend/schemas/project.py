@@ -1,28 +1,32 @@
+import uuid
 from pydantic import BaseModel
-from datetime import datetime
 from models.project import ProjectStatus
+from .base import Response
 
 
-class ProjectCreate(BaseModel):
-    """Create in DB schema"""
-    workspace_id: int
+class ProjectCreateRequest(BaseModel):
     name: str = "New project"
     description: str
-    status: ProjectStatus = ProjectStatus.ACTIVE
 
 
-class ProjectUpdate(BaseModel):
-    """Update in DB schema"""
-    name: str
-    description: str
-    role: ProjectStatus
-
-
-class ProjectPublic(BaseModel):
-    """API Response schema"""
-    workspace_id: int
+class ProjectResponse(Response):
+    """API Response schema."""
+    workspace_id: uuid.UUID
     name: str
     description: str
     status: ProjectStatus
-    created_at: datetime
-    updated_at: datetime
+
+
+class ProjectUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    name: str | None = None
+    description: str | None = None
+    status: ProjectStatus | None = None
+
+
+class ProjectModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
+    workspace_id: uuid.UUID
+    name: str = "New project"
+    description: str
+    status: ProjectStatus = ProjectStatus.ACTIVE

@@ -1,40 +1,52 @@
 """Service layer logic for User."""
 from sqlalchemy.ext.asyncio import AsyncSession
+from exceptions.exceptions import (
+    InvalidLoginInfoError,
+    NotFoundError,
+    AlreadyExistsError)
 from security import get_password_hash, verify_password
-from crud.user import UserCRUD
+from repositories.user import UserRepository
 from models.user import User
-from schemas.user import UserCreate, UserRegister
+from schemas.user import UserModel, UserRegisterRequest
 
 
-async def create_user(user_data: UserRegister, session: AsyncSession):
+async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
     """
     Create a new user in the database.
+
+
     """
     try:
+        # check if user exists
+        user = await UserRepository.get_by_email(user_data.email, session)
+
+        if user is not None:
+            raise AlreadyExistsError("user")
+
         # hide password!
         password_hashed = get_password_hash(user_data.password)
-        user_data_db = UserCreate(username=user_data.username,
-                                  password_hashed=password_hashed,
-                                  email=user_data.email)
-        user = await UserCRUD.create(user_data_db, session=session)
+
+        user_data_db = UserModel(username=user_data.username,
+                                 password_hashed=password_hashed,
+                                 email=user_data.email)
+        user = await UserRepository.create(user_data_db, session=session)
         await session.commit()
         return user
-    except Exception as exc:
+    except Exception:
         await session.rollback()
-        raise Exception from exc
-
-
-async def is_user_registered(user_data: UserRegister, session: AsyncSession) -> bool:
-    """Checks if the user already has an account"""
-    user = await UserCRUD.get_by_email(user_data.email, session)
-    return user is not None
+        raise
 
 
 async def authenticate_user(email: str, password: str, session: AsyncSession) -> User:
     """Checks user data (email, password)"""
-    user = await UserCRUD.get_by_email(email, session)
+    user = await UserRepository.get_by_email(email, session)
+
+    # check if user exists
+    if user is None:
+        raise NotFoundError("No user with this email")
+
     # check password
     if not verify_password(password, user.password_hashed):
-        raise Exception
+        raise InvalidLoginInfoError("Email or password is incorrect")
 
     return user

@@ -1,21 +1,27 @@
 """Security related features."""
+import uuid
+from datetime import datetime, timedelta, timezone
+import hashlib
+import base64
+from secrets import token_urlsafe
 from jose import jwt
 from pwdlib import PasswordHash
-from config import api_config
-from datetime import datetime, timedelta, timezone
+from configs import api_config
 
 
 # password hashing context
 password_context = PasswordHash.recommended()
 
 
-def create_access_token(user_id: int, data: dict | None = None) -> str:
+def create_access_token(user_id: uuid.UUID, data: dict | None = None) -> str:
     """
-    Generates a JWT access token
+    Generates a JWT access token.
 
-    Uses user ID for sub claim
+    Uses user ID for sub claim.
 
-    Uses settings stated in the API config
+    Uses settings stated in the API config.
+    
+    You can optionally include additional data in the token by passing a dictionary to the `data` parameter.
     """
     to_encode = data.copy() if data else {}
     expire = datetime.now(timezone.utc) + \
@@ -28,10 +34,30 @@ def create_access_token(user_id: int, data: dict | None = None) -> str:
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
-    """Checks if password matches hashed password"""
+    """Checks if password matches hashed password."""
     return password_context.verify_and_update(password, hashed_password)[0]
 
 
 def get_password_hash(password: str) -> str:
-    """Hashes password"""
+    """Hashes password."""
     return password_context.hash(password)
+
+
+def generate_link_token(byte_length: int = 32) -> str:
+    """
+    Generates URL-friendly random token for links.
+    
+    Use as a basic method to generate tokens for links.
+    """
+    return token_urlsafe(byte_length)
+
+
+def hash_link_token(token: str) -> str:
+    """
+    Hashes link token.
+    
+    Uses SHA-256 and encodes the hash in URL-safe base64.
+    """
+    hash_object = hashlib.sha256(token.encode())
+    token_hash = base64.urlsafe_b64encode(hash_object.digest()).decode()
+    return token_hash

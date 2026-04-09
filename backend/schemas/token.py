@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class Token(BaseModel):
+class TokenResponse(BaseModel):
+    """API response schema."""
     access_token: str
     token_type: str = 'bearer'
