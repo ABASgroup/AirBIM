@@ -1,4 +1,5 @@
-"""Base Database Access Object for CRUD operations."""
+"""Base repository for CRUD operations."""
+import uuid
 from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,9 +10,9 @@ from models.base import BaseModel
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
-class BaseCRUD(Generic[ModelT]):
+class BaseRepository(Generic[ModelT]):
     """
-    Base DAO class for CRUD operations for any model.
+    Base repository class for CRUD operations for any model.
 
     Override '_model' property to use with some specific model.
     """
@@ -43,11 +44,11 @@ class BaseCRUD(Generic[ModelT]):
         return entries
 
     @classmethod
-    async def get_by_id(cls, entry_id: int, session: AsyncSession) -> None | ModelT:
+    async def get_by_id(cls, entry_id: uuid.UUID, session: AsyncSession) -> None | ModelT:
         """Get a model entry by the ID/primary key.
 
         Args:
-            entry_id (`int`): entry's ID OR primary key
+            entry_id (`uuid.UUID`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
         """
         entry = await session.get(cls._model, entry_id)
@@ -56,14 +57,14 @@ class BaseCRUD(Generic[ModelT]):
     @classmethod
     async def update_by_id(
         cls,
-        entry_id: int,
+        entry_id: uuid.UUID,
         update_data: BaseScheme,
         session: AsyncSession
     ):
         """Update an entry with new data by its ID/primary key.
 
         Args:
-            entry_id (`int`): entry's ID OR primary key
+            entry_id (`uuid.UUID`): entry's ID OR primary key
             update_data (`pydantic.BaseScheme`): a pydantic scheme instance with new data
             session (`AsyncSession`): an asynchronous database session
         """
@@ -85,11 +86,11 @@ class BaseCRUD(Generic[ModelT]):
         return entry
 
     @classmethod
-    async def delete_by_id(cls, entry_id: int, session: AsyncSession) -> ModelT | None:
+    async def delete_by_id(cls, entry_id: uuid.UUID, session: AsyncSession) -> ModelT | None:
         """Delete an entry by its ID/primary key.
 
         Args:
-            entry_id (`int`): entry's ID OR primary key
+            entry_id (`uuid.UUID`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
         """
         entry = await session.get(cls._model, entry_id)

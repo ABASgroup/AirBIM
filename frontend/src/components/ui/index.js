@@ -1,6 +1,7 @@
 export { ActionMenu } from "./ActionMenu";
 export { Dropdown } from "./Dropdown";
 export { FilledButton } from "./FilledButton";
+export { FileSelect } from "./FileSelect";
 export { Input } from "./Input";
 export { Logo } from "./Logo";
 export { Modal } from "./Modal";

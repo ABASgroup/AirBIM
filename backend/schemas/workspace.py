@@ -1,21 +1,19 @@
 from pydantic import BaseModel
-from datetime import datetime
 from models.workspace import WorkspaceType
+from .base import Response
 
 
 class WorkspaceCreateRequest(BaseModel):
     name: str
 
 
-class WorkspaceCreate(BaseModel):
+class WorkspacePublic(Response):
+    """API Response schema."""
     name: str
     type: WorkspaceType
 
 
-class WorkspacePublic(BaseModel):
-    """API Response schema"""
-    id: int
+class WorkspaceModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
     name: str
     type: WorkspaceType
-    created_at: datetime
-    updated_at: datetime

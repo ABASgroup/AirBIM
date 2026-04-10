@@ -1,24 +1,23 @@
+import uuid
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.stage import StagePublic
 from storage import Storage
 from schemas.files import (
-    FileLinkPublic,
+    FileLinkResponse,
     FileUploadConfirmRequest,
     FileUploadLinkRequest,
-    PointCloudFilePublic,
+    PointCloudFileResponse,
 )
 from services import stage as stage_service
 from services.file import FileService
 from roles import Permission
-from fastapi import APIRouter, Depends
 
 from dependencies import (
     get_db_session,
     require_stage_permission,
     get_storage
 )
-
-from roles import Permission
 
 
 router = APIRouter(prefix="/stages", tags=["project stages"])
@@ -30,7 +29,7 @@ router = APIRouter(prefix="/stages", tags=["project stages"])
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_VIEW))],
 )
-async def get_stage(stage_id: int, session: AsyncSession = Depends(get_db_session)):
+async def get_stage(stage_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)):
     stage = await stage_service.get_stage(stage_id, session=session)
     return stage
 
@@ -42,13 +41,13 @@ async def get_stage(stage_id: int, session: AsyncSession = Depends(get_db_sessio
         Depends(require_stage_permission(Permission.STAGE_DELETE))],
 )
 async def delete_stage(
-    stage_id: int,
+    stage_id: uuid.UUID,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)
 ):
     """
     Delete stage and all related data and files.
-    
+
     Requires permission.
     """
     stage = await stage_service.delete_stage(stage_id, session=session, storage=storage)
@@ -57,18 +56,18 @@ async def delete_stage(
 
 @router.post(
     "/{stage_id}/files/point_clouds/upload",
-    response_model=FileLinkPublic,
+    response_model=FileLinkResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
 )
 async def get_point_cloud_upload_link(
-    stage_id: int,
+    stage_id: uuid.UUID,
     file_data: FileUploadLinkRequest,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)
 ):
     """
-    Get a temporary link to upload file.
+    Get a temporary link to upload point cloud file.
 
     Use this link to upload file.
 
@@ -85,7 +84,7 @@ async def get_point_cloud_upload_link(
         session=session
     )
 
-    link_data = FileLinkPublic(
+    link_data = FileLinkResponse(
         key=key,
         url=url,
         filename=file_data.filename,
@@ -98,12 +97,12 @@ async def get_point_cloud_upload_link(
 
 @router.post(
     "/{stage_id}/files/point_clouds/confirm",
-    response_model=PointCloudFilePublic,
+    response_model=PointCloudFileResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
 )
 async def confirm_point_cloud_upload(
-    stage_id: int,
+    stage_id: uuid.UUID,
     file_data: FileUploadConfirmRequest,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)

@@ -1,31 +1,43 @@
+import uuid
 from pydantic import BaseModel
-from .user import UserPublic
-from roles import Role, Permission
-from datetime import datetime
+from roles import Permission, Role
+from .base import Response
+from .user import UserResponse
 
 
-class MembershipCreate(BaseModel):
-    workspace_id: int
-    user_id: int
+class MembershipModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
+    workspace_id: uuid.UUID
+    user_id: uuid.UUID
     role: Role = Role.MEMBER
 
 
-class MembershipPublic(BaseModel):
-    """API Response schema"""
-    workspace_id: int
-    user_id: int
+class MembershipPublic(Response):
+    """API Response schema."""
+    workspace_id: uuid.UUID
+    user_id: uuid.UUID
     role: Role
 
 
-class MembershipUserPublic(BaseModel):
-    """API Response schema"""
-    user: UserPublic
-    role: Role
-    workspace_id: int
+class MembershipUserResponse(Response):
+    """
+    API Response schema.
 
-class MembershipPermissionsPublic(BaseModel):
-    """API Response schema"""
-    workspace_id: int
-    user_id: int
+    Contains user information in addition to membership info.
+    """
+    user: UserResponse
+    role: Role
+    workspace_id:  uuid.UUID
+
+
+class MembershipPermissionsResponse(Response):
+    """
+    API Response schema.
+
+    Contains specified permissions in addition to membership 
+    info according to the user's role.
+    """
+    workspace_id: uuid.UUID
+    user_id: uuid.UUID
     role: Role
     permissions: list[Permission]
