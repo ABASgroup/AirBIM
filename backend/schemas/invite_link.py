@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-from roles import InviteableRole, Role
+from core.roles import InviteableRole, Role
 
 
 class InviteLinkRequest(BaseModel):

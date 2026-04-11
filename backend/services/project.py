@@ -1,8 +1,8 @@
 """Service layer logic for Project."""
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
-from exceptions.exceptions import NotFoundError
+from infrastructure.storage import Storage
+from core.exceptions.exceptions import NotFoundError
 from repositories.project import ProjectRepository
 from models.project import Project
 from schemas.project import ProjectModel, ProjectUpdate

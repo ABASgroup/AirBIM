@@ -2,12 +2,12 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from roles import Role, InviteableRole
-from exceptions.exceptions import InvalidInvitationError
+from core.roles import Role, InviteableRole
+from core.exceptions.exceptions import InvalidInvitationError
 from repositories.invite_link import InviteLinkRepository
 from models.invite_link import InviteLink
 from schemas.invite_link import InviteLinkModel, InviteLinkResponse
-from security import generate_link_token, hash_link_token
+from core.security import generate_link_token, hash_link_token
 
 
 async def generate_invite_link(

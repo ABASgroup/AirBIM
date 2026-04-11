@@ -5,7 +5,7 @@ from dependencies import (
     get_db_session,
     get_current_user_id,
 )
-from roles import get_role_permissions
+from core.roles import get_role_permissions
 from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,

@@ -1,11 +1,11 @@
 """Service layer logic for Workspace."""
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
+from infrastructure.storage import Storage
 from services.file import FileService
 from repositories.workspace import WorkspaceRepository
 from repositories.membership import MembershipRepository
-from exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
+from core.exceptions.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
 from schemas.workspace import WorkspaceModel
 

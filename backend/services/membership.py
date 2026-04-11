@@ -1,11 +1,11 @@
 """Service layer logic for Membership."""
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from roles import Role
+from core.roles import Role
 from repositories.membership import MembershipRepository
 from models.membership import Membership
 from schemas.membership import MembershipModel
-from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
+from core.exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
 
 
 async def get_workspace_members(workspace_id: uuid.UUID, session: AsyncSession) -> list[Membership]:

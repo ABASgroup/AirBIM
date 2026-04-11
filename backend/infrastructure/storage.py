@@ -2,7 +2,7 @@
 from typing import BinaryIO
 import boto3
 from botocore.exceptions import ClientError
-from configs import storage_config
+from core.configs.storage import storage_config
 
 
 class Storage:

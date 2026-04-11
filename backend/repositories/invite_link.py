@@ -3,7 +3,7 @@ from .base import BaseRepository
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from roles import Role
+from core.roles import Role
 
 
 class InviteLinkRepository(BaseRepository[InviteLink]):

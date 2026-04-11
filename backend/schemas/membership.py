@@ -1,6 +1,6 @@
 import uuid
 from pydantic import BaseModel
-from roles import Permission, Role
+from core.roles import Permission, Role
 from .base import Response
 from .user import UserResponse
 

@@ -1,14 +1,14 @@
 import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
+from infrastructure.storage import Storage
 from dependencies import (
     get_db_session,
     get_current_user_id,
     get_storage,
     require_workspace_permission,
 )
-from roles import Role, get_role_permissions, Permission
+from core.roles import Role, get_role_permissions, Permission
 from models.membership import Membership
 from models.workspace import WorkspaceType
 from schemas.invite_link import InviteLinkRequest, InviteLinkResponse

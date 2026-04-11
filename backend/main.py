@@ -5,14 +5,14 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from configs import api_config
-from exceptions.handlers import add_exception_handlers
+from core.configs.api import api_config
+from core.exceptions.handlers import add_exception_handlers
 
-from routers.auth import router as auth_router
-from routers.workspace import router as workspace_router
-from routers.project import router as project_router
-from routers.stage import router as stage_router
-from routers.invite import router as invite_router
+from api.routers.auth import router as auth_router
+from api.routers.workspace import router as workspace_router
+from api.routers.project import router as project_router
+from api.routers.stage import router as stage_router
+from api.routers.invite import router as invite_router
 
 
 @asynccontextmanager

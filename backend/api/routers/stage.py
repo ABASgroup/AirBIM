@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.stage import StagePublic
-from storage import Storage
+from infrastructure.storage import Storage
 from schemas.files import (
     FileLinkResponse,
     FileUploadConfirmRequest,
@@ -11,7 +11,7 @@ from schemas.files import (
 )
 from services import stage as stage_service
 from services.file import FileService
-from roles import Permission
+from core.roles import Permission
 
 from dependencies import (
     get_db_session,

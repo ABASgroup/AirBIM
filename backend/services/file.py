@@ -8,12 +8,12 @@ from schemas.files import (
     FileUploadLinkRequest
 )
 
-from exceptions.exceptions import NotFoundError
+from core.exceptions.exceptions import NotFoundError
 
 from models.files import PointCloudFile, BimFile, FileStatus
 
 from repositories.files import PointCloudFileRepository, BimFileRepository
-from storage import Storage
+from infrastructure.storage import Storage
 
 
 class FileService:

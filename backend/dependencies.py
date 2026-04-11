@@ -4,16 +4,16 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 import uuid
-from storage import Storage
-from configs import api_config
-from roles import ROLE_PERMISSIONS, Permission
+from infrastructure.storage import Storage
+from core.configs.api import api_config
+from core.roles import ROLE_PERMISSIONS, Permission
 
 from services.membership import get_membership
 from services.stage import get_stage_with_project
 from services.project import get_project
 
-from database import session_maker
-from exceptions.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
+from infrastructure.database import session_maker
+from core.exceptions.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
