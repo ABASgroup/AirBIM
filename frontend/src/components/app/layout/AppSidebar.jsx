@@ -97,7 +97,11 @@ export const AppSidebar = () => {
           </FilledButton>
         </Dropdown>
       </div>
-      <CreateWorkspaceForm isOpen={isCreateWorkspaceModalOpen} onClose={() => setIsCreateWorkspaceModalOpen(false)} onCreate={handleCreateWorkspace} />
+      <CreateWorkspaceForm
+        isOpen={isCreateWorkspaceModalOpen}
+        onClose={() => setIsCreateWorkspaceModalOpen(false)}
+        onCreate={handleCreateWorkspace}
+      />
     </aside>
   );
 };

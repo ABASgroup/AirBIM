@@ -8,3 +8,4 @@ export { Modal } from "./Modal";
 export { Select } from "./Select";
 export { TabPanel } from "./TabPanel";
 export { UnfilledButton } from "./UnfilledButton";
+export { IfcViewer } from "./IfcViewer";

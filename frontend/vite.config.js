@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-// https://vite.dev/config/
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['web-ifc']
+  },
   plugins: [react(), tailwindcss()],
   server: {
     host: '0.0.0.0',
