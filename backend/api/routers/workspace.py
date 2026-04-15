@@ -13,11 +13,11 @@ from models.membership import Membership
 from models.workspace import WorkspaceType
 from schemas.invite_link import InviteLinkRequest, InviteLinkResponse
 from schemas.project import ProjectModel, ProjectCreateRequest, ProjectResponse
-from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspacePublic
+from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspaceResponse
 from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,
-    MembershipPublic,
+    MembershipResponse,
     MembershipUserResponse
 )
 from services import project as project_service
@@ -39,7 +39,7 @@ async def access(
     Get current user access, including permissions and role in the workspace.
 
     Use if you need to specify permissions.
-    
+
     If user is not a member of the workspace, returns an error.
     """
     membership = await membership_service.get_membership(
@@ -80,7 +80,7 @@ async def get_workspace_members(
 
 @router.delete(
     "/{workspace_id}/memberships/{user_id}",
-    response_model=MembershipPublic,
+    response_model=MembershipResponse,
     dependencies=[
         Depends(require_workspace_permission(Permission.MEMBERS_REMOVE))],
 )
@@ -101,7 +101,7 @@ async def remove_user_from_workspace(
     return removed_membership
 
 
-@router.get("/my", response_model=list[WorkspacePublic])
+@router.get("/my", response_model=list[WorkspaceResponse])
 async def get_user_workspaces(
     user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
@@ -119,7 +119,7 @@ async def get_user_workspaces(
 
 @router.get(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_VIEW))],
 )
@@ -134,7 +134,7 @@ async def get_workspace(
     return workspaces
 
 
-@router.post("", response_model=WorkspacePublic)
+@router.post("", response_model=WorkspaceResponse)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     user_id: uuid.UUID = Depends(get_current_user_id),
@@ -142,7 +142,7 @@ async def create_workspace(
 ):
     """
     Creates a new workspace, making current user its owner.
-    
+
     You can create only team workspace, personal workspace is created automatically during registration.
     """
     workspace = WorkspaceModel(
@@ -160,7 +160,7 @@ async def create_workspace(
 
 @router.delete(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_DELETE))],
 )
@@ -197,7 +197,7 @@ async def get_invite_link(
     Get invite link for the workspace associated with that role.
 
     Use if you need a new link.
-    
+
     Always save token from the response, otherwise it will be lost.
     """
     link = await invite_link_service.generate_invite_link(

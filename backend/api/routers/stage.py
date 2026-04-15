@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.stage import StagePublic
+from schemas.stage import StageResponse
 from infrastructure.storage import Storage
 from schemas.files import (
     FileLinkResponse,
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/stages", tags=["project stages"])
 
 @router.get(
     "/{stage_id}",
-    response_model=StagePublic,
+    response_model=StageResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_VIEW))],
 )
@@ -36,7 +36,7 @@ async def get_stage(stage_id: uuid.UUID, session: AsyncSession = Depends(get_db_
 
 @router.delete(
     "/{stage_id}",
-    response_model=StagePublic,
+    response_model=StageResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_DELETE))],
 )
@@ -102,7 +102,6 @@ async def get_point_cloud_upload_link(
         Depends(require_stage_permission(Permission.FILES_UPLOAD_CLOUDS))],
 )
 async def confirm_point_cloud_upload(
-    stage_id: uuid.UUID,
     file_data: FileUploadConfirmRequest,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)
@@ -115,7 +114,6 @@ async def confirm_point_cloud_upload(
     Requires permission.
     """
     file = await FileService.confirm_point_cloud_upload(
-        stage_id,
         file_data,
         storage=storage,
         session=session

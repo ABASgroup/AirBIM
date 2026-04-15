@@ -6,7 +6,7 @@ from services import project as project_service
 from services import stage as stage_service
 from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
-from schemas.stage import StageModel, StagePublic
+from schemas.stage import StageModel, StageResponse
 from schemas.files import (
     FileUploadLinkRequest,
     FileUploadConfirmRequest,
@@ -84,7 +84,7 @@ async def delete_project(
 
 @router.get(
     "/{project_id}/stages",
-    response_model=list[StagePublic],
+    response_model=list[StageResponse],
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_VIEW))],
 )
@@ -104,7 +104,7 @@ async def get_project_stages(
 
 @router.post(
     "/{project_id}/stages",
-    response_model=StagePublic,
+    response_model=StageResponse,
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_CREATE))],
 )
@@ -169,7 +169,6 @@ async def get_bim_upload_link(
         Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
 )
 async def confirm_bim_upload(
-    project_id: uuid.UUID,
     file_data: FileUploadConfirmRequest,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)

@@ -12,7 +12,7 @@ class MembershipModel(BaseModel):
     role: Role = Role.MEMBER
 
 
-class MembershipPublic(Response):
+class MembershipResponse(Response):
     """API Response schema."""
     workspace_id: uuid.UUID
     user_id: uuid.UUID

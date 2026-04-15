@@ -18,4 +18,5 @@ celery_app = Celery(
 celery_app.conf.task_queues = (
     Queue("default"),
     Queue("heavy"),
+    Queue("converter")
 )

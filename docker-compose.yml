@@ -95,6 +95,23 @@ services:
       database:
         condition: service_healthy
 
+  worker-converter:
+    container_name: airbim-worker-converter
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "worker", "-l", "info", "-Q", "converter", "--concurrency=8"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.converter
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
   worker-heavy:
     container_name: airbim-worker-heavy
     command: ["celery", "-A", "infrastructure.celery:celery_app", "worker", "-l", "info", "-Q", "heavy", "--concurrency=8"]

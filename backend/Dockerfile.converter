@@ -1,0 +1,42 @@
+FROM python:3.12-slim AS potree-builder
+
+ARG POTREE_CONVERTER_REF=2.1.1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        libtbb-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "${POTREE_CONVERTER_REF}" https://github.com/potree/PotreeConverter.git /tmp/PotreeConverter \
+    && cmake -S /tmp/PotreeConverter -B /tmp/PotreeConverter/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /tmp/PotreeConverter/build --target PotreeConverter -j"$(nproc)"
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libtbb12 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /opt/potreeconverter
+
+COPY --from=potree-builder /tmp/PotreeConverter/build/PotreeConverter /opt/potreeconverter/PotreeConverter
+COPY --from=potree-builder /tmp/PotreeConverter/build/resources /opt/potreeconverter/resources
+COPY --from=potree-builder /tmp/PotreeConverter/build/licenses /opt/potreeconverter/licenses
+
+RUN ln -s /opt/potreeconverter/PotreeConverter /usr/local/bin/PotreeConverter
+
+ENV POTREE_CONVERTER_HOME=/opt/potreeconverter
+
+EXPOSE 8000
+
+CMD ["sh", "entrypoint.sh"]
