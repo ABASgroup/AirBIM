@@ -1,7 +1,7 @@
 // Routing for the app
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import { AppLayout } from "@app/layout"
-import { LandingPage, LoginPage, RegistrationPage, DashboardPage, SettingsPage, WorkspacePage, ProjectPage } from "@/pages"
+import { AppLayout, ExternalLayout } from "@app/layout"
+import { LandingPage, LoginPage, RegistrationPage, DashboardPage, SettingsPage, WorkspacePage, ProjectPage, InvitePage } from "@/pages"
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("access_token");
@@ -24,6 +24,22 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        
+        <Route element={<ExternalLayout />}>
+          <Route path="invites/:token" element={<InvitePage />} />
+
+          <Route path="/login" element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } />
+
+          <Route path="/register" element={
+            <PublicRoute>
+              <RegistrationPage />
+            </PublicRoute>
+          } />
+        </Route>
 
         <Route path="/login" element={
           <PublicRoute>
@@ -34,6 +50,11 @@ function App() {
           <PublicRoute>
             <RegistrationPage />
           </PublicRoute>} />
+
+        <Route path="invites/:token" element={
+          <ProtectedRoute>
+            <InvitePage />
+          </ProtectedRoute>} />
 
         <Route path="/app" element={
           <ProtectedRoute>

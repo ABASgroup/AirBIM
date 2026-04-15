@@ -5,7 +5,9 @@ export const Modal = ({ children, title, showBackdrop, onClose }) => {
       {showBackdrop && <div className="absolute inset-0 bg-black/30" />}
       <div className="relative min-w-xl bg-surface backdrop-blur-xl rounded-[5px] 
       border-primary-color border-2 p-10 shadow-xl pointer-events-auto
-      [&_p]:text-lg [&_p]:m-2">
+      [&_p]:text-lg [&_p]:m-2 
+      [&_label]:text-xs [&_label]:font-bold [&_label]:text-mute-text-color 
+      [&_label]:uppercase [&_label]:tracking-widest [&_label]:block [&_label]:mb-2">
         {onClose && (
           <button
             onClick={onClose}

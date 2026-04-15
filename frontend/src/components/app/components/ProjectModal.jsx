@@ -69,7 +69,7 @@ const ProjectModalContent = ({ onClose, onSubmit, mode, project }) => {
   return (
     <Modal title={title} showBackdrop={true}>
       <div>
-        <p>Название проекта</p>
+        <label>Название проекта</label>
         <Input
           placeholder="Название проекта"
           value={formState.name}
@@ -77,7 +77,7 @@ const ProjectModalContent = ({ onClose, onSubmit, mode, project }) => {
         />
       </div>
       <div>
-        <p>Описание проекта</p>
+        <label>Описание проекта</label>
         <Input
           placeholder="Описание проекта"
           value={formState.description}
@@ -88,7 +88,7 @@ const ProjectModalContent = ({ onClose, onSubmit, mode, project }) => {
 
       {mode === "edit" && (
         <div>
-          <p>Статус проекта</p>
+          <label>Статус проекта</label>
           <Select
             value={formState.status}
             onChange={setStatus}
@@ -100,7 +100,7 @@ const ProjectModalContent = ({ onClose, onSubmit, mode, project }) => {
         </div>
       ) || (
           <div>
-            <p>Файл плана (BIM)</p>
+            <label>Файл плана (BIM)</label>
             <FileSelect
               value={formState.projectFile}
               onChange={setProjectFile}

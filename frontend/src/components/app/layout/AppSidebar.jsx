@@ -25,12 +25,6 @@ export const AppSidebar = () => {
     setWorkspaces(res.data);
     setIsCreateWorkspaceModalOpen(false);
   };
-  const trigger = (
-    <div className="h-15 px-4 flex items-center justify-between cursor-pointer border-border-color border-b-3">
-      <span className="truncate">{currentWorkspace?.name || "Загрузка..."}</span>
-      <i className={`fa-solid fa-chevron-down transition-transform text-text-color ${isOpen ? "rotate-180" : ""}`}></i>
-    </div>
-  );
   const handleDeleteWorkspace = async (id) => {
     await deleteWorkspace(id);
     const res = await getWorkspaces();
@@ -41,7 +35,12 @@ export const AppSidebar = () => {
   return (
     <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3">
       <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
-        <Dropdown trigger={trigger} isOpen={isOpen} onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}>
+        <Dropdown
+          label={currentWorkspace?.name || "Загрузка..."}
+          isOpen={isOpen}
+          onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}
+          className="h-15 px-4"
+        >
           {workspaces.map((ws) => (
             <div
               key={ws.id}

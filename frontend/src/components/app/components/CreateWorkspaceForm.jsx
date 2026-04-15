@@ -20,7 +20,7 @@ export const CreateWorkspaceForm = ({ isOpen, onClose, onCreate }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <Modal title="Создать новое пространство" showBackdrop>
         <div>
-          <p>Название пространства</p>
+          <label>Название пространства</label>
           <Input
             type="text"
             placeholder="Название пространства"

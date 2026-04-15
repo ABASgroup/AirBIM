@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getWorkspace } from "@/api/workspace";
 import { WorkspaceTabPanel } from "@app/components/WorkspaceTabPanel";
+import { useWorkspace } from "@/context/WorkspaceContext";
 
 function WorkspacePage() {
     const { workspaceId } = useParams();
     const [workspace, setWorkspace] = useState(null);
+    const { switchWorkspace } = useWorkspace();
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -14,6 +16,7 @@ function WorkspacePage() {
         getWorkspace(workspaceId)
             .then(res => {
                 setWorkspace(res.data);
+                switchWorkspace(res.data.id);
                 setLoading(false);
             })
             .catch(err => {
@@ -23,7 +26,7 @@ function WorkspacePage() {
                 setLoading(false);
             });
 
-    }, [workspaceId]);
+    }, [workspaceId, switchWorkspace]);
 
     if (loading) return <div>Загрузка...</div>;
 
