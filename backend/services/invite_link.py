@@ -3,10 +3,12 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from core.roles import Role, InviteableRole
-from core.exceptions.exceptions import InvalidInvitationError
+from core.exceptions.exceptions import InvalidInvitationError, NotFoundError, ProhibitedWorkspaceActionError
 from repositories.invite_link import InviteLinkRepository
+from repositories.workspace import WorkspaceRepository
 from models.invite_link import InviteLink
-from schemas.invite_link import InviteLinkModel, InviteLinkResponse, NewInviteLinkResponse
+from models.workspace import WorkspaceType
+from schemas.invite_link import InviteLinkModel
 from core.security import generate_link_token, hash_link_token
 
 
@@ -19,13 +21,23 @@ async def generate_invite_link(
     """
     Generates new unique role invite link.
 
+    You can't generate link for personal workspaces.
+
     DB requires all links to be unique, tries to generate token again
     if there :class:`~sqlalchemy.exc.IntegrityError`.
-    
+
     Returns tuple of invite link and token (not hashed, for client).
     """
     while True:
         try:
+            # check workspace type first
+            workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
+            if workspace is None:
+                raise NotFoundError("Workspace not found")
+            if workspace.type == WorkspaceType.PERSONAL:
+                raise ProhibitedWorkspaceActionError(
+                    "creating invite link for a personal workspace")
+
             # hide token!
             token = generate_link_token()
             token_hashed = hash_link_token(token)
