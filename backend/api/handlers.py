@@ -1,11 +1,10 @@
-"""FastAPI"""
+"""FastAPI exception handlers."""
 import logging
 
-from fastapi import status
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from .exceptions import *
+from core.exceptions.exceptions import *
 
 
 logger = logging.getLogger(__name__)
@@ -77,6 +76,14 @@ async def prohibited_workspace_action_handler(request: Request, exc: ProhibitedW
     )
 
 
+async def membership_violation_handler(request: Request, exc: MembershipViolationError):
+    logger.exception(f"App exception: {exc}")
+    return JSONResponse(
+        status_code=409,
+        content={"message": exc.message}
+    )
+
+
 def add_exception_handlers(app: FastAPI):
     """Registers exceptions handlers"""
     app.add_exception_handler(Exception, handle_unhandled_exception)
@@ -91,3 +98,5 @@ def add_exception_handlers(app: FastAPI):
                               invalid_login_info_handler)
     app.add_exception_handler(
         ProhibitedWorkspaceActionError, prohibited_workspace_action_handler)
+    app.add_exception_handler(MembershipViolationError,
+                              membership_violation_handler)

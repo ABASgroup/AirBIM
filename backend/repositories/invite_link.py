@@ -1,4 +1,6 @@
 import uuid
+
+from sqlalchemy.orm import selectinload
 from .base import BaseRepository
 from models.invite_link import InviteLink
 from sqlalchemy import select, delete
@@ -12,7 +14,7 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
 
     @classmethod
     async def delete_by_workspace_id(cls, workspace_id: uuid.UUID, session: AsyncSession):
-        """Delete all invite links for the workspace"""
+        """Delete all invite links for the workspace."""
         stmt = delete(cls._model).where(
             cls._model.workspace_id == workspace_id)
         await session.execute(stmt)
@@ -20,7 +22,7 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
     @classmethod
     async def get_by_workspace_id_and_role(
             cls, workspace_id: uuid.UUID, role: Role, session: AsyncSession) -> InviteLink | None:
-        """Get invite link by workspace ID and role"""
+        """Get invite link by workspace ID and role."""
         result = await session.execute(
             select(cls._model)
             .where(cls._model.workspace_id == workspace_id)
@@ -30,8 +32,12 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
 
     @classmethod
     async def get_by_token(cls, token_hashed: str, session: AsyncSession) -> InviteLink | None:
-        """Get invite link using its token"""
-        stmt = select(cls._model).where(
+        """Get invite link using its token."""
+        stmt = select(cls._model).options(
+            selectinload(
+                cls._model.created_by, cls._model.workspace
+            )
+        ).where(
             cls._model.token_hashed == token_hashed)
         result = await session.execute(stmt)
         link = result.scalar_one_or_none()

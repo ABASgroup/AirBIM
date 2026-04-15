@@ -190,7 +190,7 @@ async def confirm_bim_upload(
 
 
 @router.delete(
-    "/{project_id}/files/bim/confirm",
+    "/{project_id}/files/bim",
     response_model=BIMFileResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_DELETE_BIM))],
@@ -216,3 +216,38 @@ async def delete_bim_file(
     )
 
     return file
+
+
+@router.post(
+    "/{project_id}/files/bim/download",
+    response_model=FileLinkResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_DOWNLOAD))],
+)
+async def get_bim_download_link(
+    project_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Get a temporary link to download BIM file.
+
+    Use this link to download file.
+
+    Requires permission.
+    """
+    url, file = await FileService.generate_bim_download_link(
+        project_id=project_id,
+        storage=storage,
+        session=session
+    )
+
+    link_data = FileLinkResponse(
+        key=file.key,
+        url=url,
+        filename=file.filename,
+        size=file.size,
+        content_type=file.content_type
+    )
+
+    return link_data

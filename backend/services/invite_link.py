@@ -6,7 +6,7 @@ from core.roles import Role, InviteableRole
 from core.exceptions.exceptions import InvalidInvitationError
 from repositories.invite_link import InviteLinkRepository
 from models.invite_link import InviteLink
-from schemas.invite_link import InviteLinkModel, InviteLinkResponse
+from schemas.invite_link import InviteLinkModel, InviteLinkResponse, NewInviteLinkResponse
 from core.security import generate_link_token, hash_link_token
 
 
@@ -15,12 +15,14 @@ async def generate_invite_link(
     creator_id: uuid.UUID,
     role: InviteableRole,
     session: AsyncSession
-) -> InviteLinkResponse:
+) -> tuple[InviteLink, str]:
     """
     Generates new unique role invite link.
 
     DB requires all links to be unique, tries to generate token again
     if there :class:`~sqlalchemy.exc.IntegrityError`.
+    
+    Returns tuple of invite link and token (not hashed, for client).
     """
     while True:
         try:
@@ -33,14 +35,13 @@ async def generate_invite_link(
                                                creator_id=creator_id,
                                                role=Role(role))
 
-            await InviteLinkRepository.create(invite_link_data, session=session)
+            link = await InviteLinkRepository.create(invite_link_data, session=session)
 
-            # output public information
-            # token is not hashed, we need to output it first
-            link_out = InviteLinkResponse(
-                token=token, workspace_id=workspace_id, role=role)
             await session.commit()
-            return link_out
+            link = await InviteLinkRepository.refresh(link, session=session, relations=["created_by", "workspace"])
+
+            # token is not hashed, ALWAYS return token
+            return link, token
         except IntegrityError:
             # the token was not unique
             # strange, but let's
@@ -64,7 +65,7 @@ async def revoke_links(workspace_id: uuid.UUID, session: AsyncSession):
         raise
 
 
-async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkResponse:
+async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
     """
     Validates invite link using its token.
 
@@ -78,14 +79,11 @@ async def validate_invite_link(token: str, session: AsyncSession) -> InviteLinkR
 
         # link is not found, token is invalid
         if link is None:
-            raise InvalidInvitationError("Invite link is invalid: token has not passed")
+            raise InvalidInvitationError(
+                "Invite link is invalid: token has not passed")
 
         # still want to send back not hashed token
-        public_link = InviteLinkResponse(
-            token=token,
-            workspace_id=link.workspace_id,
-            role=InviteableRole(link.role))
-        return public_link
+        return link
     except Exception:
         await session.rollback()
         raise

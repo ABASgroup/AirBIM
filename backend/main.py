@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from core.configs.api import api_config
-from core.exceptions.handlers import add_exception_handlers
+from api.handlers import add_exception_handlers
 
 from api.routers.auth import router as auth_router
 from api.routers.workspace import router as workspace_router

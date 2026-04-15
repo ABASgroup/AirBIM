@@ -19,6 +19,13 @@ class MembershipResponse(Response):
     role: Role
 
 
+class MembershipUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    workspace_id: uuid.UUID | None = None
+    user_id: uuid.UUID | None = None
+    role: Role | None = None
+
+
 class MembershipUserResponse(Response):
     """
     API Response schema.

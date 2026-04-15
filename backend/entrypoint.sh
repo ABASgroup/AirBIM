@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-# celery worker
-echo "Starting Celery..."
-
 echo "Running database migrations..."
 alembic upgrade head
 

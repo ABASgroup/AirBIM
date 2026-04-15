@@ -78,6 +78,36 @@ class FileService:
             raise
 
     @classmethod
+    async def generate_bim_download_link(
+        cls,
+        project_id: uuid.UUID,
+        session: AsyncSession,
+        storage: Storage
+    ) -> tuple[str, BimFile]:
+        """
+        Creates presigned URL for BIM download.
+
+        Returns url and file key.
+        """
+        try:
+            # get the key first
+            file = await BimFileRepository.get_by_project_id(
+                project_id=project_id,
+                session=session
+            )
+
+            if file is None:
+                raise NotFoundError(
+                    "BIM file for this project is not found")
+
+            link = storage.get_download_link(file.key)
+
+            return link, file
+        except Exception:
+            await session.rollback()
+            raise
+
+    @classmethod
     async def generate_bim_upload_link(
         cls,
         workspace_id: uuid.UUID,

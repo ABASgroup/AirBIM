@@ -10,6 +10,7 @@ from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,
 )
+from schemas.invite_link import InviteLinkResponse
 from services import membership as membership_service
 from services import invite_link as invite_link_service
 
@@ -17,7 +18,7 @@ from services import invite_link as invite_link_service
 router = APIRouter(prefix="/invites", tags=["workspace invitations"])
 
 
-@router.get("/{token}")
+@router.get("/{token}", response_model=InviteLinkResponse)
 async def validate_invite_link(
     token: str, session: AsyncSession = Depends(get_db_session)
 ):
@@ -48,7 +49,9 @@ async def accept_link_invitation(
     link = await invite_link_service.validate_invite_link(token, session=session)
 
     membership_model = MembershipModel(
-        workspace_id=link.workspace_id, user_id=user_id, role=link.role
+        workspace_id=link.workspace_id,
+        user_id=user_id,
+        role=link.role
     )
 
     membership = await membership_service.create_membership(membership_model, session)
