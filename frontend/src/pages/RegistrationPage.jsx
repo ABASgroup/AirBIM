@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Modal, FilledButton, Input } from "@ui";
+import { acceptInviteLink } from "@/api/invites";
 import api from "../api/index";
 
 function RegistrationPage() {
@@ -26,6 +27,11 @@ function RegistrationPage() {
       });
 
       localStorage.setItem("access_token", response.data.access_token);
+      const pendingInvite = sessionStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        await acceptInviteLink(pendingInvite);
+        sessionStorage.removeItem("pendingInvite");
+      }
       navigate("/app/dashboard");
     } catch (err) {
       if (err.response?.status === 409) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { LandingHeader } from "@landing";
-import { Modal, FilledButton } from "@ui";
+import { Modal, FilledButton, UnfilledButton } from "@ui";
 import { validateInviteLink, acceptInviteLink } from "@/api/invites";
 
 function InvitePage() {
@@ -30,11 +30,10 @@ function InvitePage() {
       return;
     }
     try {
-      await acceptInviteLink(token);
+      await acceptInviteLink(token); 
       navigate("/app/dashboard");
     } catch (err) {
       setError("Не удалось принять приглашение. Возможно, вы уже являетесь участником.");
-      console.error("Не удалось принять приглашение:", err);
     }
   };
   return (
@@ -60,9 +59,14 @@ function InvitePage() {
               {data?.user}
             </p>
           </div>
-          <FilledButton onClick={handleAccept}>
-            {isAuthorized ? "Принять приглашение" : "Войти и присоединиться"}
-          </FilledButton>
+          <div className="flex justify-between w-full">
+            <UnfilledButton onClick={() => navigate("/app")}>
+              Отмена
+            </UnfilledButton>
+            <FilledButton onClick={handleAccept}>
+              {isAuthorized ? "Принять приглашение" : "Войти и присоединиться"}
+            </FilledButton>
+          </div>
         </div>
       )}
     </Modal>
