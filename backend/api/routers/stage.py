@@ -1,7 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.stage import StageResponse
 from infrastructure.storage import Storage
 from schemas.files import (
     FileLinkResponse,
@@ -9,16 +8,19 @@ from schemas.files import (
     FileUploadLinkRequest,
     PointCloudFileResponse,
 )
+from schemas.stage import StageResponse
 from services import stage as stage_service
 from services.file import FileService
 from core.roles import Permission
 
-from dependencies import (
-    get_db_session,
-    require_stage_permission,
-    get_storage
+from core.dependencies import (
+    get_database_uow,
+    get_storage,
+    DatabaseSessionUOW
 )
-
+from api.dependencies import (
+    require_stage_permission
+)
 
 router = APIRouter(prefix="/stages", tags=["project stages"])
 
@@ -29,8 +31,9 @@ router = APIRouter(prefix="/stages", tags=["project stages"])
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_VIEW))],
 )
-async def get_stage(stage_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)):
-    stage = await stage_service.get_stage(stage_id, session=session)
+async def get_stage(stage_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    async with uow:
+        stage = await stage_service.get_stage(stage_id, session=uow.session)
     return stage
 
 
@@ -42,7 +45,7 @@ async def get_stage(stage_id: uuid.UUID, session: AsyncSession = Depends(get_db_
 )
 async def delete_stage(
     stage_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -50,7 +53,8 @@ async def delete_stage(
 
     Requires permission.
     """
-    stage = await stage_service.delete_stage(stage_id, session=session, storage=storage)
+    async with uow:
+        stage = await stage_service.delete_stage(stage_id, session=uow.session, storage=storage)
     return stage
 
 
@@ -63,7 +67,7 @@ async def delete_stage(
 async def get_point_cloud_upload_link(
     stage_id: uuid.UUID,
     file_data: FileUploadLinkRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -73,16 +77,17 @@ async def get_point_cloud_upload_link(
 
     Requires permission.
     """
-    stage = await stage_service.get_stage_with_project(stage_id, session=session)
+    async with uow:
+        stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
 
-    url, key = await FileService.generate_point_cloud_upload_link(
-        stage.project.workspace_id,
-        stage.project.id,
-        stage.id,
-        file_data,
-        storage=storage,
-        session=session
-    )
+        url, key = await FileService.generate_point_cloud_upload_link(
+            stage.project.workspace_id,
+            stage.project.id,
+            stage.id,
+            file_data,
+            storage=storage,
+            session=uow.session
+        )
 
     link_data = FileLinkResponse(
         key=key,
@@ -103,7 +108,7 @@ async def get_point_cloud_upload_link(
 )
 async def confirm_point_cloud_upload(
     file_data: FileUploadConfirmRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -113,10 +118,11 @@ async def confirm_point_cloud_upload(
 
     Requires permission.
     """
-    file = await FileService.confirm_point_cloud_upload(
-        file_data,
-        storage=storage,
-        session=session
-    )
+    async with uow:
+        file = await FileService.confirm_point_cloud_upload(
+            file_data,
+            session=uow.session,
+            storage=storage
+        )
 
     return file

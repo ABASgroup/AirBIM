@@ -49,7 +49,6 @@ async def generate_invite_link(
 
             link = await InviteLinkRepository.create(invite_link_data, session=session)
 
-            await session.commit()
             link = await InviteLinkRepository.refresh(link, session=session, relations=["created_by", "workspace"])
 
             # token is not hashed, ALWAYS return token
@@ -58,7 +57,6 @@ async def generate_invite_link(
             # the token was not unique
             # strange, but let's
             # try again
-            await session.rollback()
             continue
 
 
@@ -68,13 +66,8 @@ async def revoke_links(workspace_id: uuid.UUID, session: AsyncSession):
 
     Use to secure access to the workspace, when links are compromised.
     """
-    try:
-        # delete old links
-        await InviteLinkRepository.delete_by_workspace_id(workspace_id, session=session)
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
+    # delete old links
+    await InviteLinkRepository.delete_by_workspace_id(workspace_id, session=session)
 
 
 async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
@@ -83,19 +76,15 @@ async def validate_invite_link(token: str, session: AsyncSession) -> InviteLink:
 
     Invalid link's token will not be found in the DB.
     """
-    try:
-        # try to find hashed token
-        # reminder: hash is determined
-        token_hashed = hash_link_token(token)
-        link = await InviteLinkRepository.get_by_token(token_hashed, session=session)
+    # try to find hashed token
+    # reminder: hash is determined
+    token_hashed = hash_link_token(token)
+    link = await InviteLinkRepository.get_by_token(token_hashed, session=session)
 
-        # link is not found, token is invalid
-        if link is None:
-            raise InvalidInvitationError(
-                "Invite link is invalid: token has not passed")
+    # link is not found, token is invalid
+    if link is None:
+        raise InvalidInvitationError(
+            "Invite link is invalid: token has not passed")
 
-        # still want to send back not hashed token
-        return link
-    except Exception:
-        await session.rollback()
-        raise
+    # still want to send back not hashed token
+    return link

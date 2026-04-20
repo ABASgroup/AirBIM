@@ -16,9 +16,8 @@ from api.routers.invite import router as invite_router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     # startup: resource initialization
-
     yield
 
     # shutdown: resource cleanup

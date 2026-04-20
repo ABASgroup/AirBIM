@@ -17,17 +17,13 @@ from infrastructure.storage import Storage
 
 
 class FileService:
-    def __init__(self):
-        pass
-
-    @classmethod
+    @staticmethod
     def create_file_key(
-        cls,
         workspace_id: uuid.UUID,
         project_id: uuid.UUID,
         filename: str,
         stage_id: uuid.UUID | None = None
-    ):
+    ) -> str:
         """
         Provides a key for the file in the fixed format.
 
@@ -41,26 +37,26 @@ class FileService:
             key = f"{key}{filename}"
         return key
 
-    @classmethod
-    def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
+    @staticmethod
+    def clear_stage_files(workspace_id, project_id, stage_id, storage: Storage):
         """Clear all files related to the stage from the storage."""
         prefix = f"workspace_{workspace_id}/project_{project_id}/stage_{stage_id}/"
         storage.delete_files_by_prefix(prefix)
 
-    @classmethod
-    def clear_project_files(cls, workspace_id, project_id, storage: Storage):
+    @staticmethod
+    def clear_project_files(workspace_id, project_id, storage: Storage):
         """Clear all files related to the project from the storage."""
         prefix = f"workspace_{workspace_id}/project_{project_id}/"
         storage.delete_files_by_prefix(prefix)
 
-    @classmethod
-    def clear_workspace_files(cls, workspace_id, storage: Storage):
+    @staticmethod
+    def clear_workspace_files(workspace_id, storage: Storage):
         """Clear all files related to the workspace from the storage."""
         prefix = f"workspace_{workspace_id}/"
         storage.delete_files_by_prefix(prefix)
 
-    @classmethod
-    async def delete_bim_file(cls, project_id: uuid.UUID, storage: Storage, session: AsyncSession):
+    @staticmethod
+    async def delete_bim_file(project_id: uuid.UUID, storage: Storage, session: AsyncSession):
         """Delete BIM file from the storage and remove entry from the database."""
         try:
             file = await BimFileRepository.get_by_project_id(project_id, session=session)
@@ -72,9 +68,7 @@ class FileService:
 
             # delete from database
             await BimFileRepository.delete(file, session=session)
-            await session.commit()
         except Exception:
-            await session.rollback()
             raise
 
     @classmethod
@@ -104,7 +98,6 @@ class FileService:
 
             return link, file
         except Exception:
-            await session.rollback()
             raise
 
     @classmethod
@@ -143,10 +136,8 @@ class FileService:
             # generate temporary upload link
             link = storage.get_upload_link(key)
 
-            await session.commit()
             return link, key
         except Exception:
-            await session.rollback()
             raise
 
     @classmethod
@@ -186,10 +177,8 @@ class FileService:
                 file_db,
                 FileStatus.UPLOADED,
                 session=session)
-            await session.commit()
             return file_db
-        except:
-            await session.rollback()
+        except Exception:
             raise
 
     @classmethod
@@ -230,10 +219,8 @@ class FileService:
             # generate temporary upload link
             link = storage.get_upload_link(key)
 
-            await session.commit()
             return link, key
         except Exception:
-            await session.rollback()
             raise
 
     @classmethod
@@ -273,8 +260,6 @@ class FileService:
                 file_db,
                 FileStatus.UPLOADED,
                 session=session)
-            await session.commit()
             return file_db
-        except:
-            await session.rollback()
+        except Exception:
             raise

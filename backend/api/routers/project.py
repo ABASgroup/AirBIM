@@ -14,12 +14,13 @@ from schemas.files import (
     BIMFileResponse
 )
 from core.roles import Permission
-from dependencies import (
-    get_db_session,
-    require_project_permission,
+from core.dependencies import (
+    get_database_uow,
     get_storage,
+    DatabaseSessionUOW
 )
 
+from api.dependencies import require_project_permission
 
 router = APIRouter(prefix="/projects", tags=["workspace projects"])
 
@@ -30,13 +31,14 @@ router = APIRouter(prefix="/projects", tags=["workspace projects"])
     dependencies=[
         Depends(require_project_permission(Permission.PROJECT_VIEW))],
 )
-async def get_project(project_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)):
+async def get_project(project_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     """
     Get project information.
 
     Requires permission.
     """
-    project = await project_service.get_project(project_id, session=session)
+    async with uow:
+        project = await project_service.get_project(project_id, session=uow.session)
     return project
 
 
@@ -49,16 +51,17 @@ async def get_project(project_id: uuid.UUID, session: AsyncSession = Depends(get
 async def update_project(
     project_id: uuid.UUID,
     project_data: ProjectUpdate,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Update project information.
 
     Requires permission.
     """
-    project = await project_service.update_project(
-        project_id, project_data, session=session
-    )
+    async with uow:
+        project = await project_service.update_project(
+            project_id, project_data, session=uow.session
+        )
     return project
 
 
@@ -70,7 +73,7 @@ async def update_project(
 )
 async def delete_project(
     project_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -78,7 +81,8 @@ async def delete_project(
 
     Requires permission.
     """
-    project = await project_service.delete_project(project_id, session=session, storage=storage)
+    async with uow:
+        project = await project_service.delete_project(project_id, session=uow.session, storage=storage)
     return project
 
 
@@ -89,16 +93,17 @@ async def delete_project(
         Depends(require_project_permission(Permission.STAGE_VIEW))],
 )
 async def get_project_stages(
-    project_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+    project_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Get all stages related to the project.
 
     Requires permission.
     """
-    stages = await stage_service.get_project_stages(
-        project_id, session=session
-    )
+    async with uow:
+        stages = await stage_service.get_project_stages(
+            project_id, session=uow.session
+        )
     return stages
 
 
@@ -110,7 +115,7 @@ async def get_project_stages(
 )
 async def create_stage(
     project_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session)
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Create new stage related to the project.
@@ -118,7 +123,8 @@ async def create_stage(
     Requires permission.
     """
     stage_data_db = StageModel(project_id=project_id)
-    stage = await stage_service.create_stage(stage_data_db, session=session)
+    async with uow:
+        stage = await stage_service.create_stage(stage_data_db, session=uow.session)
     return stage
 
 
@@ -131,7 +137,7 @@ async def create_stage(
 async def get_bim_upload_link(
     project_id: uuid.UUID,
     file_data: FileUploadLinkRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -141,15 +147,16 @@ async def get_bim_upload_link(
 
     Requires permission.
     """
-    project = await project_service.get_project(project_id, session=session)
+    async with uow:
+        project = await project_service.get_project(project_id, session=uow.session)
 
-    url, key = await FileService.generate_bim_upload_link(
-        project_id=project_id,
-        workspace_id=project.workspace_id,
-        file_data=file_data,
-        storage=storage,
-        session=session
-    )
+        url, key = await FileService.generate_bim_upload_link(
+            project_id=project_id,
+            workspace_id=project.workspace_id,
+            file_data=file_data,
+            session=uow.session,
+            storage=storage
+        )
 
     link_data = FileLinkResponse(
         key=key,
@@ -170,7 +177,7 @@ async def get_bim_upload_link(
 )
 async def confirm_bim_upload(
     file_data: FileUploadConfirmRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -180,11 +187,12 @@ async def confirm_bim_upload(
 
     Requires permission.
     """
-    file = await FileService.confirm_bim_upload(
-        file_data=file_data,
-        storage=storage,
-        session=session
-    )
+    async with uow:
+        file = await FileService.confirm_bim_upload(
+            file_data=file_data,
+            session=uow.session,
+            storage=storage
+        )
 
     return file
 
@@ -197,7 +205,7 @@ async def confirm_bim_upload(
 )
 async def delete_bim_file(
     project_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -209,11 +217,12 @@ async def delete_bim_file(
 
     Requires permission.
     """
-    file = await FileService.delete_bim_file(
-        project_id=project_id,
-        storage=storage,
-        session=session
-    )
+    async with uow:
+        file = await FileService.delete_bim_file(
+            project_id=project_id,
+            session=uow.session,
+            storage=storage
+        )
 
     return file
 
@@ -226,7 +235,7 @@ async def delete_bim_file(
 )
 async def get_bim_download_link(
     project_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -236,11 +245,12 @@ async def get_bim_download_link(
 
     Requires permission.
     """
-    url, file = await FileService.generate_bim_download_link(
-        project_id=project_id,
-        storage=storage,
-        session=session
-    )
+    async with uow:
+        url, file = await FileService.generate_bim_download_link(
+            project_id=project_id,
+            session=uow.session,
+            storage=storage
+        )
 
     link_data = FileLinkResponse(
         key=file.key,

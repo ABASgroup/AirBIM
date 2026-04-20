@@ -42,13 +42,8 @@ async def create_membership(membership_data: MembershipModel, session: AsyncSess
     """
     Create a new membership for the workspace.
     """
-    try:
-        workspace = await MembershipRepository.create(membership_data, session=session)
-        await session.commit()
-        return workspace
-    except Exception:
-        await session.rollback()
-        raise
+    workspace = await MembershipRepository.create(membership_data, session=session)
+    return workspace
 
 
 async def delete_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session: AsyncSession) -> Membership:
@@ -59,27 +54,22 @@ async def delete_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session
 
     You can't remove the owner from the workspace.
     """
-    try:
-        membership = await MembershipRepository.get_user_workspace_membership(
-            user_id,
-            workspace_id,
-            session=session)
+    membership = await MembershipRepository.get_user_workspace_membership(
+        user_id,
+        workspace_id,
+        session=session)
 
-        if membership is None:
-            raise NotMemberError()
+    if membership is None:
+        raise NotMemberError()
 
-        # check role first
-        if membership.role == Role.OWNER:
-            raise ProhibitedWorkspaceActionError(
-                "deleting owner from workspace")
+    # check role first
+    if membership.role == Role.OWNER:
+        raise ProhibitedWorkspaceActionError(
+            "deleting owner from workspace")
 
-        # not an owner, delete
-        await MembershipRepository.delete(membership, session=session)
-        await session.commit()
-        return membership
-    except Exception:
-        await session.rollback()
-        raise
+    # not an owner, delete
+    await MembershipRepository.delete(membership, session=session)
+    return membership
 
 
 async def change_user_role(
@@ -91,48 +81,43 @@ async def change_user_role(
 ) -> Membership:
     """
     Change user role.
-    
+
     Make sure to check permission.
-    
+
     Also checks for constraints:
     - Nobody can upgrade another user to owner, owner is unique
     - Nobody can downgrade owner
     """
-    try:
-        # access memberships first
-        user_membership = await MembershipRepository.get_user_workspace_membership(
-            user_id,
-            workspace_id,
-            session=session
-        )
+    # access memberships first
+    user_membership = await MembershipRepository.get_user_workspace_membership(
+        user_id,
+        workspace_id,
+        session=session
+    )
 
-        if user_membership is None:
-            raise NotMemberError()
+    if user_membership is None:
+        raise NotMemberError()
 
-        editor_membership = await MembershipRepository.get_user_workspace_membership(
-            editor_id,
-            workspace_id,
-            session=session
-        )
+    editor_membership = await MembershipRepository.get_user_workspace_membership(
+        editor_id,
+        workspace_id,
+        session=session
+    )
 
-        if editor_membership is None:
-            raise NotMemberError()
+    if editor_membership is None:
+        raise NotMemberError()
 
-        # check constraints
-        if new_role == Role.OWNER:
-            raise MembershipViolationError("attempt to create another owner")
+    # check constraints
+    if new_role == Role.OWNER:
+        raise MembershipViolationError("attempt to create another owner")
 
-        if user_membership.role == Role.OWNER:
-            raise MembershipViolationError("attempt to change owner's role")
+    if user_membership.role == Role.OWNER:
+        raise MembershipViolationError("attempt to change owner's role")
 
-        user_membership = await MembershipRepository.update(
-            user_membership,
-            update_data=MembershipUpdate(role=new_role),
-            session=session
-        )
+    user_membership = await MembershipRepository.update(
+        user_membership,
+        update_data=MembershipUpdate(role=new_role),
+        session=session
+    )
 
-        await session.commit()
-        return user_membership
-    except Exception:
-        await session.rollback()
-        raise
+    return user_membership

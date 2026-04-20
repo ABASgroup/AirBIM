@@ -20,3 +20,5 @@ celery_app.conf.task_queues = (
     Queue("heavy"),
     Queue("converter")
 )
+
+celery_app.autodiscover_tasks(["tasks"])
