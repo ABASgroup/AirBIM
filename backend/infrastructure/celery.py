@@ -1,6 +1,8 @@
 from celery import Celery
+from celery.schedules import crontab
 from kombu import Queue
 from core.configs.celery import celery_config
+from dependencies import get_storage, get_db_session
 
 
 celery_app = Celery(
@@ -18,7 +20,7 @@ celery_app = Celery(
 celery_app.conf.task_queues = (
     Queue("default"),
     Queue("heavy"),
-    Queue("converter")
+    Queue("converter"),
 )
 
 celery_app.autodiscover_tasks(["tasks"])

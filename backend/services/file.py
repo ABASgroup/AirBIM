@@ -58,18 +58,15 @@ class FileService:
     @staticmethod
     async def delete_bim_file(project_id: uuid.UUID, storage: Storage, session: AsyncSession):
         """Delete BIM file from the storage and remove entry from the database."""
-        try:
-            file = await BimFileRepository.get_by_project_id(project_id, session=session)
-            if not file:
-                raise NotFoundError("BIM file not found for the project.")
+        file = await BimFileRepository.get_by_project_id(project_id, session=session)
+        if not file:
+            raise NotFoundError("BIM file not found for the project.")
 
-            # delete from storage
-            storage.delete_file(file.key)
+        # delete from storage
+        storage.delete_file(file.key)
 
-            # delete from database
-            await BimFileRepository.delete(file, session=session)
-        except Exception:
-            raise
+        # delete from database
+        await BimFileRepository.delete(file, session=session)
 
     @classmethod
     async def generate_bim_download_link(
@@ -83,22 +80,19 @@ class FileService:
 
         Returns url and file key.
         """
-        try:
-            # get the key first
-            file = await BimFileRepository.get_by_project_id(
-                project_id=project_id,
-                session=session
-            )
+        # get the key first
+        file = await BimFileRepository.get_by_project_id(
+            project_id=project_id,
+            session=session
+        )
 
-            if file is None:
-                raise NotFoundError(
-                    "BIM file for this project is not found")
+        if file is None:
+            raise NotFoundError(
+                "BIM file for this project is not found")
 
-            link = storage.get_download_link(file.key)
+        link = storage.get_download_link(file.key)
 
-            return link, file
-        except Exception:
-            raise
+        return link, file
 
     @classmethod
     async def generate_bim_upload_link(
@@ -114,31 +108,28 @@ class FileService:
 
         Returns url and file key.
         """
-        try:
-            # create key
-            key = cls.create_file_key(
-                workspace_id=workspace_id,
-                project_id=project_id,
-                filename=file_data.filename
-            )
+        # create key
+        key = cls.create_file_key(
+            workspace_id=workspace_id,
+            project_id=project_id,
+            filename=file_data.filename
+        )
 
-            # make pending file
-            file_data_db = BIMFileModel(
-                filename=file_data.filename,
-                key=key,
-                content_type=file_data.content_type,
-                size=file_data.size,
-                project_id=project_id
-            )
+        # make pending file
+        file_data_db = BIMFileModel(
+            filename=file_data.filename,
+            key=key,
+            content_type=file_data.content_type,
+            size=file_data.size,
+            project_id=project_id
+        )
 
-            await BimFileRepository.create(file_data_db, session=session)
+        await BimFileRepository.create(file_data_db, session=session)
 
-            # generate temporary upload link
-            link = storage.get_upload_link(key)
+        # generate temporary upload link
+        link = storage.get_upload_link(key)
 
-            return link, key
-        except Exception:
-            raise
+        return link, key
 
     @classmethod
     async def confirm_bim_upload(
@@ -152,34 +143,31 @@ class FileService:
 
         If everything is fine, returns file entry in DB.
         """
-        try:
-            # in the database
-            # check fields we want to check
-            file_db = await BimFileRepository.get_file_by_metadata(
-                file_data.filename,
-                file_data.content_type,
-                file_data.size,
-                session=session
-            )
+        # in the database
+        # check fields we want to check
+        file_db = await BimFileRepository.get_file_by_metadata(
+            file_data.filename,
+            file_data.content_type,
+            file_data.size,
+            session=session
+        )
 
-            if file_db is None:
-                raise NotFoundError(
-                    "File not found: no entry in the database.")
+        if file_db is None:
+            raise NotFoundError(
+                "File not found: no entry in the database.")
 
-            # in the storage
-            exists = storage.file_exists(file_db.key)
-            if not exists:
-                raise NotFoundError(
-                    "File not found: not uploaded to the storage")
+        # in the storage
+        exists = storage.file_exists(file_db.key)
+        if not exists:
+            raise NotFoundError(
+                "File not found: not uploaded to the storage")
 
-            # everything seems clear, set new status
-            await BimFileRepository.update_status(
-                file_db,
-                FileStatus.UPLOADED,
-                session=session)
-            return file_db
-        except Exception:
-            raise
+        # everything seems clear, set new status
+        await BimFileRepository.update_status(
+            file_db,
+            FileStatus.UPLOADED,
+            session=session)
+        return file_db
 
     @classmethod
     async def generate_point_cloud_upload_link(
@@ -196,32 +184,29 @@ class FileService:
 
         Returns url and file key.
         """
-        try:
-            # create key
-            key = cls.create_file_key(
-                workspace_id=workspace_id,
-                project_id=project_id,
-                filename=file_data.filename,
-                stage_id=stage_id
-            )
+        # create key
+        key = cls.create_file_key(
+            workspace_id=workspace_id,
+            project_id=project_id,
+            filename=file_data.filename,
+            stage_id=stage_id
+        )
 
-            # make pending file
-            file_data_db = PointCloudFileModel(
-                filename=file_data.filename,
-                key=key,
-                content_type=file_data.content_type,
-                size=file_data.size,
-                stage_id=stage_id
-            )
+        # make pending file
+        file_data_db = PointCloudFileModel(
+            filename=file_data.filename,
+            key=key,
+            content_type=file_data.content_type,
+            size=file_data.size,
+            stage_id=stage_id
+        )
 
-            await PointCloudFileRepository.create(file_data_db, session=session)
+        await PointCloudFileRepository.create(file_data_db, session=session)
 
-            # generate temporary upload link
-            link = storage.get_upload_link(key)
+        # generate temporary upload link
+        link = storage.get_upload_link(key)
 
-            return link, key
-        except Exception:
-            raise
+        return link, key
 
     @classmethod
     async def confirm_point_cloud_upload(
@@ -235,31 +220,37 @@ class FileService:
 
         If everything is fine, returns file entry in DB.
         """
-        try:
-            # in the database
-            # check fields we want to check
-            file_db = await PointCloudFileRepository.get_file_by_metadata(
-                file_data.filename,
-                file_data.content_type,
-                file_data.size,
-                session=session
-            )
+        # in the database
+        # check fields we want to check
+        file_db = await PointCloudFileRepository.get_file_by_metadata(
+            file_data.filename,
+            file_data.content_type,
+            file_data.size,
+            session=session
+        )
 
-            if file_db is None:
-                raise NotFoundError(
-                    "File not found: no entry in the database.")
+        if file_db is None:
+            raise NotFoundError(
+                "File not found: no entry in the database.")
 
-            # in the storage
-            exists = storage.file_exists(file_db.key)
-            if not exists:
-                raise NotFoundError(
-                    "File not found: not uploaded to the storage")
+        # in the storage
+        exists = storage.file_exists(file_db.key)
+        if not exists:
+            raise NotFoundError(
+                "File not found: not uploaded to the storage")
 
-            # everything seems clear, set new status
-            await PointCloudFileRepository.update_status(
-                file_db,
-                FileStatus.UPLOADED,
-                session=session)
-            return file_db
-        except Exception:
-            raise
+        # everything seems clear, set new status
+        await PointCloudFileRepository.update_status(
+            file_db,
+            FileStatus.UPLOADED,
+            session=session)
+        return file_db
+
+    async def clean_up_storage(self, storage: Storage, session: AsyncSession):
+        """
+        Cleans up old files from storage.
+
+        Which files are being cleaned:
+        - those, that are pending in the database for a long time but not in the storage
+        - those, that are in the storage but not in the database
+        """
