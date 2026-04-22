@@ -1,19 +1,19 @@
 import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
+from infrastructure.storage import Storage
 from services import project as project_service
 from services import stage as stage_service
 from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
-from schemas.stage import StageModel, StagePublic
+from schemas.stage import StageModel, StageResponse
 from schemas.files import (
     FileUploadLinkRequest,
     FileUploadConfirmRequest,
     FileLinkResponse,
     BIMFileResponse
 )
-from roles import Permission
+from core.roles import Permission
 from dependencies import (
     get_db_session,
     require_project_permission,
@@ -84,7 +84,7 @@ async def delete_project(
 
 @router.get(
     "/{project_id}/stages",
-    response_model=list[StagePublic],
+    response_model=list[StageResponse],
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_VIEW))],
 )
@@ -104,7 +104,7 @@ async def get_project_stages(
 
 @router.post(
     "/{project_id}/stages",
-    response_model=StagePublic,
+    response_model=StageResponse,
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_CREATE))],
 )
@@ -169,7 +169,6 @@ async def get_bim_upload_link(
         Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
 )
 async def confirm_bim_upload(
-    project_id: uuid.UUID,
     file_data: FileUploadConfirmRequest,
     session: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage)
@@ -191,7 +190,7 @@ async def confirm_bim_upload(
 
 
 @router.delete(
-    "/{project_id}/files/bim/confirm",
+    "/{project_id}/files/bim",
     response_model=BIMFileResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_DELETE_BIM))],
@@ -217,3 +216,38 @@ async def delete_bim_file(
     )
 
     return file
+
+
+@router.post(
+    "/{project_id}/files/bim/download",
+    response_model=FileLinkResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.FILES_DOWNLOAD))],
+)
+async def get_bim_download_link(
+    project_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Get a temporary link to download BIM file.
+
+    Use this link to download file.
+
+    Requires permission.
+    """
+    url, file = await FileService.generate_bim_download_link(
+        project_id=project_id,
+        storage=storage,
+        session=session
+    )
+
+    link_data = FileLinkResponse(
+        key=file.key,
+        url=url,
+        filename=file.filename,
+        size=file.size,
+        content_type=file.content_type
+    )
+
+    return link_data

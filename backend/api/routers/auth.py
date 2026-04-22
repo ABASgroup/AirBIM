@@ -6,8 +6,8 @@ from schemas.user import UserRegisterRequest
 from schemas.token import TokenResponse
 from schemas.membership import MembershipModel
 from schemas.workspace import WorkspaceModel
-from security import create_access_token
-from roles import Role, Permission
+from core.security import create_access_token
+from core.roles import Role, Permission
 from models.workspace import WorkspaceType
 from services import user as user_service
 from services import workspace as workspace_service

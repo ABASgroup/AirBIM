@@ -15,7 +15,7 @@ services:
     volumes:
       - storage_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${STORAGE_PORT}/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:${STORAGE_PORT}/minio/health/live" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,10 +46,9 @@ services:
     container_name: airbim-cache
     image: redis:latest
     restart: unless-stopped
-    environment:
-      - REDIS_ARGS=--requirepass ${CACHE_PASSWORD} --appendonly yes
+    command: ["redis-server", "--requirepass", "${CACHE_PASSWORD}", "--appendonly", "yes"]
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${CACHE_PORT:-6379}:6379"
     volumes:
       - cache_data:/data
     healthcheck:
@@ -65,10 +64,9 @@ services:
     container_name: airbim-broker
     image: redis:latest
     restart: unless-stopped
-    environment:
-      - REDIS_ARGS=--requirepass ${BROKER_PASSWORD} --appendonly yes
+    command: ["redis-server", "--requirepass", "${BROKER_PASSWORD}", "--appendonly", "yes"]
     ports:
-      - "${BROKER_PORT:-6380}:6380"
+      - "${BROKER_PORT:-6380}:6379"
     volumes:
       - broker_data:/data
     healthcheck:
@@ -78,6 +76,93 @@ services:
       retries: 5
     depends_on:
       cache:
+        condition: service_healthy
+
+  worker:
+    container_name: airbim-worker
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "worker", "-l", "info", "-Q", "default", "--concurrency=4"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+  worker-converter:
+    container_name: airbim-worker-converter
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "worker", "-l", "info", "-Q", "converter", "--concurrency=8"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.converter
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+  worker-heavy:
+    container_name: airbim-worker-heavy
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "worker", "-l", "info", "-Q", "heavy", "--concurrency=8"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+  
+  beat:
+    container_name: airbim-beat
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "beat", "-l", "info"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+  flower:
+    container_name: airbim-flower
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "infrastructure.celery:celery_app", "flower"]
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://:${BROKER_PASSWORD}@broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${BROKER_PASSWORD}@broker:6379/0
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
   backend:
@@ -96,6 +181,12 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
+      storage:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
       broker:
         condition: service_healthy
 

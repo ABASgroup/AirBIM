@@ -1,11 +1,15 @@
 """Service layer logic for Membership."""
 import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from roles import Role
-from repositories.membership import MembershipRepository
+
+from core.exceptions.exceptions import (MembershipViolationError,
+                                        NotMemberError,
+                                        ProhibitedWorkspaceActionError)
+from core.roles import Role
 from models.membership import Membership
-from schemas.membership import MembershipModel
-from exceptions.exceptions import NotMemberError, ProhibitedWorkspaceActionError
+from repositories.membership import MembershipRepository
+from schemas.membership import MembershipModel, MembershipUpdate
 
 
 async def get_workspace_members(workspace_id: uuid.UUID, session: AsyncSession) -> list[Membership]:
@@ -49,11 +53,11 @@ async def create_membership(membership_data: MembershipModel, session: AsyncSess
 
 async def delete_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session: AsyncSession) -> Membership:
     """
-    Delete user's membership in the workspace
+    Delete user's membership in the workspace.
 
-    Make sure to check permission
+    Make sure to check permission.
 
-    You can't remove the owner from the workspace
+    You can't remove the owner from the workspace.
     """
     try:
         membership = await MembershipRepository.get_user_workspace_membership(
@@ -73,6 +77,62 @@ async def delete_membership(user_id: uuid.UUID, workspace_id: uuid.UUID, session
         await MembershipRepository.delete(membership, session=session)
         await session.commit()
         return membership
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def change_user_role(
+    editor_id: uuid.UUID,
+    user_id: uuid.UUID,
+    workspace_id: uuid.UUID,
+    new_role: Role,
+    session: AsyncSession
+) -> Membership:
+    """
+    Change user role.
+    
+    Make sure to check permission.
+    
+    Also checks for constraints:
+    - Nobody can upgrade another user to owner, owner is unique
+    - Nobody can downgrade owner
+    """
+    try:
+        # access memberships first
+        user_membership = await MembershipRepository.get_user_workspace_membership(
+            user_id,
+            workspace_id,
+            session=session
+        )
+
+        if user_membership is None:
+            raise NotMemberError()
+
+        editor_membership = await MembershipRepository.get_user_workspace_membership(
+            editor_id,
+            workspace_id,
+            session=session
+        )
+
+        if editor_membership is None:
+            raise NotMemberError()
+
+        # check constraints
+        if new_role == Role.OWNER:
+            raise MembershipViolationError("attempt to create another owner")
+
+        if user_membership.role == Role.OWNER:
+            raise MembershipViolationError("attempt to change owner's role")
+
+        user_membership = await MembershipRepository.update(
+            user_membership,
+            update_data=MembershipUpdate(role=new_role),
+            session=session
+        )
+
+        await session.commit()
+        return user_membership
     except Exception:
         await session.rollback()
         raise

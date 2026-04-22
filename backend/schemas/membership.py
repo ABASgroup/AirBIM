@@ -1,6 +1,6 @@
 import uuid
 from pydantic import BaseModel
-from roles import Permission, Role
+from core.roles import Permission, Role
 from .base import Response
 from .user import UserResponse
 
@@ -12,11 +12,18 @@ class MembershipModel(BaseModel):
     role: Role = Role.MEMBER
 
 
-class MembershipPublic(Response):
+class MembershipResponse(Response):
     """API Response schema."""
     workspace_id: uuid.UUID
     user_id: uuid.UUID
     role: Role
+
+
+class MembershipUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    workspace_id: uuid.UUID | None = None
+    user_id: uuid.UUID | None = None
+    role: Role | None = None
 
 
 class MembershipUserResponse(Response):

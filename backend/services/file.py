@@ -8,12 +8,12 @@ from schemas.files import (
     FileUploadLinkRequest
 )
 
-from exceptions.exceptions import NotFoundError
+from core.exceptions.exceptions import NotFoundError
 
 from models.files import PointCloudFile, BimFile, FileStatus
 
 from repositories.files import PointCloudFileRepository, BimFileRepository
-from storage import Storage
+from infrastructure.storage import Storage
 
 
 class FileService:
@@ -73,6 +73,36 @@ class FileService:
             # delete from database
             await BimFileRepository.delete(file, session=session)
             await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+    @classmethod
+    async def generate_bim_download_link(
+        cls,
+        project_id: uuid.UUID,
+        session: AsyncSession,
+        storage: Storage
+    ) -> tuple[str, BimFile]:
+        """
+        Creates presigned URL for BIM download.
+
+        Returns url and file key.
+        """
+        try:
+            # get the key first
+            file = await BimFileRepository.get_by_project_id(
+                project_id=project_id,
+                session=session
+            )
+
+            if file is None:
+                raise NotFoundError(
+                    "BIM file for this project is not found")
+
+            link = storage.get_download_link(file.key)
+
+            return link, file
         except Exception:
             await session.rollback()
             raise

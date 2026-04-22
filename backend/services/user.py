@@ -1,10 +1,10 @@
 """Service layer logic for User."""
 from sqlalchemy.ext.asyncio import AsyncSession
-from exceptions.exceptions import (
+from core.exceptions.exceptions import (
     InvalidLoginInfoError,
     NotFoundError,
     AlreadyExistsError)
-from security import get_password_hash, verify_password
+from core.security import get_password_hash, verify_password
 from repositories.user import UserRepository
 from models.user import User
 from schemas.user import UserModel, UserRegisterRequest

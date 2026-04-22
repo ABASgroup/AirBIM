@@ -8,6 +8,6 @@ class StageModel(BaseModel):
     project_id: uuid.UUID
 
 
-class StagePublic(Response):
+class StageResponse(Response):
     """API Response schema."""
     project_id: uuid.UUID

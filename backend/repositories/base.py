@@ -79,6 +79,29 @@ class BaseRepository(Generic[ModelT]):
         return entry
 
     @classmethod
+    async def update(
+        cls,
+        entry: ModelT,
+        update_data: BaseScheme,
+        session: AsyncSession
+    ):
+        """Update an entry with new data by its ID/primary key.
+
+        Args:
+            entry_id (`uuid.UUID`): entry's ID OR primary key
+            update_data (`pydantic.BaseScheme`): a pydantic scheme instance with new data
+            session (`AsyncSession`): an asynchronous database session
+        """
+        update_data_dict = update_data.model_dump(exclude_unset=True)
+
+        for key, value in update_data_dict.items():
+            setattr(entry, key, value)
+
+        await session.flush()
+        await session.refresh(entry)
+        return entry
+
+    @classmethod
     async def delete(cls, entry: ModelT, session: AsyncSession):
         """Delete entry using its object"""
         await session.delete(entry)
@@ -97,4 +120,21 @@ class BaseRepository(Generic[ModelT]):
 
         await session.delete(entry)
         await session.flush()
+        return entry
+
+    @classmethod
+    async def refresh(
+        cls,
+        entry: ModelT,
+        session: AsyncSession,
+        relations: list[str] | None = None
+    ):
+        """Get a model entry by the ID/primary key.
+
+        Args:
+            entry_id (`uuid.UUID`): entry itself, which you need to refresh
+            session (`AsyncSession`): an asynchronous database session
+            relations (`list[str]`): list of relations to refresh (if None, all relations will be refreshed)
+        """
+        await session.refresh(entry, attribute_names=relations)
         return entry

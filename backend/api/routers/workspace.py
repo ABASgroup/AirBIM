@@ -1,23 +1,24 @@
 import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
+from infrastructure.storage import Storage
 from dependencies import (
     get_db_session,
     get_current_user_id,
     get_storage,
     require_workspace_permission,
 )
-from roles import Role, get_role_permissions, Permission
+from core.roles import Role, get_role_permissions, Permission
 from models.membership import Membership
 from models.workspace import WorkspaceType
-from schemas.invite_link import InviteLinkRequest, InviteLinkResponse
+from schemas.invite_link import InviteLinkRequest, NewInviteLinkResponse
 from schemas.project import ProjectModel, ProjectCreateRequest, ProjectResponse
-from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspacePublic
+from schemas.user import UserResponse
+from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspaceResponse
 from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,
-    MembershipPublic,
+    MembershipResponse,
     MembershipUserResponse
 )
 from services import project as project_service
@@ -39,7 +40,7 @@ async def access(
     Get current user access, including permissions and role in the workspace.
 
     Use if you need to specify permissions.
-    
+
     If user is not a member of the workspace, returns an error.
     """
     membership = await membership_service.get_membership(
@@ -80,7 +81,7 @@ async def get_workspace_members(
 
 @router.delete(
     "/{workspace_id}/memberships/{user_id}",
-    response_model=MembershipPublic,
+    response_model=MembershipResponse,
     dependencies=[
         Depends(require_workspace_permission(Permission.MEMBERS_REMOVE))],
 )
@@ -101,7 +102,34 @@ async def remove_user_from_workspace(
     return removed_membership
 
 
-@router.get("/my", response_model=list[WorkspacePublic])
+@router.patch(
+    "/{workspace_id}/memberships/{user_id}/role",
+    response_model=MembershipResponse,
+)
+async def change_user_role(
+    workspace_id: uuid.UUID,
+    user_id: uuid.UUID,
+    role: Role,
+    editor: Membership = Depends(
+        require_workspace_permission(Permission.MEMBERS_EDIT_ROLE)),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Change user role in the workspace.
+
+    Permission required.
+    """
+    membership = await membership_service.change_user_role(
+        editor_id=editor.user_id,
+        user_id=user_id,
+        workspace_id=workspace_id,
+        new_role=role,
+        session=session
+    )
+    return membership
+
+
+@router.get("/my", response_model=list[WorkspaceResponse])
 async def get_user_workspaces(
     user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
@@ -119,7 +147,7 @@ async def get_user_workspaces(
 
 @router.get(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_VIEW))],
 )
@@ -134,7 +162,7 @@ async def get_workspace(
     return workspaces
 
 
-@router.post("", response_model=WorkspacePublic)
+@router.post("", response_model=WorkspaceResponse)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     user_id: uuid.UUID = Depends(get_current_user_id),
@@ -142,7 +170,7 @@ async def create_workspace(
 ):
     """
     Creates a new workspace, making current user its owner.
-    
+
     You can create only team workspace, personal workspace is created automatically during registration.
     """
     workspace = WorkspaceModel(
@@ -160,7 +188,7 @@ async def create_workspace(
 
 @router.delete(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_DELETE))],
 )
@@ -184,7 +212,7 @@ async def delete_team_workspace(
     return workspace
 
 
-@router.post("/{workspace_id}/invites", response_model=InviteLinkResponse)
+@router.post("/{workspace_id}/invites", response_model=NewInviteLinkResponse)
 async def get_invite_link(
     workspace_id: uuid.UUID,
     link_data: InviteLinkRequest,
@@ -197,13 +225,20 @@ async def get_invite_link(
     Get invite link for the workspace associated with that role.
 
     Use if you need a new link.
-    
+
     Always save token from the response, otherwise it will be lost.
     """
-    link = await invite_link_service.generate_invite_link(
+    link, token = await invite_link_service.generate_invite_link(
         workspace_id, membership.user_id, link_data.role, session=session
     )
-    return link
+    return NewInviteLinkResponse(
+        token=token,
+        workspace=WorkspaceResponse.model_validate(
+            link.workspace, from_attributes=True),
+        created_by=UserResponse.model_validate(
+            link.created_by, from_attributes=True),
+        expires_at=link.expires_at,
+    )
 
 
 @router.post(

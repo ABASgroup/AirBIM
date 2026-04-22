@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-from roles import InviteableRole, Role
+from core.roles import InviteableRole, Role
+from schemas.workspace import WorkspaceResponse
+from schemas.user import UserResponse
 
 
 class InviteLinkRequest(BaseModel):
@@ -17,9 +19,16 @@ class InviteLinkModel(BaseModel):
     expires_at: datetime | None = None
 
 
-class InviteLinkResponse(BaseModel):
+class NewInviteLinkResponse(BaseModel):
     """API Response schema."""
     token: str
-    workspace_id: uuid.UUID
-    role: InviteableRole
+    workspace: WorkspaceResponse
+    created_by: UserResponse
+    expires_at: datetime | None = None
+
+
+class InviteLinkResponse(BaseModel):
+    """API Response schema."""
+    workspace: WorkspaceResponse
+    created_by: UserResponse
     expires_at: datetime | None = None
