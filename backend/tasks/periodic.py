@@ -1,19 +1,20 @@
 import asyncio
-from infrastructure.celery import celery_app
+from infrastructure.celery_app import celery_app, Celery
 from celery.schedules import crontab
+from celery import shared_task
 from services.file import FileService
 from core.dependencies import get_database_uow
 
 
-# register periodic tasks
-celery_app.conf.beat_schedule = {
-    'clear_storage_every_day': {
-        'task': 'tasks.clean_up_storage',
-        'schedule': crontab(hour=0, minute=0),
-    },
-}
+class PeriodicTask(celery_app.Task):
+    queue = 'default'
 
 
-@celery_app.task
+@celery_app.task(base=PeriodicTask, ignore_result=True)
 def clean_up_files():
     """Cleans up files from the storage and the database periodically."""
+
+
+@celery_app.task(base=PeriodicTask,  ignore_result=True)
+def test():
+    print(f'HELLO WORLD')

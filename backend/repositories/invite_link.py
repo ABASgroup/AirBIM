@@ -34,9 +34,8 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
     async def get_by_token(cls, token_hashed: str, session: AsyncSession) -> InviteLink | None:
         """Get invite link using its token."""
         stmt = select(cls._model).options(
-            selectinload(
-                cls._model.created_by, cls._model.workspace
-            )
+            selectinload(cls._model.created_by),
+            selectinload(cls._model.workspace)
         ).where(
             cls._model.token_hashed == token_hashed)
         result = await session.execute(stmt)

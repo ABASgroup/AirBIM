@@ -1,7 +1,7 @@
 import uuid
+from enum import StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Enum
-from enum import StrEnum
 from .base import BaseModel
 
 

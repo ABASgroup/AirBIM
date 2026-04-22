@@ -246,9 +246,9 @@ class FileService:
             session=session)
         return file_db
 
-    async def clean_up_storage(self, storage: Storage, session: AsyncSession):
+    async def clean_up_files(self, storage: Storage, session: AsyncSession):
         """
-        Cleans up old files from storage.
+        Cleans up files from the database and the storage.
 
         Which files are being cleaned:
         - those, that are pending in the database for a long time but not in the storage

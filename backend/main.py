@@ -14,6 +14,8 @@ from api.routers.project import router as project_router
 from api.routers.stage import router as stage_router
 from api.routers.invite import router as invite_router
 
+from tasks.processing import test_celery
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -45,6 +47,13 @@ async def ping():
     """Simple API check endpoint."""
     return {"message": "I'm fine, thank you!"}
 
+
+@app.get('/test')
+async def pong():
+    """Simple API check endpoint."""
+    from core.configs import database
+    test_celery.delay()
+    return {"message": "sended"}
 
 # launch
 if __name__ == "__main__":
