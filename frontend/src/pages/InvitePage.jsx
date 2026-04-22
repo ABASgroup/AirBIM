@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { LandingHeader } from "@landing";
 import { Modal, FilledButton, UnfilledButton } from "@ui";
 import { validateInviteLink, acceptInviteLink } from "@/api/invites";
+import { ROLES } from "@/utils/roles";
 
 function InvitePage() {
   const { token } = useParams();
@@ -30,7 +31,7 @@ function InvitePage() {
       return;
     }
     try {
-      await acceptInviteLink(token); 
+      await acceptInviteLink(token);
       navigate("/app/dashboard");
     } catch (err) {
       setError("Не удалось принять приглашение. Возможно, вы уже являетесь участником.");
@@ -49,15 +50,17 @@ function InvitePage() {
         </div>
       ) : (
         <div className="flex flex-col gap-5 text-center">
-          <p className="text-lg">Вас приглашают присоединиться к воркспейсу</p>
+          <p className="text-lg">
+            Пользователь
+            <span className="text-primary-color"> {data?.created_by?.username} </span>
+            приглашает вас присоединиться к воркспейсу
+            <span className="text-primary-color"> {data?.workspace?.name} </span>
+          </p>
           <div className="bg-background-color p-3 rounded-[5px]">
             <label>Ваша роль</label>
             <span className="font-bold text-primary-color text-xl tracking-wide">
-              {data?.role === "member" ? "Редактор" : "Наблюдатель"}
+              {ROLES.find(r => r.value === data?.role)?.label || data?.role}
             </span>
-            <p>
-              {data?.user}
-            </p>
           </div>
           <div className="flex justify-between w-full">
             <UnfilledButton onClick={() => navigate("/app")}>

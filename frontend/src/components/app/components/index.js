@@ -5,3 +5,4 @@ export { MemberList } from "./MemberList";
 export { ProjectModal } from "./ProjectModal";
 export { ProjectsList } from "./ProjectsList";
 export { WorkspaceTabPanel } from "./WorkspaceTabPanel";
+export { RoleTooltip } from "./RoleTooltip";

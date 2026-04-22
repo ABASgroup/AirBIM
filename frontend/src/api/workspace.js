@@ -6,3 +6,8 @@ export const getWorkspaceMembers = (id) => api.get(`/workspaces/${id}/membership
 export const createWorkspace = (name) => api.post("/workspaces", { name });
 export const deleteWorkspace = (id) => api.delete(`/workspaces/${id}`);
 export const getWorkspaceAccess = (id) => api.get(`/workspaces/${id}/access`);
+
+export const removeWorkspaceMember = (workspaceId, userId) => 
+    api.delete(`/workspaces/${workspaceId}/memberships/${userId}`);
+export const changeUserRole = (workspaceId, userId, role) =>
+     api.patch(`/workspaces/${workspaceId}/memberships/${userId}/role?role=${role}`);

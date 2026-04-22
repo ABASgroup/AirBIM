@@ -23,10 +23,14 @@ class StorageConfig(BaseSettings):
                                       env_file_encoding='utf-8',
                                       extra='ignore')
 
+    # TODO: испарвить хардкод эндпоинты
     @property
-    def endpoint(self) -> str:
-        """Endpoint for connection."""
+    def internal_endpoint(self) -> str:
         return f"http://storage:{self.STORAGE_PORT}"
+    
+    @property
+    def public_endpoint(self) -> str:
+        return f"http://localhost:{self.STORAGE_PORT}"
 
 
 storage_config = StorageConfig()  # type: ignore

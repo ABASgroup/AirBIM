@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { Modal, Select, FilledButton } from "@ui";
 import { createInviteLink, revokeInviteLinks } from "@/api/invites";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { ROLES } from "@/utils/roles";
 
-const ROLE_OPTIONS = [
-  { value: "member", label: "Редактор" },
-  { value: "viewer", label: "Наблюдатель" },
-];
+const ROLE_OPTIONS = ROLES.filter(r => r.value === "member" || r.value === "viewer");
 
 export const InviteManagerModal = ({ isOpen, onClose, showBackdrop }) => {
   const { currentWorkspace } = useWorkspace();

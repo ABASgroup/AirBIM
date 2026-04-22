@@ -51,7 +51,7 @@ h3 {
 }
 
 @layer base {
-    p, a, span, button, ::placeholder {
+    p, a, span, button, ::placeholder, ul {
         font-size: 16px;
         font-family: "PTSansCaption", Arial, sans-serif;
         @apply text-text-color
