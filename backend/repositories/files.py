@@ -48,6 +48,19 @@ class BaseFileRepository(BaseRepository[ModelT]):
         )
         return result.scalar_one_or_none()
 
+    @classmethod
+    async def get_by_status(
+        cls,
+        status: FileStatus,
+        session: AsyncSession
+    ):
+        """Get all files with the specified status."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.status == status)
+        )
+        return result.scalars().all()
+
 
 class BimFileRepository(BaseFileRepository[BimFile]):
     """Repository class for CRUD operations with BimFile model."""

@@ -32,28 +32,21 @@ async def create_project(project_data: ProjectModel, session: AsyncSession) -> P
     """
     Create a new project for the workspace.
     """
-    try:
-        project = await ProjectRepository.create(project_data, session=session)
-        await session.commit()
-        return project
-    except Exception:
-        await session.rollback()
-        raise
+    project = await ProjectRepository.create(project_data, session=session)
+    return project
 
 
 async def update_project(project_id: uuid.UUID, project_data: ProjectUpdate, session: AsyncSession) -> Project:
     """Update information about project using its ID"""
     try:
         project = await ProjectRepository.update_by_id(project_id, project_data, session=session)
-        await session.commit()
-        await session.refresh(project)
+
+        if project is None:
+            raise NotFoundError("Project was not found")
+
         return project
     except AttributeError as exc:
-        await session.rollback()
         raise NotFoundError("Project was not found") from exc
-    except Exception:
-        await session.rollback()
-        raise
 
 
 async def delete_project(project_id: uuid.UUID, session: AsyncSession, storage: Storage) -> Project:
@@ -62,21 +55,18 @@ async def delete_project(project_id: uuid.UUID, session: AsyncSession, storage: 
 
     Make sure to check permission.
     """
-    try:
-        project = await ProjectRepository.get_by_id(project_id, session=session)
+    project = await ProjectRepository.get_by_id(project_id, session=session)
 
-        if project is None:
-            raise NotFoundError("Project was not found.")
+    if project is None:
+        raise NotFoundError("Project was not found.")
 
-        # clear project files first
-        FileService.clear_project_files(
-            project.workspace_id, project.id, storage)
+    # clear project files first
+    FileService.clear_project_files(
+        project.workspace_id,
+        project.id,
+        storage=storage)
 
-        # drop entry and related entries
-        await ProjectRepository.delete(project, session=session)
+    # drop entry and related entries
+    await ProjectRepository.delete(project, session=session)
 
-        await session.commit()
-        return project
-    except Exception:
-        await session.rollback()
-        raise
+    return project
