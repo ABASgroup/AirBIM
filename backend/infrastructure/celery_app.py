@@ -34,7 +34,7 @@ celery_app.conf.task_queues = (
 celery_app.conf.beat_schedule = {
     'periodic-cleanup-every-midnight': {
         'task': 'tasks.periodic.clean_up_files',
-        'schedule': crontab(hour=0, minute=0),
+        'schedule': 60,
         'options': {'queue': 'default'}
     },
     'test-30-seconds': {

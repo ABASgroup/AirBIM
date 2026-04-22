@@ -14,7 +14,7 @@ class File(BaseModel):
     """
     Represents every single file in the storage without extra specification.
     """
-    __abstract__ = True
+    __tablename__ = "files"
 
     filename: Mapped["str"] = mapped_column(nullable=False)
     key: Mapped["str"] = mapped_column(nullable=False, unique=True)
@@ -28,18 +28,38 @@ class File(BaseModel):
     )
 
 
-class BimFile(File):
-    __tablename__ = "bim_files"
-
-    project_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"))
-    project: Mapped["Project"] = relationship(back_populates="bim_files")
-
-
-class PointCloudFile(File):
-    __tablename__ = "point_cloud_files"
+class PointCloud(BaseModel):
+    __tablename__ = "point_clouds"
 
     stage_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("stages.id", ondelete="CASCADE"))
     stage: Mapped["Stage"] = relationship(
-        back_populates="point_cloud_files")
+        back_populates="point_clouds")
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+    file: Mapped["File"] = relationship(
+        cascade="all, delete",
+        passive_deletes=True
+    )
+
+
+class Bim(BaseModel):
+    __tablename__ = "bims"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"))
+    project: Mapped["Project"] = relationship(back_populates="bims")
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+    file: Mapped["File"] = relationship(
+        cascade="all, delete",
+        passive_deletes=True
+    )

@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
 from services.file import FileService
-from core.exceptions.exceptions import NotFoundError
+from core.exceptions import NotFoundError
 from repositories.stage import StageRepository
 from models.stage import Stage
 from schemas.stage import StageModel

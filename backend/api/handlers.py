@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from core.exceptions.exceptions import *
+from core.exceptions import *
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,14 @@ async def invalid_login_info_handler(request: Request, exc: InvalidLoginInfoErro
     )
 
 
+async def invalid_file_metadata_handler(request: Request, exc: InvalidFileMetaDataError):
+    logger.exception(f"App exception: {exc}")
+    return JSONResponse(
+        status_code=401,
+        content={"message": exc.message}
+    )
+
+
 async def prohibited_workspace_action_handler(request: Request, exc: ProhibitedWorkspaceActionError):
     logger.exception(f"App exception: {exc}")
     return JSONResponse(
@@ -96,6 +104,8 @@ def add_exception_handlers(app: FastAPI):
                               invalid_invitation_handler)
     app.add_exception_handler(InvalidLoginInfoError,
                               invalid_login_info_handler)
+    app.add_exception_handler(InvalidFileMetaDataError,
+                              invalid_file_metadata_handler)
     app.add_exception_handler(
         ProhibitedWorkspaceActionError, prohibited_workspace_action_handler)
     app.add_exception_handler(MembershipViolationError,

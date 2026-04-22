@@ -1,18 +1,19 @@
 """Service layer logic for files."""
 import uuid
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.files import (
-    FileUploadConfirmRequest,
-    PointCloudFileModel,
-    BIMFileModel,
-    FileUploadLinkRequest
+    FileModel,
+    BIMModel,
+    FileDataRequest
 )
 
-from core.exceptions.exceptions import NotFoundError
+from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.files import PointCloudFile, BimFile, FileStatus
+from models.file import Bim, FileStatus, File
+from models.project import Project
 
-from repositories.files import PointCloudFileRepository, BimFileRepository
+from repositories.files import FileRepository, BimRepository
 from infrastructure.storage import Storage
 
 
@@ -56,17 +57,37 @@ class FileService:
         storage.delete_files_by_prefix(prefix)
 
     @staticmethod
-    async def delete_bim_file(project_id: uuid.UUID, storage: Storage, session: AsyncSession):
+    async def delete_bim(project_id: uuid.UUID, storage: Storage, session: AsyncSession):
         """Delete BIM file from the storage and remove entry from the database."""
-        file = await BimFileRepository.get_by_project_id(project_id, session=session)
-        if not file:
-            raise NotFoundError("BIM file not found for the project.")
+        bim = await BimRepository.get_by_project_id(project_id, session=session)
 
-        # delete from storage
-        storage.delete_file(file.key)
+        if not bim:
+            raise NotFoundError("BIM is not found for the project.")
+
+        # delete file from storage
+        storage.delete_file(bim.file.key)
 
         # delete from database
-        await BimFileRepository.delete(file, session=session)
+        await BimRepository.delete(bim, session=session)
+        return bim
+
+    @staticmethod
+    def check_file_meta(
+        file: File,
+        content_type: str,
+        size: int,
+        filename: str
+    ):
+        """
+        Check provided file metadata with meta that is already in the database.
+
+        You can register there metadata checks you need.
+        """
+        failed = (file.filename != filename) or (
+            file.content_type != content_type) or (file.size != size)
+
+        if failed:
+            raise InvalidFileMetaDataError()
 
     @classmethod
     async def generate_bim_download_link(
@@ -74,32 +95,30 @@ class FileService:
         project_id: uuid.UUID,
         session: AsyncSession,
         storage: Storage
-    ) -> tuple[str, BimFile]:
+    ) -> tuple[str, File]:
         """
         Creates presigned URL for BIM download.
 
-        Returns url and file key.
+        Returns url and file.
         """
-        # get the key first
-        file = await BimFileRepository.get_by_project_id(
+        bim = await BimRepository.get_by_project_id(
             project_id=project_id,
             session=session
         )
 
-        if file is None:
+        if bim is None:
             raise NotFoundError(
-                "BIM file for this project is not found")
+                "BIM is not found for the project.")
 
-        link = storage.get_download_link(file.key)
+        link = storage.get_download_link(bim.file.key)
 
-        return link, file
+        return link, bim.file
 
     @classmethod
     async def generate_bim_upload_link(
         cls,
-        workspace_id: uuid.UUID,
-        project_id: uuid.UUID,
-        file_data: FileUploadLinkRequest,
+        project: Project,
+        file_data: FileDataRequest,
         storage: Storage,
         session: AsyncSession
     ) -> tuple[str, str]:
@@ -110,21 +129,22 @@ class FileService:
         """
         # create key
         key = cls.create_file_key(
-            workspace_id=workspace_id,
+            workspace_id=project.workspace_id,
             project_id=project_id,
             filename=file_data.filename
         )
 
-        # make pending file
-        file_data_db = BIMFileModel(
+        file = FileModel(
             filename=file_data.filename,
             key=key,
-            content_type=file_data.content_type,
             size=file_data.size,
-            project_id=project_id
+            content_type=file_data.content_type
         )
+        bim = BIMModel(project_id=project_id, file=file)
 
-        await BimFileRepository.create(file_data_db, session=session)
+        # make pending file
+        await FileRepository.create(file, session=session)
+        await BimRepository.create(bim, session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(key)
@@ -134,123 +154,67 @@ class FileService:
     @classmethod
     async def confirm_bim_upload(
         cls,
-        file_data: FileUploadConfirmRequest,
-        storage: Storage,
-        session: AsyncSession
-    ) -> BimFile:
-        """
-        Runs checks on the file.
-
-        If everything is fine, returns file entry in DB.
-        """
-        # in the database
-        # check fields we want to check
-        file_db = await BimFileRepository.get_file_by_metadata(
-            file_data.filename,
-            file_data.content_type,
-            file_data.size,
-            session=session
-        )
-
-        if file_db is None:
-            raise NotFoundError(
-                "File not found: no entry in the database.")
-
-        # in the storage
-        exists = storage.file_exists(file_db.key)
-        if not exists:
-            raise NotFoundError(
-                "File not found: not uploaded to the storage")
-
-        # everything seems clear, set new status
-        await BimFileRepository.update_status(
-            file_db,
-            FileStatus.UPLOADED,
-            session=session)
-        return file_db
-
-    @classmethod
-    async def generate_point_cloud_upload_link(
-        cls,
-        workspace_id: uuid.UUID,
         project_id: uuid.UUID,
-        stage_id: uuid.UUID,
-        file_data: FileUploadLinkRequest,
+        file_data: FileDataRequest,
         storage: Storage,
         session: AsyncSession
-    ) -> tuple[str, str]:
-        """
-        Creates presigned URL for point cloud upload and makes reservation in DB.
-
-        Returns url and file key.
-        """
-        # create key
-        key = cls.create_file_key(
-            workspace_id=workspace_id,
-            project_id=project_id,
-            filename=file_data.filename,
-            stage_id=stage_id
-        )
-
-        # make pending file
-        file_data_db = PointCloudFileModel(
-            filename=file_data.filename,
-            key=key,
-            content_type=file_data.content_type,
-            size=file_data.size,
-            stage_id=stage_id
-        )
-
-        await PointCloudFileRepository.create(file_data_db, session=session)
-
-        # generate temporary upload link
-        link = storage.get_upload_link(key)
-
-        return link, key
-
-    @classmethod
-    async def confirm_point_cloud_upload(
-        cls,
-        file_data: FileUploadConfirmRequest,
-        storage: Storage,
-        session: AsyncSession
-    ) -> PointCloudFile:
+    ) -> Bim:
         """
         Runs checks on the file.
 
-        If everything is fine, returns file entry in DB.
+        If everything is fine, returns entry in DB.
         """
         # in the database
-        # check fields we want to check
-        file_db = await PointCloudFileRepository.get_file_by_metadata(
-            file_data.filename,
-            file_data.content_type,
-            file_data.size,
-            session=session
-        )
+        bim = await BimRepository.get_by_project_id(project_id, session=session)
 
-        if file_db is None:
+        if bim is None:
             raise NotFoundError(
-                "File not found: no entry in the database.")
+                "BIM is not found for the project.")
+
+        await BimRepository.refresh(bim, session=session, relations=["file"])
+
+        # check fields we want to check
+        file = bim.file
+
+        cls.check_file_meta(file, **file_data.model_dump())
 
         # in the storage
-        exists = storage.file_exists(file_db.key)
-        if not exists:
+        if not storage.file_exists(file.key):
             raise NotFoundError(
                 "File not found: not uploaded to the storage")
 
         # everything seems clear, set new status
-        await PointCloudFileRepository.update_status(
-            file_db,
+        await FileRepository.update_status(
+            file,
             FileStatus.UPLOADED,
             session=session)
-        return file_db
+        return bim
 
-    async def clean_up_files(self, storage: Storage, session: AsyncSession):
+    @classmethod
+    async def clean_up_files(
+            cls,
+            storage: Storage,
+            session: AsyncSession,
+            pending_for_limit: timedelta = timedelta(days=1)
+    ):
         """
         Cleans up files from the database and the storage.
 
         Which files are being cleaned:
-        - those, that are pending in the database for a long time but not in the storage
+        - those, that are pending in the database for a long time
         - those, that are in the storage but not in the database
         """
+        # delete files that are pending for far too long
+        # they CAN be in the storage if there was no confirm
+        # it was decided to delete them anyway
+        files = await FileRepository.get_by_status(FileStatus.PENDING, session=session)
+
+        for file in files:
+            file_pending_for = file.created_at - datetime.now(timezone.utc)
+            if file_pending_for > pending_for_limit:
+                # db first
+                key = file.key
+                await FileRepository.delete(file, session=session)
+                storage.delete_file(key)
+
+        # delete files that are in the storage but not in the database

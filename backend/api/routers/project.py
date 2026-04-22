@@ -1,6 +1,5 @@
 import uuid
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
 from services import project as project_service
 from services import stage as stage_service
@@ -8,10 +7,9 @@ from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StageResponse
 from schemas.files import (
-    FileUploadLinkRequest,
-    FileUploadConfirmRequest,
+    FileDataRequest,
     FileLinkResponse,
-    BIMFileResponse
+    BIMResponse
 )
 from core.roles import Permission
 from core.dependencies import (
@@ -136,7 +134,7 @@ async def create_stage(
 )
 async def get_bim_upload_link(
     project_id: uuid.UUID,
-    file_data: FileUploadLinkRequest,
+    file_data: FileDataRequest,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
@@ -149,10 +147,8 @@ async def get_bim_upload_link(
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)
-
         url, key = await FileService.generate_bim_upload_link(
-            project_id=project_id,
-            workspace_id=project.workspace_id,
+            project=project,
             file_data=file_data,
             session=uow.session,
             storage=storage
@@ -171,12 +167,13 @@ async def get_bim_upload_link(
 
 @router.post(
     "/{project_id}/files/bim/confirm",
-    response_model=BIMFileResponse,
+    response_model=BIMResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
 )
 async def confirm_bim_upload(
-    file_data: FileUploadConfirmRequest,
+    project_id: uuid.UUID,
+    file_data: FileDataRequest,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
@@ -188,18 +185,19 @@ async def confirm_bim_upload(
     Requires permission.
     """
     async with uow:
-        file = await FileService.confirm_bim_upload(
+        bim = await FileService.confirm_bim_upload(
+            project_id=project_id,
             file_data=file_data,
             session=uow.session,
             storage=storage
         )
 
-    return file
+    return bim
 
 
 @router.delete(
     "/{project_id}/files/bim",
-    response_model=BIMFileResponse,
+    response_model=BIMResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_DELETE_BIM))],
 )
@@ -209,22 +207,22 @@ async def delete_bim_file(
     storage: Storage = Depends(get_storage)
 ):
     """
-    Delete project's BIM file.
+    Delete project's BIM.
 
-    This action deletes file from the storage and removes record from the database.
+    This action deletes BIM from the storage and removes record from the database.
 
-    Be cautious, related reports, point clouds will become irrelevant without the BIM file.
+    Be cautious, related reports, point clouds will become irrelevant without the BIM.
 
     Requires permission.
     """
     async with uow:
-        file = await FileService.delete_bim_file(
+        bim = await FileService.delete_bim(
             project_id=project_id,
             session=uow.session,
             storage=storage
         )
 
-    return file
+    return bim
 
 
 @router.post(

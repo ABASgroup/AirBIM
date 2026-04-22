@@ -1,18 +1,11 @@
 import uuid
-from datetime import datetime
 from pydantic import BaseModel
-from models.files import FileStatus
+from models.file import FileStatus
 from .base import Response
 
 
 # link schemas
-class FileUploadLinkRequest(BaseModel):
-    filename: str
-    content_type: str
-    size: int
-
-
-class FileUploadConfirmRequest(BaseModel):
+class FileDataRequest(BaseModel):
     filename: str
     content_type: str
     size: int
@@ -42,12 +35,10 @@ class FileResponse(Response):
     content_type: str
     size: int
     status: FileStatus
-    created_at: datetime
-    updated_at: datetime
 
 
 class FileModel(BaseModel):
-    """Schema in DB. Use as a mixin."""
+    """Schema in DB. Use to create in db."""
     filename: str
     key: str
     content_type: str
@@ -56,22 +47,25 @@ class FileModel(BaseModel):
 
 
 # schemas for point clouds
-class PointCloudFileModel(FileModel):
+class PointCloudModel(FileModel):
     """Schema in DB. Use to create in DB."""
     stage_id: uuid.UUID
+    file: FileModel
 
 
-class PointCloudFileResponse(FileResponse):
+class PointCloudResponse(Response):
     """API response schema."""
     stage_id: uuid.UUID
+    file: FileResponse
 
 
 # schemas for bims
-class BIMFileModel(FileModel):
+class BIMModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     project_id: uuid.UUID
+    file: FileModel
 
-
-class BIMFileResponse(FileResponse):
+class BIMResponse(Response):
     """API response schema."""
     project_id: uuid.UUID
+    file: FileResponse

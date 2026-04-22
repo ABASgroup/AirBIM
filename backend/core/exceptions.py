@@ -45,6 +45,14 @@ class InvalidLoginInfoError(BaseAppError):
     """Email or password is invalid."""
 
 
+class InvalidFileMetaDataError(BaseAppError):
+    """Invalid metadata provided."""
+
+    def __init__(self):
+        message = "The metadata provided doesn't match the metadata in the database"
+        super().__init__(message)
+
+
 class ProhibitedWorkspaceActionError(BaseAppError):
     """Workspace prohibits this behavior or action."""
 
