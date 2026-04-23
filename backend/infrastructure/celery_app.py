@@ -1,6 +1,7 @@
 """Celery configuration."""
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
+from celery.schedules import crontab
 from kombu import Queue
 from core.configs.celery import celery_config
 from infrastructure.async_runtime import init_worker_event_loop, close_worker_event_loop
@@ -35,7 +36,7 @@ celery_app.conf.task_queues = (
 celery_app.conf.beat_schedule = {
     'periodic-cleanup-every-midnight': {
         'task': 'tasks.periodic.clean_up_files',
-        'schedule': 60,
+        'schedule': crontab(hour=0, minute=0),
         'options': {'queue': 'default'}
     },
     'test-30-seconds': {
@@ -48,7 +49,8 @@ celery_app.conf.beat_schedule = {
 # on each worker process we should create a
 # separate async loop to avoid troubles with
 # concurrency for the database connection
-
+# TLDR: ALWAYS ONE EVENT LOOP PER WORKER
+# AND DON'T FORGET TO CLOSE IT
 
 @worker_process_init.connect
 def _init_async_runtime(**_kwargs):

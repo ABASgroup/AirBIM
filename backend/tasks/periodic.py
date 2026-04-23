@@ -14,11 +14,14 @@ def clean_up_files():
     async def run_task():
         uow = get_database_uow()
         async with uow:
-            await FileService.clean_up_files(
+            files_deleted = await FileService.clean_up_files(
                 storage=get_storage(),
                 session=uow.session
             )
-    run_async(run_task())
+        return files_deleted
+    files_deleted = run_async(run_task())
+    # temporary no logger
+    print(f"FILE CLEAN UP: FILES DELETED - {files_deleted}")
 
 
 @celery_app.task(base=PeriodicTask,  ignore_result=True)

@@ -140,7 +140,6 @@ class FileService:
             size=file_data.size,
             content_type=file_data.content_type
         )
-        
 
         # make pending file
         file = await FileRepository.create(file, session=session)
@@ -205,18 +204,27 @@ class FileService:
         - those, that are pending in the database for a long time
         - those, that are in the storage but not in the database
         """
+        files_deleted = 0
         # delete files that are pending for far too long
         # they CAN be in the storage if there was no confirm
         # it was decided to delete them anyway
         files = await FileRepository.get_by_status(FileStatus.PENDING, session=session)
 
         for file in files:
-            # TODO: offset naive and offset aware datetimes
             file_pending_for = datetime.now(timezone.utc) - file.created_at
             if file_pending_for > pending_for_limit:
                 # db first
                 key = file.key
                 await FileRepository.delete(file, session=session)
                 storage.delete_file(key)
+                files_deleted += 1
 
         # delete files that are in the storage but not in the database
+        # no entry in the database about them is a sign of an "orphan" file
+        keys = storage.get_all_keys()
+        for key in keys:
+            file = await FileRepository.get_by_key(key, session=session)
+            if file is None:
+                storage.delete_file(key)
+                files_deleted += 1
+        return files_deleted

@@ -12,6 +12,19 @@ class FileRepository(BaseRepository[File]):
     _model = File
 
     @classmethod
+    async def get_by_key(
+        cls,
+        key: str,
+        session: AsyncSession
+    ) -> File | None:
+        """Get file by the key."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.key == key)
+        )
+        return result.scalar_one_or_none()
+
+    @classmethod
     async def update_status(
         cls,
         file: File,

@@ -8,7 +8,7 @@ from core.configs.storage import storage_config
 class Storage:
     """
     App S3 storage.
-    
+
     Interface to interact with the S3 storage.
     """
 
@@ -89,7 +89,7 @@ class Storage:
         )
         return url
 
-    def get_download_link(self, key: str, ):
+    def get_download_link(self, key: str) -> str:
         """
         Get temporary link for downloading file to the storage.
 
@@ -103,7 +103,7 @@ class Storage:
         )
         return url
 
-    def delete_files_by_prefix(self, prefix: str):
+    def delete_files_by_prefix(self, prefix: str) -> int:
         """
         Delete all files that contain the provided prefix.
 
@@ -147,7 +147,7 @@ class Storage:
             Bucket=self._bucket_name, Key=key)
         return response
 
-    def file_exists(self, key: str):
+    def file_exists(self, key: str) -> bool:
         """
         Checks if a file with this key exists.
 
@@ -163,3 +163,8 @@ class Storage:
             else:
                 # something's wrong
                 raise
+
+    def get_all_keys(self) -> list[str]:
+        """Get all keys in the bucket."""
+        bucket = self._resource.Bucket(self._bucket_name)
+        return [obj.key for obj in bucket.objects.all()]
