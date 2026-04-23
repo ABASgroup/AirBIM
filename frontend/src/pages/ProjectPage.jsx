@@ -4,7 +4,7 @@ import { getProject } from "@/api/project";
 import { getBimDownloadLink } from "@/api/file"
 import { useState, useEffect } from "react";
 import { FilledButton } from "@ui";
-import { IfcViewerModal } from "@app/components/IfcViewerModal"
+import { IfcViewerDrawer } from "@app/components/IfcViewerDrawer"
 import { useToast } from "@/context/ToastContext";
 
 function ProjectPage() {
@@ -54,7 +54,7 @@ function ProjectPage() {
       <p>{project?.description}</p>
       <FilledButton onClick={handleShowBim} disabled={bimLoading}>Показать BIM</FilledButton>
       {bimError && <p style={{ color: "red" }}>{bimError}</p>}
-      <IfcViewerModal
+      <IfcViewerDrawer
         url={bimUrl}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

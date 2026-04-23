@@ -1,5 +1,5 @@
 export { CreateWorkspaceForm } from "./CreateWorkspaceForm";
-export { IfcViewerModal } from "./IfcViewerModal";
+export { IfcViewerDrawer } from "./IfcViewerDrawer";
 export { InviteManagerModal } from "./InviteManagerModal";
 export { MemberList } from "./MemberList";
 export { ProjectModal } from "./ProjectModal";
