@@ -52,7 +52,7 @@ class Bim(BaseModel):
 
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"))
-    project: Mapped["Project"] = relationship(back_populates="bims")
+    project: Mapped["Project"] = relationship(back_populates="bim")
 
     file_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),

@@ -1,6 +1,6 @@
 """Base model of the API database."""
 from datetime import datetime
-from sqlalchemy import func, UUID
+from sqlalchemy import func, UUID, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs
 import uuid
@@ -20,6 +20,12 @@ class BaseModel(AsyncAttrs, DeclarativeBase):
         unique=True,
         default=uuid.uuid4
     )
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(),
-                                                 onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )

@@ -130,7 +130,7 @@ class FileService:
         # create key
         key = cls.create_file_key(
             workspace_id=project.workspace_id,
-            project_id=project_id,
+            project_id=project.id,
             filename=file_data.filename
         )
 
@@ -140,10 +140,11 @@ class FileService:
             size=file_data.size,
             content_type=file_data.content_type
         )
-        bim = BIMModel(project_id=project_id, file=file)
+        
 
         # make pending file
-        await FileRepository.create(file, session=session)
+        file = await FileRepository.create(file, session=session)
+        bim = BIMModel(project_id=project.id, file_id=file.id)
         await BimRepository.create(bim, session=session)
 
         # generate temporary upload link
@@ -210,7 +211,8 @@ class FileService:
         files = await FileRepository.get_by_status(FileStatus.PENDING, session=session)
 
         for file in files:
-            file_pending_for = file.created_at - datetime.now(timezone.utc)
+            # TODO: offset naive and offset aware datetimes
+            file_pending_for = datetime.now(timezone.utc) - file.created_at
             if file_pending_for > pending_for_limit:
                 # db first
                 key = file.key

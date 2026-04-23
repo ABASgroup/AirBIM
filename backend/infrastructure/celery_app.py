@@ -1,8 +1,9 @@
 """Celery configuration."""
 from celery import Celery
-from celery.schedules import crontab
+from celery.signals import worker_process_init, worker_process_shutdown
 from kombu import Queue
 from core.configs.celery import celery_config
+from infrastructure.async_runtime import init_worker_event_loop, close_worker_event_loop
 
 
 # register tasks modules here
@@ -43,3 +44,17 @@ celery_app.conf.beat_schedule = {
         'options': {'queue': 'default'}
     },
 }
+
+# on each worker process we should create a
+# separate async loop to avoid troubles with
+# concurrency for the database connection
+
+
+@worker_process_init.connect
+def _init_async_runtime(**_kwargs):
+    init_worker_event_loop()
+
+
+@worker_process_shutdown.connect
+def _shutdown_async_runtime(**_kwargs):
+    close_worker_event_loop()
