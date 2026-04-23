@@ -5,7 +5,7 @@ import { useWorkspace } from "@/context/WorkspaceContext";
 import { getProjects, createProject, deleteProject, updateProject } from "@/api/project";
 import { getBimUploadLink, uploadFileWithPresignedLink, confirmBimUpload } from "@/api/file";
 import { isIFC } from "@utils";
-import { FilledButton, ActionMenu } from "@ui";
+import { FilledButton, ActionMenu, LoadingSpinner } from "@ui";
 import { ProjectModal } from "@app/components/ProjectModal";
 
 export const ProjectsList = () => {
@@ -16,12 +16,18 @@ export const ProjectsList = () => {
   const [editingProject, setEditingProject] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const actionBtnRefs = useRef({});
   const navigate = useNavigate();
   useEffect(() => {
     setProjects([]);
+    setIsLoading(true);
     if (currentWorkspace?.id) {
-      getProjects(currentWorkspace.id).then(res => setProjects(res.data));
+      getProjects(currentWorkspace.id)
+        .then(res => setProjects(res.data))
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, [currentWorkspace?.id]);
 
@@ -86,6 +92,10 @@ export const ProjectsList = () => {
     setActiveMenuId(null);
   };
   const isEmpty = !projects || projects.length === 0;
+
+  if (isLoading) {
+    return <LoadingSpinner variant = "inline" message="Загрузка проектов..." />;
+  }
 
   return (
     <div>

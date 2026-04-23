@@ -19,7 +19,7 @@ export const WorkspaceTabPanel = ({ workspace }) => {
   ];
 
   if (loadingPermissions) {
-    return <div>Загрузка...</div>;
+    return <></>;
   }
 
   const isPersonalWorkspace = workspace?.type === "personal";

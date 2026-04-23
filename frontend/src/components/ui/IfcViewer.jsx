@@ -1,10 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { IfcViewerAPI } from "web-ifc-viewer";
+import { LoadingSpinner } from "@ui";
 
 export function IfcViewer({ url }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [wasmReady, setWasmReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+
+  useEffect(() => {
+    const loadIfc = async () => {
+      if (!viewerRef.current || !url || !wasmReady) return;
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        await viewerRef.current.IFC.loadIfcUrl(url, true);
+      } catch (error) {
+        setLoadError("Не удалось загрузить BIM модель");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadIfc();
+  }, [url, wasmReady]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -27,15 +49,6 @@ export function IfcViewer({ url }) {
     };
   }, []);
 
-  useEffect(() => {
-    const loadIfc = async () => {
-      if (!viewerRef.current || !url || !wasmReady) return;
-      await viewerRef.current.IFC.loadIfcUrl(url, true);
-    };
-
-    loadIfc();
-  }, [url, wasmReady]);
-
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file || !viewerRef.current) return;
@@ -50,11 +63,12 @@ export function IfcViewer({ url }) {
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-
       <div
         ref={containerRef}
         className="w-full h-full outline-none"
       />
+      {isLoading && <LoadingSpinner message="Загрузка BIM модели..." />}
+      {loadError && <div className="error-message">{loadError}</div>}
     </div>
   );
 }
