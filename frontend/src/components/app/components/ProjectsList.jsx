@@ -119,7 +119,7 @@ export const ProjectsList = () => {
         {projects.map((project) => (
           <div
             key={project.id}
-            className="flex items-center justify-between rounded-[5px] p-5 bg-surface"
+            className="flex items-center justify-between rounded-[5px] p-5 bg-surface cursor-pointer shadow-bottom"
             onClick={() => navigate(`/app/projects/${project.id}`)}>
             <div>
               <h3 className="font-bold">{project.name}</h3>
@@ -137,7 +137,7 @@ export const ProjectsList = () => {
                   setActiveMenuId(activeMenuId === project.id ? null : project.id);
                 }}
               >
-                <i className="fa-solid fa-bars text-text-color p-2"></i>
+                <i className="fa-solid fa-bars text-text-color p-2 transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
               </button>
               {activeMenuId === project.id && (
                 <ActionMenu

@@ -3,7 +3,8 @@ import { UnfilledButton } from "@ui";
 
 export const PricingCard = ({ tariff, isFeatured }) => {
   return (
-    <div className={`relative flex flex-col items-center p-6 rounded-lg transition-all bg-surface text-primary-color w-80
+    <div className={`relative flex flex-col items-center p-6 rounded-lg transition-all 
+      bg-surface text-primary-color w-80 shadow-bottom
       ${isFeatured ? "border-3 border-primary-color" : "none"}
     `}>
       {isFeatured && (

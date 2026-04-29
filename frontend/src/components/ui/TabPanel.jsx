@@ -2,7 +2,7 @@
 export const TabPanel = ({ tabs, activeTab, onChange, children }) => {
 	return (
 		<div className="bg-background-color">
-			<div className="flex border-5 border-surface rounded-[10px]">
+			<div className="flex border-5 border-surface rounded-[10px] shadow-bottom">
 				{tabs.map((tab) => (
 					<button
 						key={tab.id}

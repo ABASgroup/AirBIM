@@ -4,15 +4,17 @@ import { Logo, UnfilledButton } from "@ui";
 
 export const AppHeader = () => {
   const location = useLocation();
-  const isDashboard = location.pathname === "/app/dashboard";
+  const isSettings = location.pathname === "/app/settings" || location.pathname.startsWith("/app/workspace/");
   return (
     <header className="h-15 flex items-center justify-between sticky top-0 z-50 px-5 
     bg-surface/70 backdrop-blur-md border-border-color border-b-3">
       <div className="flex items-center justify-between gap-5">
         <Logo />
-        {!isDashboard && (
+        {isSettings && (
           <Link to="/app/dashboard">
-            <UnfilledButton>Личный кабинет</UnfilledButton>
+            <button className="active:scale-95 cursor-pointer hover:brightness-75">
+              К дашборду
+            </button>
           </Link>
         )}
       </div>

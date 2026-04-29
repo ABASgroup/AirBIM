@@ -33,7 +33,7 @@ export const AppSidebar = () => {
   };
 
   return (
-    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3">
+    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
       <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
@@ -45,12 +45,12 @@ export const AppSidebar = () => {
             <div
               key={ws.id}
               onClick={() => handleSelect(ws)}
-              className={`w-70 px-4 py-2 text-left cursor-pointer gap-2 flex items-center border-none select-none justify-between
-                ${currentWorkspace?.id === ws.id ? "bg-mute-text-color rounded-[5px]" : "bg-transparent"
-                }`}
+              className={`w-70 px-1 py-2 text-left cursor-pointer gap-2 flex items-center 
+                select-none justify-between rounded-[5px] hover:bg-black/30
+                ${currentWorkspace?.id === ws.id && "border-2 border-text-color/20"}`}
             >
               <div className="flex items-center gap-2 grow min-w-0 overflow-hidden">
-                <i className={`fa-solid w-5 text-center ${ws.type === "personal" ? "fa-user" : "fa-users"}`}></i>
+                <i className={`fa-solid w-5 text-center pl-1 ${ws.type === "personal" ? "fa-user" : "fa-users"}`}></i>
                 <div className="flex flex-col items-start min-w-0">
                   <span className="truncate">{ws.name}</span>
                   <span className="text-xs text-text-color/30">
@@ -59,13 +59,15 @@ export const AppSidebar = () => {
                 </div>
               </div>
 
-              <div className="p-2" ref={(el) => actionBtnRefs.current[ws.id] = el}
+              <button
+                className="p-1" 
+                ref={(el) => actionBtnRefs.current[ws.id] = el}
                 onClick={(e) => {
                   e.stopPropagation();
                   setActiveMenuId(activeMenuId === ws.id ? null : ws.id);
                 }}>
-                <i className="fa-solid fa-bars flex justify-end shrink-0 text-text-color"></i>
-              </div>
+                <i className="fa-solid fa-bars flex justify-center shrink-0 text-text-color transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
+              </button>
 
               {activeMenuId === ws.id && (
                 <ActionMenu

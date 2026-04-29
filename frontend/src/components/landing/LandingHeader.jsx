@@ -1,10 +1,11 @@
 // Header лендинга
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { FilledButton, UnfilledButton, Logo } from "@ui";
 
 
 export const LandingHeader = () => {
 
+  const location = useLocation();
   const token = localStorage.getItem("access_token");
 
   return (
@@ -21,13 +22,13 @@ export const LandingHeader = () => {
           </Link>
         ) : (
           <div className="flex items-center gap-5">
-            {location.pathname !== '/login' && (
+            {location.pathname !== "/login" && (
               <Link to="/login">
                 <UnfilledButton color="purple">Войти</UnfilledButton>
               </Link>
             )}
 
-            {location.pathname !== '/register' && (
+            {location.pathname !== "/register" && (
               <Link to="/register">
                 <FilledButton color="purple">Зарегистрироваться</FilledButton>
               </Link>

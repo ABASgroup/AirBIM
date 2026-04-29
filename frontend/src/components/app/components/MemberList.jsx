@@ -66,14 +66,14 @@ export const MemberList = ({ workspaceId }) => {
               const isOwner = member.role === "owner";
               return (
                 <div key={member.user.email} className="flex items-center justify-between gap-2 h-14">
-                  <div className="w-full flex items-center bg-surface p-2 pl-4 rounded-[5px] gap-3">
+                  <div className="w-full flex items-center bg-surface p-2 pl-4 rounded-[5px] gap-3 shadow-bottom">
                     <i className="fa-solid fa-user text-text-color text-xl"></i>
                     <div>
                       <p className="m-0">{member.user.username}</p>
                       <p className="m-0 text-sm text-mute-text-color">{member.user.email}</p>
                     </div>
                   </div>
-                  <RoleTooltip role={member.role} disabled={openSelectId === member.user.id} className="w-70 h-full">
+                  <RoleTooltip role={member.role} disabled={openSelectId === member.user.id} className="w-70 h-full shadow-bottom">
                     <Select
                       value={member.role}
                       options={isOwner ? ROLES : selectRoles}
@@ -97,7 +97,7 @@ export const MemberList = ({ workspaceId }) => {
                         setActiveMenuId(activeMenuId === member.user.id ? null : member.user.id);
                       }}
                       disabled={isOwner}
-                      className={`${isOwner ? "opacity-25" : "cursor-pointer"}`}
+                      className={`${isOwner ? "opacity-25" : "cursor-pointer transition-all active:scale-95 hover:brightness-75"}`}
                     >
                       <i className="fa-solid fa-bars text-text-color text-xl w-14 pr-2 flex justify-center"></i>
                     </button>

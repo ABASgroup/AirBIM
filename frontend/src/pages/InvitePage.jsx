@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { LandingHeader } from "@landing";
 import { Modal, FilledButton, UnfilledButton } from "@ui";
 import { validateInviteLink, acceptInviteLink } from "@/api/invites";
-import { ROLES } from "@/utils/roles";
 
 function InvitePage() {
   const { token } = useParams();
@@ -12,7 +11,6 @@ function InvitePage() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const isAuthorized = !!localStorage.getItem("access_token");
-
   useEffect(() => {
     validateInviteLink(token)
       .then(res => {
@@ -59,7 +57,7 @@ function InvitePage() {
           <div className="bg-background-color p-3 rounded-[5px]">
             <label>Ваша роль</label>
             <span className="font-bold text-primary-color text-xl tracking-wide">
-              {ROLES.find(r => r.value === data?.role)?.label || data?.role}
+              {data?.role === "member" ? "Редактор" : "Наблюдатель"}
             </span>
           </div>
           <div className="flex justify-between w-full">

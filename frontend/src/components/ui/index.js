@@ -9,7 +9,6 @@ export { Select } from "./Select";
 export { TabPanel } from "./TabPanel";
 export { UnfilledButton } from "./UnfilledButton";
 export { IfcViewer } from "./IfcViewer";
-export { Disclosure } from "./Disclosure";
 export { Tooltip } from "./Tooltip";
 export { Toast } from "./Toast";
 export { LoadingSpinner } from "./LoadingSpinner";

@@ -36,7 +36,8 @@ export const Tooltip = ({ content, children, className = "", disabled = false })
       </div>
       {isVisible && !disabled && (
         <div
-          className="fixed z-50 bg-surface border-2 border-primary-color rounded-[5px] p-3 shadow-lg max-w-xs"
+          className="fixed z-50 bg-surface/50 backdrop-blur-md border-2 border-text-color/20 rounded-[5px] p-3 max-w-xs
+          shadow-bottom"
           style={{
             top: position.top,
             left: position.left,

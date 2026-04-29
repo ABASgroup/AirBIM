@@ -51,7 +51,7 @@ const StepSection = ({ step, index }) => {
       <div className={`max-w-6xl h-80 flex flex-row items-center gap-12 ${isEven ? "" : "flex-row-reverse"} ${isEven ? "ml-auto" : "mr-auto"}`}>
 
         <div className="flex-1 space-y-5 items-center text-center">
-          <h2 className={`text-4xl font-extrabold leading-tight text-primary-color`}>
+          <h2 className={`text-4xl font-extrabold leading-tight ${step.textColor}`}>
             {step.title}
           </h2>
           <p className={`text-md max-w-xl mx-auto ${step.textColor}`}>
@@ -67,8 +67,8 @@ const StepSection = ({ step, index }) => {
               maskImage: `linear-gradient(${isEven ? "to right" : "to left"}, transparent 0%, black 25%)`,
             }}
           />
-                  <div 
-            className={`absolute inset-0 pointer-events-none bg-gradient-to-${isEven ? "l" : "r"} from-background-color via-transparent to-transparent`} 
+          <div
+            className={`absolute inset-0 pointer-events-none bg-gradient-to-${isEven ? "l" : "r"} from-background-color via-transparent to-transparent`}
           />
         </div>
       </div>

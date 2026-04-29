@@ -9,10 +9,11 @@ export const FilledButton = ({ children, color = "purple", className = "", ...pr
   return (
     <button
       className={`
+        shadow-bottom
         border-none
         min-w-[100px] px-3 py-2
         rounded-[10px]
-        transition-all active:scale-95
+        transition-all active:scale-95 hover:brightness-80
         cursor-pointer
         flex items-center justify-center
         gap-2
