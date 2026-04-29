@@ -1,9 +1,6 @@
-import uuid
 import enum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum
-from datetime import datetime
-from core.roles import Role
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Enum
 from .base import BaseModel
 
 

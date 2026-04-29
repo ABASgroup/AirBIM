@@ -10,10 +10,10 @@ from schemas.files import (
 
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.file import Bim, FileStatus, File
+from models.file import Bim, FileStatus, File, PointCloud
 from models.project import Project
 
-from repositories.files import FileRepository, BimRepository
+from repositories.files import FileRepository, BimRepository, PointCloudRepository
 from infrastructure.storage import Storage
 
 
@@ -88,6 +88,11 @@ class FileService:
 
         if failed:
             raise InvalidFileMetaDataError()
+
+    @classmethod
+    async def get_point_cloud(cls, point_cloud_id: uuid.UUID, session: AsyncSession):
+        point_cloud = await PointCloudRepository.get_by_id(point_cloud_id, session=session)
+        return point_cloud
 
     @classmethod
     async def generate_bim_download_link(

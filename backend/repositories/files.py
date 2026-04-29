@@ -90,3 +90,17 @@ class BimRepository(BaseRepository[Bim]):
 class PointCloudRepository(BaseRepository[PointCloud]):
     """Repository class for CRUD operations with PointCloud model."""
     _model = PointCloud
+
+    @classmethod
+    async def update_converted_key_prefix(
+        cls,
+        point_cloud_id: uuid.UUID,
+        prefix: str,
+        session: AsyncSession
+    ) -> PointCloud:
+        """Update converted files prefix key."""
+        entry = await session.get_one(cls._model, point_cloud_id)
+        entry.converted_key_prefix = prefix
+        await session.flush()
+        await session.refresh(entry)
+        return entry

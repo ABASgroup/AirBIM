@@ -8,7 +8,11 @@ from infrastructure.async_runtime import init_worker_event_loop, close_worker_ev
 
 
 # register tasks modules here
-TASK_MODULES = ('tasks.processing', 'tasks.periodic')
+TASK_MODULES = (
+    'tasks.processing',
+    'tasks.periodic',
+    'tasks.preprocessing'
+)
 
 # celery app main configuration
 celery_app = Celery(
@@ -39,11 +43,6 @@ celery_app.conf.beat_schedule = {
         'schedule': crontab(hour=0, minute=0),
         'options': {'queue': 'default'}
     },
-    'test-30-seconds': {
-        'task': 'tasks.periodic.test',
-        'schedule': 30,
-        'options': {'queue': 'default'}
-    },
 }
 
 # on each worker process we should create a
@@ -51,6 +50,7 @@ celery_app.conf.beat_schedule = {
 # concurrency for the database connection
 # TLDR: ALWAYS ONE EVENT LOOP PER WORKER
 # AND DON'T FORGET TO CLOSE IT
+
 
 @worker_process_init.connect
 def _init_async_runtime(**_kwargs):

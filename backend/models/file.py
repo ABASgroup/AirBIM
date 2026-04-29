@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 from enum import StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Enum
@@ -36,6 +37,9 @@ class PointCloud(BaseModel):
     stage: Mapped["Stage"] = relationship(
         back_populates="point_clouds")
 
+    converted_key_prefix: Mapped["str"] = mapped_column(
+        nullable=True, unique=True)
+
     file_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=False,
@@ -46,6 +50,9 @@ class PointCloud(BaseModel):
         passive_deletes=True
     )
 
+    bim: Mapped[Optional["Bim"]] = relationship(
+        back_populates="point_cloud", uselist=False)
+
 
 class Bim(BaseModel):
     __tablename__ = "bims"
@@ -53,6 +60,16 @@ class Bim(BaseModel):
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"))
     project: Mapped["Project"] = relationship(back_populates="bim")
+
+    point_cloud_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("point_clouds.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True
+    )
+    point_cloud: Mapped[Optional["PointCloud"]] = relationship(
+        "PointCloud",
+        back_populates="bim"
+    )
 
     file_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),

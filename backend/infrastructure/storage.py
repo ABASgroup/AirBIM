@@ -75,6 +75,28 @@ class Storage:
         content = response['Body']
         return content
 
+    def upload_file_locally(self, key: str, file_path: str):
+        """
+        Upload file to the storage from the local dir.
+
+        Args:
+            key (str): key/path of the file in the storage
+            file_path (str): path to the file
+        """
+        self._client.upload_file(self._bucket_name, key, file_path)
+
+    def download_file_locally(self, key: str, file_path: str):
+        """
+        Download file from the storage.
+
+        Saves it locally.
+
+        Args:
+            key (str): key/path of the file in the storage
+            file_path (str): save path of the file
+        """
+        self._client.download_file(self._bucket_name, key, file_path)
+
     def get_upload_link(self, key: str):
         """
         Get temporary link for uploading file to the storage
