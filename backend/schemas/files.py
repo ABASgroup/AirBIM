@@ -47,16 +47,16 @@ class FileModel(BaseModel):
 
 
 # schemas for point clouds
-class PointCloudModel(FileModel):
+class PointCloudModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     stage_id: uuid.UUID
-    file: FileModel
+    file_id: uuid.UUID
 
 
 class PointCloudResponse(Response):
     """API response schema."""
     stage_id: uuid.UUID
-    file_id: uuid.UUID
+    file: FileResponse
 
 
 # schemas for bims
@@ -64,6 +64,7 @@ class BIMModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     project_id: uuid.UUID
     file_id: uuid.UUID
+
 
 class BIMResponse(Response):
     """API response schema."""

@@ -1,6 +1,5 @@
 import uuid
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
 from core.dependencies import (
     get_database_uow,

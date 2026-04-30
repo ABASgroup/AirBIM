@@ -17,6 +17,8 @@ async def get_project(project_id: uuid.UUID, session: AsyncSession) -> Project:
     if project is None:
         raise NotFoundError("No project with this ID")
 
+    project = await ProjectRepository.refresh(project, session=session, relations=["bim"])
+
     return project
 
 

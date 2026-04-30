@@ -127,10 +127,10 @@ async def create_stage(
 
 
 @router.post(
-    "/{project_id}/files/bim/upload",
+    "/{project_id}/bim/upload",
     response_model=FileLinkResponse,
     dependencies=[
-        Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
+        Depends(require_project_permission(Permission.FILES_UPLOAD))],
 )
 async def get_bim_upload_link(
     project_id: uuid.UUID,
@@ -165,97 +165,25 @@ async def get_bim_upload_link(
     return link_data
 
 
-@router.post(
-    "/{project_id}/files/bim/confirm",
+@router.get(
+    "/{project_id}/bim",
     response_model=BIMResponse,
     dependencies=[
-        Depends(require_project_permission(Permission.FILES_UPLOAD_BIM))],
+        Depends(require_project_permission(Permission.FILES_VIEW))],
 )
-async def confirm_bim_upload(
+async def get_project_bim(
     project_id: uuid.UUID,
-    file_data: FileDataRequest,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
-    Confirm finishing uploading a BIM file.
+    Get project's BIM file.
 
-    You can't confirm file upload if file is not uploaded.
+    Provides metadata about the BIM.
 
     Requires permission.
     """
     async with uow:
-        bim = await FileService.confirm_bim_upload(
-            project_id=project_id,
-            file_data=file_data,
-            session=uow.session,
-            storage=storage
-        )
+        project = await project_service.get_project(project_id, session=uow.session)
+        bim = project.bim
 
     return bim
-
-
-@router.delete(
-    "/{project_id}/files/bim",
-    response_model=BIMResponse,
-    dependencies=[
-        Depends(require_project_permission(Permission.FILES_DELETE_BIM))],
-)
-async def delete_bim_file(
-    project_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
-):
-    """
-    Delete project's BIM.
-
-    This action deletes BIM from the storage and removes record from the database.
-
-    Be cautious, related reports, point clouds will become irrelevant without the BIM.
-
-    Requires permission.
-    """
-    async with uow:
-        bim = await FileService.delete_bim(
-            project_id=project_id,
-            session=uow.session,
-            storage=storage
-        )
-
-    return bim
-
-
-@router.post(
-    "/{project_id}/files/bim/download",
-    response_model=FileLinkResponse,
-    dependencies=[
-        Depends(require_project_permission(Permission.FILES_DOWNLOAD))],
-)
-async def get_bim_download_link(
-    project_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
-):
-    """
-    Get a temporary link to download BIM file.
-
-    Use this link to download file.
-
-    Requires permission.
-    """
-    async with uow:
-        url, file = await FileService.generate_bim_download_link(
-            project_id=project_id,
-            session=uow.session,
-            storage=storage
-        )
-
-    link_data = FileLinkResponse(
-        key=file.key,
-        url=url,
-        filename=file.filename,
-        size=file.size,
-        content_type=file.content_type
-    )
-
-    return link_data
