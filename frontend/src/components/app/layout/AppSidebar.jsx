@@ -5,6 +5,7 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
+import { Can } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -60,7 +61,7 @@ export const AppSidebar = () => {
               </div>
 
               <button
-                className="p-1" 
+                className="p-1"
                 ref={(el) => actionBtnRefs.current[ws.id] = el}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -75,11 +76,14 @@ export const AppSidebar = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[ws.id] }}
                 >
-                  <button onClick={() => handleDeleteWorkspace(ws.id)}>
-                    <i className="fa-solid fa-trash"></i>
-                    Удалить
-                  </button>
-
+                  <Can permission="workspace:delete">
+                    {ws.type !== "personal" && (
+                      <button onClick={() => handleDeleteWorkspace(ws.id)}>
+                        <i className="fa-solid fa-trash"></i>
+                        Удалить
+                      </button>
+                    )}
+                  </Can>
                   <button onClick={() => {
                     setIsOpen(null);
                     setActiveMenuId(null);

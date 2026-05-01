@@ -6,7 +6,7 @@ import { getProjects, createProject, deleteProject, updateProject } from "@/api/
 import { getBimUploadLink, uploadFileWithPresignedLink, confirmBimUpload } from "@/api/file";
 import { isIFC } from "@utils";
 import { FilledButton, ActionMenu, LoadingSpinner } from "@ui";
-import { ProjectModal } from "@app/components/ProjectModal";
+import { ProjectModal, Can } from "@app/components";
 
 export const ProjectsList = () => {
   const { currentWorkspace } = useWorkspace();
@@ -94,24 +94,28 @@ export const ProjectsList = () => {
   const isEmpty = !projects || projects.length === 0;
 
   if (isLoading) {
-    return <LoadingSpinner variant = "inline" message="Загрузка проектов..." />;
+    return <LoadingSpinner variant="inline" message="Загрузка проектов..." />;
   }
 
   return (
     <div>
       {isEmpty ? (
         <div className="flex flex-col items-center justify-center py-20 gap-5">
-          <p>Создайте первый проект</p>
-          <FilledButton onClick={() => setIsModalOpen(true)}>
-            <i className="fa-solid fa-plus text-text-color"></i> Создать проект
-          </FilledButton>
+          <p>Проекты отсутствуют</p>
+          <Can permission="projects:create">
+            <FilledButton onClick={() => setIsModalOpen(true)}>
+              <i className="fa-solid fa-plus text-text-color"></i> Создать проект
+            </FilledButton>
+          </Can>
         </div>
       ) : (
         <>
           <div className="flex justify-between items-center mb-4">
-            <FilledButton onClick={() => setIsModalOpen(true)}>
-              <i className="fa-solid fa-plus text-text-color"></i> Создать проект
-            </FilledButton>
+            <Can permission="projects:create">
+              <FilledButton onClick={() => setIsModalOpen(true)}>
+                <i className="fa-solid fa-plus text-text-color"></i> Создать проект
+              </FilledButton>
+            </Can>
           </div>
         </>
       )}
@@ -130,15 +134,17 @@ export const ProjectsList = () => {
               )}
             </div>
             <div>
-              <button
-                ref={(el) => actionBtnRefs.current[project.id] = el}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMenuId(activeMenuId === project.id ? null : project.id);
-                }}
-              >
-                <i className="fa-solid fa-bars text-text-color p-2 transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
-              </button>
+              <Can permissions={["projects:edit", "projects:delete"]}>
+                <button
+                  ref={(el) => actionBtnRefs.current[project.id] = el}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === project.id ? null : project.id);
+                  }}
+                >
+                  <i className="fa-solid fa-bars text-text-color p-2 transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
+                </button>
+              </Can>
               {activeMenuId === project.id && (
                 <ActionMenu
                   isOpen={true}

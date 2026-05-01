@@ -28,8 +28,8 @@ export const Dropdown = ({ label, children, isOpen, onToggle, className = "" }) 
         <i className={`fa-solid fa-chevron-down transition-transform text-text-color ${isOpen ? "rotate-180" : ""}`}></i>
       </div>
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 bg-surface/70 backdrop-blur-md 
-        rounded-[5px] max-h-[70vh] overflow-y-auto overflow-x-hidden my-2 shadow-bottom">
+        <div className="absolute top-full left-0 z-50 bg-surface/70 backdrop-blur-md
+        rounded-[5px] max-h-[70vh] overflow-y-auto overflow-x-hidden m-2 shadow-bottom">
           <div className="p-2">
             {children}
           </div>

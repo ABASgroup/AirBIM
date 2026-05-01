@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { getWorkspaceMembers, removeWorkspaceMember, changeUserRole } from "@/api/workspace";
 import { Select, ActionMenu, LoadingSpinner } from "@ui";
 import { RoleTooltip } from "@app/components";
-import { ROLES } from "@/utils/roles";
+import { ROLES } from "@/constants";
 
 export const MemberList = ({ workspaceId }) => {
   const [members, setMembers] = useState([]);

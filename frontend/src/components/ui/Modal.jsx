@@ -9,11 +9,8 @@ export const Modal = ({ children, title, showBackdrop, onClose }) => {
       [&_label]:text-xs [&_label]:font-bold [&_label]:text-mute-text-color 
       [&_label]:uppercase [&_label]:tracking-widest [&_label]:block [&_label]:mb-2">
         {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            <i className="fa-solid fa-xmark text-primary-color cursor-pointer"></i>
+          <button onClick={onClose} className="absolute top-2 right-2 text-xl">
+            <i className="fa-solid fa-xmark text-text-color cursor-pointer hover:brightness-70 active:scale-95"></i>
           </button>
         )}
         {title && <h2 className="text-3xl font-bold text-text-color mb-5 text-center">{title}</h2>}

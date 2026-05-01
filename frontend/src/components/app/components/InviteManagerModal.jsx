@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Modal, Select, FilledButton } from "@ui";
+import { Modal, Select, FilledButton, ConfirmModal } from "@ui";
 import { createInviteLink, revokeInviteLinks } from "@/api/invites";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { ROLES } from "@/utils/roles";
+import { ROLES } from "@/constants";
 
 const ROLE_OPTIONS = ROLES.filter(r => r.value === "member" || r.value === "viewer");
 
@@ -12,6 +12,7 @@ export const InviteManagerModal = ({ isOpen, onClose, showBackdrop }) => {
   const [role, setRole] = useState("member");
   const [loading, setLoading] = useState(false);
   const workspaceId = currentWorkspace?.id;
+  const [confirmRevokeLinks, setConfirmRevokeLinks] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !workspaceId) return;
@@ -56,44 +57,50 @@ export const InviteManagerModal = ({ isOpen, onClose, showBackdrop }) => {
       console.error("Не уадалось отозвать ссылку", err);
     } finally {
       setLoading(false);
+      setConfirmRevokeLinks(false);
     }
   };
   if (!isOpen) return null;
   const fullUrl = link ? `${window.location.origin}/invites/${link.token}` : "";
 
+  if (confirmRevokeLinks) {
+    return (
+      <ConfirmModal
+        isOpen={true}
+        title="Отзыв пригласительных ссылок"
+        message="Вы уверены, что хотите отозвать все пригласительные ссылки?"
+        onConfirm={handleRevoke}
+        onCancel={() => setConfirmRevokeLinks(false)}
+      />
+    );
+  }
+
   return (
     <Modal title="Приглашение участников" isOpen={isOpen} onClose={onClose} showBackdrop={showBackdrop}>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <label>Роль для новых участников</label>
           <Select value={role} onChange={handleRoleChange} options={ROLE_OPTIONS} disabled={loading} />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <label>Пригласительная ссылка</label>
           <div className="flex gap-2">
             <input
               type="text"
               readOnly
-              value={fullUrl || "Ссылка отозвана"}
+              value={fullUrl || "Ссылки отозваны"}
               className="flex-1 bg-background-color border-none rounded-[5px] p-3 text-sm text-text-color outline-none"
             />
-            <FilledButton
-              onClick={handleCopy}
-              disabled={!link || loading}
-            >
+            <FilledButton onClick={handleCopy}>
               <i className="fa-solid fa-copy text-text-color"></i>
               Копировать
             </FilledButton>
+            <button onClick={() => setConfirmRevokeLinks(true)} className="cursor-pointer active:scale-95 hover:brightness-70">
+              <i className="fa-solid fa-ban text-primary-color"></i>
+            </button>
           </div>
         </div>
-        <FilledButton
-          color="warning"
-          onClick={handleRevoke}
-          disabled={loading || !link}
-        >
-          Отозвать все ссылки
-        </FilledButton>
       </div>
     </Modal>
   );

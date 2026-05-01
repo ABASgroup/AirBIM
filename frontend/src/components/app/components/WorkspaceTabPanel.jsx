@@ -1,7 +1,7 @@
 // Панель настроек воркспейса
 import { useState, useEffect } from "react";
 import { TabPanel, FilledButton } from "@ui";
-import { MemberList, InviteManagerModal } from "@app/components";
+import { MemberList, InviteManagerModal, Can } from "@app/components";
 import { useWorkspace } from "@/context/WorkspaceContext";
 
 export const WorkspaceTabPanel = ({ workspace }) => {
@@ -11,7 +11,6 @@ export const WorkspaceTabPanel = ({ workspace }) => {
   const canAccessMembers = !loadingPermissions && hasPermission([
     "members:view",
     "members:invite",
-    "members:edit_role"
   ]);
   const tabs = [
     { id: "general", label: "Основное" },
@@ -29,23 +28,25 @@ export const WorkspaceTabPanel = ({ workspace }) => {
       {activeTab === "general" && (
         <p>Воркспейс создан: {workspace.created_at.split("T")[0]}</p>
       )}
-      {canAccessMembers && activeTab === "members" && (
-        <div className="pt-5">
-          {!isPersonalWorkspace && (
-            <>
-              <FilledButton onClick={() => setIsModalOpen(true)}>
-                <i className="fa-solid fa-plus text-text-color"></i>
-                Создать пригласительную ссылку
-              </FilledButton>
-              <InviteManagerModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                showBackdrop>
-              </InviteManagerModal>
-            </>
-          )}
-          <MemberList workspaceId={workspace?.id} />
-        </div>
+      {activeTab === "members" && (
+        <Can permissions={["members:view", "members:invite"]}>
+          <div className="pt-5">
+            {!isPersonalWorkspace && (
+              <>
+                <FilledButton onClick={() => setIsModalOpen(true)}>
+                  <i className="fa-solid fa-plus text-text-color"></i>
+                  Создать пригласительную ссылку
+                </FilledButton>
+                <InviteManagerModal
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                  showBackdrop>
+                </InviteManagerModal>
+              </>
+            )}
+            <MemberList workspaceId={workspace?.id} />
+          </div>
+        </Can>
       )}
     </TabPanel>
   )

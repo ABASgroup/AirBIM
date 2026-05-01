@@ -12,3 +12,4 @@ export { IfcViewer } from "./IfcViewer";
 export { Tooltip } from "./Tooltip";
 export { Toast } from "./Toast";
 export { LoadingSpinner } from "./LoadingSpinner";
+export { ConfirmModal } from "./ConfirmModal";

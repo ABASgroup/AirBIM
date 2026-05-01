@@ -1,5 +1,5 @@
 import { Tooltip } from "@ui";
-import { ROLES } from "@/utils/roles";
+import { ROLES } from "@/constants";
 
 export const RoleTooltip = ({ role, children, className = "", disabled = false }) => {
   const roleData = ROLES.find(r => r.value === role);
