@@ -1,5 +1,7 @@
+import os
 import subprocess
 import re
+from pathlib import Path
 from utils.files import clean_path
 
 
@@ -22,10 +24,14 @@ def convert_point_cloud(
 
     Returns output location.
     """
-    # TODO: hide and make smarter
-    # TODO: add exception raising
-    TOOL_DIR = "/opt/potreeconverter/PotreeConverter"
-    TOOL_DIR = clean_path(TOOL_DIR)
+    # resolve converter path: env var → /usr/local/bin → /opt/potreeconverter
+    tool_bin = os.getenv("POTREE_CONVERTER_BIN")
+    if tool_bin:
+        TOOL_DIR = clean_path(tool_bin)
+    elif Path("/usr/local/bin/PotreeConverter").exists():
+        TOOL_DIR = clean_path("/usr/local/bin/PotreeConverter")
+    else:
+        TOOL_DIR = clean_path("/opt/potreeconverter/PotreeConverter")
 
     # make paths safe, so it would not crash with 123 error
     clean_file_path = clean_path(file_path)
@@ -33,8 +39,8 @@ def convert_point_cloud(
     # build command
     # it's just the standard PotreeConverter 2.0 command
     cmd = []
-    cmd.append(TOOL_DIR)
-    cmd.append(clean_file_path)
+    cmd.append(str(TOOL_DIR))
+    cmd.append(str(clean_file_path))
 
     if output_path:
         clean_output_path = clean_path(output_path)
@@ -49,10 +55,18 @@ def convert_point_cloud(
         args=cmd,
         capture_output=True,
         text=True,
-        check=True
+        check=False  # не бросать исключение сразу
     )
-    # temporary measure
-    print(result.stdout)
+    
+    # debug output
+    print(f"Command: {cmd}")
+    print(f"Return code: {result.returncode}")
+    print(f"Stdout: {result.stdout}")
+    print(f"Stderr: {result.stderr}")
+    
+    # check for errors
+    if result.returncode != 0:
+        raise RuntimeError(f"PotreeConverter failed: {result.stderr}")
 
     # extract output location from logs
     out = re.search(r'output location: .+\n', result.stdout)

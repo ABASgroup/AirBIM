@@ -1,13 +1,14 @@
 import uuid
 from fastapi import APIRouter, Depends
+from core.exceptions import NotFoundError
 from infrastructure.storage import Storage
 from schemas.stage import StageResponse
 from schemas.files import (
     FileDataRequest,
     FileLinkResponse,
+    FileModel,
 )
 from services import stage as stage_service
-from services import project as project_service
 from core.roles import Permission
 
 from core.dependencies import (
@@ -18,7 +19,7 @@ from core.dependencies import (
 from api.dependencies import (
     require_stage_permission
 )
-
+from tasks.preprocessing import convert_point_cloud_task
 from services.file import FileService
 
 router = APIRouter(prefix="/stages", tags=["project stages"])
@@ -78,9 +79,16 @@ async def get_point_cloud_upload_link(
     """
     async with uow:
         stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
-        url, key = await FileService.generate_point_cloud_upload_link(
+        key = FileService.create_file_key(
+            workspace_id=stage.project.workspace_id,
+            project_id=stage.project_id,
+            stage_id=stage.id,
+            filename=file_data.filename
+        )
+        file = FileModel(**file_data.model_dump(), key=key)
+        url = await FileService.generate_point_cloud_upload_link(
             stage=stage,
-            file_data=file_data,
+            file_data=file,
             session=uow.session,
             storage=storage
         )
@@ -97,30 +105,49 @@ async def get_point_cloud_upload_link(
 
 
 @router.post(
-    "/{stage_id}/clouds/{point_cloud_id}/converted",
-    response_model=FileLinkResponse,
+    "/{stage_id}/clouds/{point_cloud_id}/convert",
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
-async def get_converted_point_cloud_download_link(
+async def convert_point_cloud(
+    point_cloud_id: uuid.UUID,
+):
+    task = convert_point_cloud_task.delay(point_cloud_id)  # type: ignore
+    return f"started: {task.id}"
+
+
+@router.post(
+    "/{stage_id}/clouds/{point_cloud_id}/converted",
+    dependencies=[
+        Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
+)
+async def get_converted_point_cloud_download_links(
     stage_id: uuid.UUID,
     point_cloud_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
-):
+) -> list[str]:
     """
     Get a temporary links to download a converted point cloud file.
 
-    You get multiple links to download all files.
+    You get multiple links to download for each file.
 
     Converted clouds are required for efficient visualization via Potree.
 
     Requires permission.
     """
     async with uow:
-        url, key = await FileService.generate_bim_upload_link(
-            project=project,
-            file_data=file_data,
-            session=uow.session,
-            storage=storage
-        )
+        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+
+    if point_cloud.converted_key_prefix is None:
+        raise NotFoundError(
+            "No converted files: point cloud is not yet converted?")
+
+    keys = storage.get_keys_with_prefix(point_cloud.converted_key_prefix)
+
+    links = []
+
+    for key in keys:
+        links.append(storage.get_download_link(key))
+
+    return links

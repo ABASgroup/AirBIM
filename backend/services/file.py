@@ -195,32 +195,14 @@ class FileService:
     @classmethod
     async def create_file(
         cls,
-        workspace_id: uuid.UUID,
-        project_id: uuid.UUID,
-        file_data: FileDataRequest,
+        file_data: FileModel,
         session: AsyncSession,
-        stage_id: uuid.UUID | None = None,
     ) -> File:
         """
-        Creates presigned URL for BIM upload and makes reservation in DB.
-
-        Returns link (URL).
+        Creates file entry in the database.
         """
-        # create key
-        key = cls.create_file_key(
-            workspace_id=workspace_id,
-            project_id=project_id,
-            stage_id=stage_id,
-            filename=file_data.filename
-        )
-
-        file = FileModel(
-            **file_data.model_dump(),
-            key=key,
-        )
-
         # make pending file
-        file = await FileRepository.create(file, session=session)
+        file = await FileRepository.create(file_data, session=session)
         return file
 
     @classmethod
@@ -229,6 +211,7 @@ class FileService:
         file_id: uuid.UUID,
         session: AsyncSession
     ) -> File:
+        """Get file entry from the database."""
         file = await FileRepository.get_by_id(file_id, session=session)
 
         if file is None:
@@ -240,10 +223,10 @@ class FileService:
     @classmethod
     async def get_point_cloud(
         cls,
-        file_id: uuid.UUID,
+        point_cloud_id: uuid.UUID,
         session: AsyncSession
     ) -> PointCloud:
-        cloud = await PointCloudRepository.get_by_id(file_id, session=session)
+        cloud = await PointCloudRepository.get_by_id(point_cloud_id, session=session)
 
         if cloud is None:
             raise NotFoundError(
@@ -255,10 +238,10 @@ class FileService:
     async def generate_bim_upload_link(
         cls,
         project: Project,
-        file_data: FileDataRequest,
+        file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> tuple[str, str]:
+    ) -> str:
         """
         Creates presigned URL for BIM upload and makes reservation in DB.
 
@@ -266,8 +249,6 @@ class FileService:
         """
         # make pending file
         file = await cls.create_file(
-            workspace_id=project.workspace_id,
-            project_id=project.id,
             file_data=file_data,
             session=session,
         )
@@ -278,16 +259,16 @@ class FileService:
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
 
-        return link, file.key
+        return link
 
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
         stage: Stage,
-        file_data: FileDataRequest,
+        file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> tuple[str, str]:
+    ) -> str:
         """
         Creates presigned URL for BIM upload and makes reservation in DB.
 
@@ -295,9 +276,6 @@ class FileService:
         """
         # make pending file
         file = await cls.create_file(
-            workspace_id=stage.project.workspace_id,
-            project_id=stage.project_id,
-            stage_id=stage.id,
             file_data=file_data,
             session=session,
         )
@@ -308,4 +286,4 @@ class FileService:
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
 
-        return link, file.key
+        return link

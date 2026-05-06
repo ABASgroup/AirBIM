@@ -9,7 +9,8 @@ from schemas.stage import StageModel, StageResponse
 from schemas.files import (
     FileDataRequest,
     FileLinkResponse,
-    BIMResponse
+    BIMResponse,
+    FileModel
 )
 from core.roles import Permission
 from core.dependencies import (
@@ -80,7 +81,11 @@ async def delete_project(
     Requires permission.
     """
     async with uow:
-        project = await project_service.delete_project(project_id, session=uow.session, storage=storage)
+        project = await project_service.delete_project(
+            project_id,
+            session=uow.session,
+            storage=storage
+        )
     return project
 
 
@@ -147,9 +152,15 @@ async def get_bim_upload_link(
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)
-        url, key = await FileService.generate_bim_upload_link(
+        key = FileService.create_file_key(
+            workspace_id=project.workspace_id,
+            project_id=project.id,
+            filename=file_data.filename
+        )
+        file = FileModel(**file_data.model_dump(), key=key)
+        url = await FileService.generate_bim_upload_link(
             project=project,
-            file_data=file_data,
+            file_data=file,
             session=uow.session,
             storage=storage
         )
