@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from core.roles import Role, InviteableRole
-from core.exceptions.exceptions import InvalidInvitationError, NotFoundError, ProhibitedWorkspaceActionError
+from core.exceptions import InvalidInvitationError, NotFoundError, ProhibitedWorkspaceActionError
 from repositories.invite_link import InviteLinkRepository
 from repositories.workspace import WorkspaceRepository
 from models.invite_link import InviteLink

@@ -13,6 +13,7 @@ from api.routers.workspace import router as workspace_router
 from api.routers.project import router as project_router
 from api.routers.stage import router as stage_router
 from api.routers.invite import router as invite_router
+from api.routers.file import router as file_router
 
 
 @asynccontextmanager
@@ -35,6 +36,7 @@ app.include_router(workspace_router)
 app.include_router(project_router)
 app.include_router(stage_router)
 app.include_router(invite_router)
+app.include_router(file_router)
 
 # add exception handlers
 add_exception_handlers(app)
@@ -44,7 +46,6 @@ add_exception_handlers(app)
 async def ping():
     """Simple API check endpoint."""
     return {"message": "I'm fine, thank you!"}
-
 
 # launch
 if __name__ == "__main__":

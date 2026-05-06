@@ -19,9 +19,9 @@ def get_session_maker():
 class DatabaseSessionUOW:
     """
     Async database session manager for use as a Unit of Work.
-    
+
     Fully controls transactions, handles rollbacks, commits and closes sessions.
-    
+
     Thus you don't need to write code to handle exceptions or control transaction.
     """
 

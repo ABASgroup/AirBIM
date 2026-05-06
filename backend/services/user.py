@@ -1,6 +1,6 @@
 """Service layer logic for User."""
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.exceptions.exceptions import (
+from core.exceptions import (
     InvalidLoginInfoError,
     NotFoundError,
     AlreadyExistsError)
@@ -26,8 +26,8 @@ async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
     password_hashed = get_password_hash(user_data.password)
 
     user_data_db = UserModel(username=user_data.username,
-                                password_hashed=password_hashed,
-                                email=user_data.email)
+                             password_hashed=password_hashed,
+                             email=user_data.email)
     user = await UserRepository.create(user_data_db, session=session)
     return user
 

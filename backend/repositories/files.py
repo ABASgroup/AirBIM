@@ -1,26 +1,33 @@
 import uuid
+from datetime import datetime, timedelta, time
 from typing import TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.files import BimFile, PointCloudFile, FileStatus, File
 from sqlalchemy import select
+from models.file import File, Bim, PointCloud, FileStatus
 from .base import BaseRepository
 
 
-# type parameter for File children
-ModelT = TypeVar("ModelT", bound=File)
+class FileRepository(BaseRepository[File]):
+    """Repository class for CRUD operations with File model."""
+    _model = File
 
-
-class BaseFileRepository(BaseRepository[ModelT]):
-    """
-    Base repository for file models.
-
-    This class is not meant to be used directly. It provides common methods for file repositories.
-    """
+    @classmethod
+    async def get_by_key(
+        cls,
+        key: str,
+        session: AsyncSession
+    ) -> File | None:
+        """Get file by the key."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.key == key)
+        )
+        return result.scalar_one_or_none()
 
     @classmethod
     async def update_status(
         cls,
-        file: ModelT,
+        file: File,
         status: FileStatus,
         session: AsyncSession
     ):
@@ -62,9 +69,9 @@ class BaseFileRepository(BaseRepository[ModelT]):
         return result.scalars().all()
 
 
-class BimFileRepository(BaseFileRepository[BimFile]):
-    """Repository class for CRUD operations with BimFile model."""
-    _model = BimFile
+class BimRepository(BaseRepository[Bim]):
+    """Repository class for CRUD operations with Bim model."""
+    _model = Bim
 
     @classmethod
     async def get_by_project_id(
@@ -72,7 +79,7 @@ class BimFileRepository(BaseFileRepository[BimFile]):
         project_id: uuid.UUID,
         session: AsyncSession
     ):
-        """Get BIM file by project ID."""
+        """Get BIM by project ID."""
         result = await session.execute(
             select(cls._model)
             .where(cls._model.project_id == project_id)
@@ -80,6 +87,20 @@ class BimFileRepository(BaseFileRepository[BimFile]):
         return result.scalar_one_or_none()
 
 
-class PointCloudFileRepository(BaseFileRepository[PointCloudFile]):
-    """Repository class for CRUD operations with PointCloudFile model."""
-    _model = PointCloudFile
+class PointCloudRepository(BaseRepository[PointCloud]):
+    """Repository class for CRUD operations with PointCloud model."""
+    _model = PointCloud
+
+    @classmethod
+    async def update_converted_key_prefix(
+        cls,
+        point_cloud_id: uuid.UUID,
+        prefix: str,
+        session: AsyncSession
+    ) -> PointCloud:
+        """Update converted files prefix key."""
+        entry = await session.get_one(cls._model, point_cloud_id)
+        entry.converted_key_prefix = prefix
+        await session.flush()
+        await session.refresh(entry)
+        return entry

@@ -11,7 +11,7 @@ class DatabaseConfig(BaseSettings):
     """Database configuration parameters."""
     DB_HOST: str
     DB_NAME: str
-    DB_PORT: int
+    DB_PORT_INTERNAL: int
     DB_USER: str
     DB_PASSWORD: str
 
@@ -23,7 +23,7 @@ class DatabaseConfig(BaseSettings):
     def db_url(self) -> str:
         """Database URL."""
         return (f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@"
-                f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}")
+                f"{self.DB_HOST}:{self.DB_PORT_INTERNAL}/{self.DB_NAME}")
 
 
 database_config = DatabaseConfig()  # type: ignore

@@ -7,7 +7,7 @@ from jose import jwt, JWTError
 
 from core.configs.api import api_config
 from core.roles import ROLE_PERMISSIONS, Permission
-from core.exceptions.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
+from core.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
 from core.dependencies import get_session_maker
 
 from services.membership import get_membership

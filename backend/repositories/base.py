@@ -129,12 +129,14 @@ class BaseRepository(Generic[ModelT]):
         session: AsyncSession,
         relations: list[str] | None = None
     ):
-        """Get a model entry by the ID/primary key.
+        """Refresh model fields.
+
+        Useful when you need to load additional fields.
 
         Args:
             entry_id (`uuid.UUID`): entry itself, which you need to refresh
             session (`AsyncSession`): an asynchronous database session
-            relations (`list[str]`): list of relations to refresh (if None, all relations will be refreshed)
+            relations (`list[str]`): list of relations to refresh (if None, only uploaded relations will be refreshed)
         """
         await session.refresh(entry, attribute_names=relations)
         return entry

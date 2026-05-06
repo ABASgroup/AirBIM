@@ -2,7 +2,7 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
-from core.exceptions.exceptions import NotFoundError
+from core.exceptions import NotFoundError
 from repositories.project import ProjectRepository
 from models.project import Project
 from schemas.project import ProjectModel, ProjectUpdate
@@ -16,6 +16,8 @@ async def get_project(project_id: uuid.UUID, session: AsyncSession) -> Project:
 
     if project is None:
         raise NotFoundError("No project with this ID")
+
+    project = await ProjectRepository.refresh(project, session=session, relations=["bim"])
 
     return project
 

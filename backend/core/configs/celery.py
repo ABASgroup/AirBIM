@@ -11,12 +11,10 @@ class CeleryConfig(BaseSettings):
     """Celery configuration parameters."""
     NAME: str = "celery"
 
-    BROKER_PORT: int
-    BROKER_HOST: str = "localhost"
+    BROKER_URL: str
     BROKER_PASSWORD: str
 
-    BACKEND_PORT: int
-    BACKEND_HOST: str = "localhost"
+    BACKEND_URL: str
     BACKEND_PASSWORD: str
 
     SERIALIZER: str = "json"
@@ -29,16 +27,6 @@ class CeleryConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
                                       extra='ignore')
-
-    @property
-    def broker_url(self) -> str:
-        """Broker URL."""
-        return (f"redis://:{self.BROKER_PASSWORD}@{self.BROKER_HOST}:{self.BROKER_PORT}")
-
-    @property
-    def backend_url(self) -> str:
-        """Backend URL."""
-        return (f"redis://:{self.BACKEND_PASSWORD}@{self.BACKEND_HOST}:{self.BACKEND_PORT}")
 
 
 celery_config = CeleryConfig()  # type: ignore

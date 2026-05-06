@@ -13,7 +13,7 @@ class StorageConfig(BaseSettings):
     STORAGE_ACCESS_KEY_ID: str
     # password
     STORAGE_SECRET_KEY: str
-    STORAGE_PORT: int
+    STORAGE_PORT_INTERNAL: int
     STORAGE_BUCKET: str = "airbim"
 
     # for presigned urls
@@ -23,14 +23,10 @@ class StorageConfig(BaseSettings):
                                       env_file_encoding='utf-8',
                                       extra='ignore')
 
-    # TODO: испарвить хардкод эндпоинты
     @property
-    def internal_endpoint(self) -> str:
-        return f"http://storage:{self.STORAGE_PORT}"
-    
-    @property
-    def public_endpoint(self) -> str:
-        return f"http://localhost:{self.STORAGE_PORT}"
+    def endpoint(self) -> str:
+        """Endpoint for connection."""
+        return f"http://storage:{self.STORAGE_PORT_INTERNAL}"
 
 
 storage_config = StorageConfig()  # type: ignore

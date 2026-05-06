@@ -8,7 +8,7 @@ from core.configs.storage import storage_config
 class Storage:
     """
     App S3 storage.
-    
+
     Interface to interact with the S3 storage.
     """
 
@@ -81,6 +81,32 @@ class Storage:
         content = response['Body']
         return content
 
+    def upload_file_locally(self, key: str, file_path: str):
+        """
+        Upload file to the storage from the local dir.
+
+        Args:
+            key (str): key/path of the file in the storage
+            file_path (str): path to the file
+        """
+        self._client.upload_file(
+            Filename=file_path,
+            Bucket=self._bucket_name,
+            Key=key
+        )
+
+    def download_file_locally(self, key: str, file_path: str):
+        """
+        Download file from the storage.
+
+        Saves it locally.
+
+        Args:
+            key (str): key/path of the file in the storage
+            file_path (str): save path of the file
+        """
+        self._client.download_file(self._bucket_name, key, file_path)
+
     def get_upload_link(self, key: str):
         """
         Get temporary link for uploading file to the storage
@@ -95,7 +121,7 @@ class Storage:
         )
         return url
 
-    def get_download_link(self, key: str, ):
+    def get_download_link(self, key: str) -> str:
         """
         Get temporary link for downloading file to the storage.
 
@@ -109,14 +135,35 @@ class Storage:
         )
         return url
 
-    def delete_files_by_prefix(self, prefix: str):
+    def get_all_keys(self) -> list[str]:
+        """Get all keys in the bucket."""
+        bucket = self._resource.Bucket(self._bucket_name)
+        return [obj.key for obj in bucket.objects.all()]
+
+    def get_keys_with_prefix(self, prefix: str) -> list[str]:
+        """
+        Get temporary link for downloading file to the storage.
+
+        Args:
+            prefix (str): key prefix of the files you need
+        """
+        bucket = self._resource.Bucket(self._bucket_name)
+
+        keys = []
+
+        for obj in bucket.objects.filter(Prefix=prefix):
+            keys.append(obj.key)
+
+        return keys
+
+    def delete_files_by_prefix(self, prefix: str) -> int:
         """
         Delete all files that contain the provided prefix.
 
         Returns the amount of files deleted.
 
         Args:
-            prefix (str): key prefix of files you want to delete
+            prefix (str): key prefix of the files you want to delete
         """
         if not prefix.endswith("/"):
             prefix += "/"
@@ -153,7 +200,7 @@ class Storage:
             Bucket=self._bucket_name, Key=key)
         return response
 
-    def file_exists(self, key: str):
+    def file_exists(self, key: str) -> bool:
         """
         Checks if a file with this key exists.
 
