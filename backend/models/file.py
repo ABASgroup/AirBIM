@@ -32,13 +32,15 @@ class File(BaseModel):
 class PointCloud(BaseModel):
     __tablename__ = "point_clouds"
 
-    stage_id: Mapped[uuid.UUID] = mapped_column(
+    stage_id: Mapped["uuid.UUID"] = mapped_column(
         ForeignKey("stages.id", ondelete="CASCADE"))
     stage: Mapped["Stage"] = relationship(
         back_populates="point_clouds")
 
-    converted_key_prefix: Mapped["str"] = mapped_column(
-        nullable=True, unique=True)
+    converted_file_links: Mapped[list["PointCloudConverted"]] = relationship(
+        back_populates="point_cloud",
+        cascade="all, delete-orphan"
+    )
 
     file_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
@@ -52,6 +54,22 @@ class PointCloud(BaseModel):
 
     bim: Mapped[Optional["Bim"]] = relationship(
         back_populates="point_cloud", uselist=False)
+
+
+class PointCloudConverted(BaseModel):
+    __tablename__ = "point_cloud_converted"
+
+    point_cloud_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("point_clouds.id", ondelete="CASCADE")
+    )
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE")
+    )
+    point_cloud: Mapped["PointCloud"] = relationship(
+        back_populates="converted_file_links")
+    file: Mapped["File"] = relationship(
+        cascade="all, delete"
+    )
 
 
 class Bim(BaseModel):

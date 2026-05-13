@@ -64,7 +64,14 @@ class PointCloudResponse(Response):
     file: FileResponse
 
 
+class PointCloudConvertedModel(BaseModel):
+    """Schema in DB. Use to create in db."""
+    point_cloud_id: uuid.UUID
+    file_id: uuid.UUID
+
 # schemas for bims
+
+
 class BIMModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     project_id: uuid.UUID

@@ -6,14 +6,20 @@ from schemas.files import (
     FileModel,
     BIMModel,
     FileDataRequest,
-    PointCloudModel
+    PointCloudModel,
+    PointCloudConvertedModel
 )
 
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
 from models.file import FileStatus, File, PointCloud
 
-from repositories.files import FileRepository, BimRepository, PointCloudRepository
+from repositories.files import (
+    FileRepository,
+    BimRepository,
+    PointCloudRepository,
+    PointCloudConvertedRepository
+)
 from infrastructure.storage import Storage
 
 
@@ -29,24 +35,6 @@ class FileService:
         """
         key = f"{uuid.uuid4()}/{filename}"
         return key
-
-    @staticmethod
-    def clear_stage_files(workspace_id, project_id, stage_id, storage: Storage):
-        """Clear all files related to the stage from the storage."""
-        prefix = f"workspace_{workspace_id}/project_{project_id}/stage_{stage_id}/"
-        storage.delete_files_by_prefix(prefix)
-
-    @staticmethod
-    def clear_project_files(workspace_id, project_id, storage: Storage):
-        """Clear all files related to the project from the storage."""
-        prefix = f"workspace_{workspace_id}/project_{project_id}/"
-        storage.delete_files_by_prefix(prefix)
-
-    @staticmethod
-    def clear_workspace_files(workspace_id, storage: Storage):
-        """Clear all files related to the workspace from the storage."""
-        prefix = f"workspace_{workspace_id}/"
-        storage.delete_files_by_prefix(prefix)
 
     @staticmethod
     async def clean_up_files(
@@ -78,6 +66,7 @@ class FileService:
 
         # delete files that are in the storage but not in the database
         # no entry in the database about them is a sign of an "orphan" file
+        # usually there is always db and then storage
         keys = storage.get_all_keys()
         db_keys = set(await FileRepository.get_all_keys(session=session))
 
@@ -279,3 +268,41 @@ class FileService:
         link = storage.get_upload_link(file.key)
 
         return link, file
+
+    @classmethod
+    async def save_converted_point_cloud_file(
+        cls,
+        point_cloud_id: uuid.UUID,
+        file_data: FileModel,
+        session: AsyncSession
+    ):
+        """Saves converted file in the database and creates connection."""
+        # create files first
+        file = await cls.create_file(file_data, session=session)
+
+        # then connection
+        data = PointCloudConvertedModel(
+            point_cloud_id=point_cloud_id,
+            file_id=file.id
+        )
+        await PointCloudConvertedRepository.create(data, session=session)
+
+    @classmethod
+    async def get_converted_point_cloud_files(
+        cls,
+        point_cloud_id: uuid.UUID,
+        session: AsyncSession
+    ) -> list[File]:
+        """Get all files for a converted point cloud."""
+        records = await PointCloudConvertedRepository.get_by_point_cloud_id(
+            point_cloud_id=point_cloud_id,
+            session=session
+        )
+
+        files = []
+
+        for record in records:
+            record = await PointCloudConvertedRepository.refresh(record, session=session, relations=["file"])
+            files.append(record.file)
+
+        return files

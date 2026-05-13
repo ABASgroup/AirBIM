@@ -101,6 +101,7 @@ async def get_point_cloud_upload_link(
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
 async def convert_point_cloud(
+    stage_id: uuid.UUID,
     point_cloud_id: uuid.UUID,
 ):
     task = convert_point_cloud_task.delay(point_cloud_id)  # type: ignore
@@ -128,17 +129,15 @@ async def get_converted_point_cloud_download_links(
     Requires permission.
     """
     async with uow:
-        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+        files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
 
-    if point_cloud.converted_key_prefix is None:
+    if len(files) == 0:
         raise NotFoundError(
             "No converted files: point cloud is not yet converted?")
 
-    keys = storage.get_keys_with_prefix(point_cloud.converted_key_prefix)
-
     links = []
 
-    for key in keys:
-        links.append(storage.get_download_link(key))
+    for file in files:
+        links.append(storage.get_download_link(file.key))
 
     return links
