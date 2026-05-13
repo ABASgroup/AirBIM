@@ -1,25 +1,45 @@
-from typing import TypeVar
+import uuid
+from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.files import BimFile, PointCloudFile, FileStatus, File
 from sqlalchemy import select
+from models.file import File, Bim, PointCloud, FileStatus, PointCloudConverted
 from .base import BaseRepository
 
 
-# type parameter for File children
-ModelT = TypeVar("ModelT", bound=File)
+class FileRepository(BaseRepository[File]):
+    """Repository class for CRUD operations with File model."""
+    _model = File
 
+    @classmethod
+    async def get_all_keys(
+        cls,
+        session: AsyncSession
+    ) -> Sequence[str]:
+        """Get all files using their keys."""
+        result = await session.execute(
+            select(cls._model.key)
+        )
+        found_keys = result.scalars().all()
 
-class BaseFileRepository(BaseRepository[ModelT]):
-    """
-    Base repository for file models.
+        return found_keys
 
-    This class is not meant to be used directly. It provides common methods for file repositories.
-    """
+    @classmethod
+    async def get_by_key(
+        cls,
+        key: str,
+        session: AsyncSession
+    ) -> File | None:
+        """Get file by the key."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.key == key)
+        )
+        return result.scalar_one_or_none()
 
     @classmethod
     async def update_status(
         cls,
-        file: ModelT,
+        file: File,
         status: FileStatus,
         session: AsyncSession
     ):
@@ -27,6 +47,7 @@ class BaseFileRepository(BaseRepository[ModelT]):
         file.status = status
 
         await session.flush()
+        await session.refresh(file)
         return file
 
     @classmethod
@@ -46,12 +67,56 @@ class BaseFileRepository(BaseRepository[ModelT]):
         )
         return result.scalar_one_or_none()
 
+    @classmethod
+    async def get_by_status(
+        cls,
+        status: FileStatus,
+        session: AsyncSession
+    ):
+        """Get all files with the specified status."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.status == status)
+        )
+        return result.scalars().all()
 
-class BimFileRepository(BaseFileRepository[BimFile]):
-    """Repository class for CRUD operations with BimFile model."""
-    _model = BimFile
+
+class BimRepository(BaseRepository[Bim]):
+    """Repository class for CRUD operations with Bim model."""
+    _model = Bim
+
+    @classmethod
+    async def get_by_project_id(
+        cls,
+        project_id: uuid.UUID,
+        session: AsyncSession
+    ):
+        """Get BIM by project ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.project_id == project_id)
+        )
+        return result.scalar_one_or_none()
 
 
-class PointCloudFileRepository(BaseFileRepository[PointCloudFile]):
-    """Repository class for CRUD operations with PointCloudFile model."""
-    _model = PointCloudFile
+class PointCloudRepository(BaseRepository[PointCloud]):
+    """Repository class for CRUD operations with PointCloud model."""
+    _model = PointCloud
+
+
+class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
+    """Repository class for CRUD operations with PointCloudConverted model."""
+    _model = PointCloudConverted
+
+    @classmethod
+    async def get_by_point_cloud_id(
+        cls,
+        point_cloud_id: uuid.UUID,
+        session: AsyncSession
+    ):
+        """Get files with point cloud ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.point_cloud_id == point_cloud_id)
+        )
+        return result.scalars().all()

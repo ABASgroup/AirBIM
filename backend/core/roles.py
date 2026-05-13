@@ -20,6 +20,8 @@ class Permission(enum.StrEnum):
     Permissions stated in the app.
 
     Registry of all permissions.
+    
+    For granular control check in code.
     """
     # workspace management
     WORKSPACE_VIEW = "workspace:view"
@@ -41,12 +43,11 @@ class Permission(enum.StrEnum):
     STAGE_CREATE = "stage:create"
     STAGE_EDIT = "stage:edit"
     STAGE_DELETE = "stage:delete"
-    # files
+    # files (hierarchical structure)
+    FILES_VIEW = "files:view"
     FILES_DOWNLOAD = "files:download"
-    FILES_UPLOAD_BIM = "files:upload:bim"
-    FILES_UPLOAD_CLOUDS = "files:upload:clouds"
-    FILES_DELETE_BIM = "files:delete:bim"
-    FILES_DELETE_CLOUDS = "files:delete:clouds"
+    FILES_UPLOAD = "files:upload"
+    FILES_DELETE = "files:delete"
 
 
 # assign permissions here
@@ -55,6 +56,7 @@ ROLE_PERMISSIONS = {
         Permission.WORKSPACE_VIEW,
         Permission.PROJECT_VIEW,
         Permission.STAGE_VIEW,
+        Permission.FILES_VIEW,
         Permission.FILES_DOWNLOAD,
     ],
     Role.MEMBER: [
@@ -64,7 +66,8 @@ ROLE_PERMISSIONS = {
         Permission.STAGE_VIEW,
         Permission.STAGE_CREATE,
         Permission.STAGE_EDIT,
-        Permission.FILES_UPLOAD_CLOUDS,
+        Permission.FILES_VIEW,
+        Permission.FILES_UPLOAD,
         Permission.FILES_DOWNLOAD,
         Permission.MEMBERS_INVITE,
     ],
@@ -78,8 +81,9 @@ ROLE_PERMISSIONS = {
         Permission.STAGE_CREATE,
         Permission.STAGE_EDIT,
         Permission.STAGE_DELETE,
-        Permission.FILES_UPLOAD_CLOUDS,
-        Permission.FILES_UPLOAD_BIM,
+        Permission.FILES_VIEW,
+        Permission.FILES_UPLOAD,
+        Permission.FILES_DELETE,
         Permission.FILES_DOWNLOAD,
         Permission.MEMBERS_INVITE,
         Permission.MEMBERS_REMOVE,

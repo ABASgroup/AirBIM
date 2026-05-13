@@ -6,7 +6,7 @@ import base64
 from secrets import token_urlsafe
 from jose import jwt
 from pwdlib import PasswordHash
-from configs import api_config
+from core.configs.api import api_config
 
 
 # password hashing context

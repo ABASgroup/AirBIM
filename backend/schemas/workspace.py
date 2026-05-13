@@ -7,7 +7,7 @@ class WorkspaceCreateRequest(BaseModel):
     name: str
 
 
-class WorkspacePublic(Response):
+class WorkspaceResponse(Response):
     """API Response schema."""
     name: str
     type: WorkspaceType
