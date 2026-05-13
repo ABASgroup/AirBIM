@@ -16,17 +16,11 @@ class Storage:
         """Establish connection to the storage"""
         self._resource = boto3.resource(
             "s3",
-            endpoint_url=storage_config.internal_endpoint,
+            endpoint_url=storage_config.endpoint,
             aws_access_key_id=storage_config.STORAGE_ACCESS_KEY_ID,
             aws_secret_access_key=storage_config.STORAGE_SECRET_KEY,
         )
         self._client = self._resource.meta.client
-        self._public_client = boto3.client(
-            "s3",
-            endpoint_url=storage_config.public_endpoint,
-            aws_access_key_id=storage_config.STORAGE_ACCESS_KEY_ID,
-            aws_secret_access_key=storage_config.STORAGE_SECRET_KEY,
-        )
         self._bucket_name = storage_config.STORAGE_BUCKET
         self._url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
 
@@ -114,7 +108,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        url = self._public_client.generate_presigned_url(
+        url = self._client.generate_presigned_url(
             ClientMethod='put_object',
             Params={'Bucket': self._bucket_name, 'Key': key},
             ExpiresIn=self._url_expiration_time
@@ -128,7 +122,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        url = self._public_client.generate_presigned_url(
+        url = self._client.generate_presigned_url(
             ClientMethod='get_object',
             Params={'Bucket': self._bucket_name, 'Key': key},
             ExpiresIn=self._url_expiration_time
@@ -238,3 +232,4 @@ class Storage:
             else:
                 # something's wrong
                 raise
+            

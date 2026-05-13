@@ -44,7 +44,7 @@ export const ProjectsList = () => {
       const confirmData = { filename: uploadLink.data.filename, size: uploadLink.data.size, content_type: uploadLink.data.content_type };
 
       await uploadFileWithPresignedLink(presignedUrl, file);
-      await confirmBimUpload(projectId, confirmData);
+      await confirmBimUpload(uploadLink.data.file_id, confirmData);
 
       return { success: true };
     } catch (error) {
