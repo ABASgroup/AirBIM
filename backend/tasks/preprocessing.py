@@ -1,6 +1,7 @@
 import uuid
+import tempfile
+import os
 from models.file import FileStatus
-from core.exceptions import NotFoundError
 from core.dependencies import get_database_uow, get_storage
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
@@ -10,10 +11,9 @@ from repositories.files import PointCloudRepository
 from utils.convert import convert_point_cloud
 from utils.files import (
     get_all_dir_files,
-    delete_file,
-    delete_dir,
     get_file_size,
-    get_file_mime_type
+    get_file_mime_type,
+    clean_path
 )
 
 
@@ -31,63 +31,66 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
     storage = get_storage()
 
     async def run_task():
-        # we don't want to ruin transaction
-        # so make them separate
         async with get_database_uow() as uow:
             # get point cloud
             point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
             # check if we already have converted files
-            if point_cloud is None:
-                raise NotFoundError("Point cloud is not found.")
             if point_cloud.converted_key_prefix:
                 # false start up, no actions required
                 # don't waste the resources
                 print("ALREADY CONVERTED")
                 return
-            await PointCloudRepository.refresh(point_cloud, session=uow.session, relations=["file"])
-            file_path = point_cloud.file.filename
+            point_cloud_file = await FileService.get_file(point_cloud.file_id, session=uow.session)
 
-        # download point cloud file
-        storage.download_file_locally(
-            point_cloud.file.key,
-            file_path=file_path
-        )
+        # all in temp_dir will be deleted after its done
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(os.path.join(tmp_dir, point_cloud_file.filename))
+            output_path = clean_path(tmp_dir)
 
-        # convert it and save stated save path
-        output_path = convert_point_cloud(file_path=file_path)
-
-        # all files in the output dir
-        files = get_all_dir_files(output_path)
-        prefix = f"converted{files[0].parent}/".replace("//", "/")
-
-        for file in files:
-            # save in the storage
-            # TODO: make key generation
-            key = f"{prefix}{file.name}"
-            # upload all of them
-            storage.upload_file_locally(key, str(file))
-
-            # save in the db
-            async with get_database_uow() as uow:
-                # do we really need to do so?
-                file_data = FileModel(
-                    filename=file.name,
-                    key=key,
-                    size=get_file_size(str(file.absolute())),
-                    content_type=get_file_mime_type(str(file.absolute())),
-                    status=FileStatus.UPLOADED
-                )
-                await FileService.create_file(file_data, session=uow.session)
-
-        # update prefix
-        async with get_database_uow() as uow:
-            await PointCloudRepository.update_converted_key_prefix(
-                point_cloud_id=point_cloud_id,
-                prefix=prefix,
-                session=uow.session
+            # download point cloud file
+            storage.download_file_locally(
+                point_cloud.file.key,
+                save_path=str(file_path)
             )
-        # delete downloaded original file
-        delete_file(file_path)
-        # delete converted files
-        delete_dir(output_path)
+
+            # convert it and save stated save path
+            output_path = convert_point_cloud(
+                file_path=str(file_path),
+                output_path=str(output_path)
+            )
+
+            # all files in the output dir
+            files = get_all_dir_files(output_path)
+            prefix = f"converted{files[0].parent}/".replace("//", "/")
+
+            for file in files:
+                # save in the storage
+                key = FileService.create_file_key(
+                    filename=file.name
+                )
+
+                # upload to the storage
+                storage.upload_file_locally(key, str(file))
+
+                size = get_file_size(str(file.absolute()))
+                content_type = get_file_mime_type(str(file.absolute()))
+
+                # save in the db
+                async with get_database_uow() as uow:
+                    file_data = FileModel(
+                        filename=file.name,
+                        key=key,
+                        size=size,
+                        content_type=content_type,
+                        status=FileStatus.UPLOADED
+                    )
+                    await FileService.create_file(file_data, session=uow.session)
+
+            # update prefix
+            async with get_database_uow() as uow:
+                await PointCloudRepository.update_converted_key_prefix(
+                    point_cloud_id=point_cloud_id,
+                    prefix=prefix,
+                    session=uow.session
+                )
     run_async(run_task())

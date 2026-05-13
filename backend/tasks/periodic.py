@@ -24,6 +24,11 @@ def clean_up_files():
     print(f"FILE CLEAN UP: FILES DELETED - {files_deleted}")
 
 
-@celery_app.task(base=PeriodicTask,  ignore_result=True)
-def test():
-    print('HELLO WORLD')
+@celery_app.task(base=PeriodicTask, ignore_result=True)
+def clean_up_temporary_files():
+    """Cleans up temporary files that were not deleted due to some issue."""
+    async def run_task():
+        uow = get_database_uow()
+        async with uow:
+            pass
+    run_async(run_task())

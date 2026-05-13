@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, time
-from typing import TypeVar
+from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models.file import File, Bim, PointCloud, FileStatus
@@ -10,6 +9,19 @@ from .base import BaseRepository
 class FileRepository(BaseRepository[File]):
     """Repository class for CRUD operations with File model."""
     _model = File
+
+    @classmethod
+    async def get_all_keys(
+        cls,
+        session: AsyncSession
+    ) -> Sequence[str]:
+        """Get all files using their keys."""
+        result = await session.execute(
+            select(cls._model.key)
+        )
+        found_keys = result.scalars().all()
+
+        return found_keys
 
     @classmethod
     async def get_by_key(

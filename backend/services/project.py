@@ -62,12 +62,6 @@ async def delete_project(project_id: uuid.UUID, session: AsyncSession, storage: 
     if project is None:
         raise NotFoundError("Project was not found.")
 
-    # clear project files first
-    FileService.clear_project_files(
-        project.workspace_id,
-        project.id,
-        storage=storage)
-
     # drop entry and related entries
     await ProjectRepository.delete(project, session=session)
 

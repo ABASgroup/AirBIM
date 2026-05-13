@@ -80,28 +80,19 @@ async def get_point_cloud_upload_link(
     async with uow:
         stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
         key = FileService.create_file_key(
-            workspace_id=stage.project.workspace_id,
-            project_id=stage.project_id,
-            stage_id=stage.id,
             filename=file_data.filename
         )
-        file = FileModel(**file_data.model_dump(), key=key)
-        url = await FileService.generate_point_cloud_upload_link(
-            stage=stage,
-            file_data=file,
+        url, file = await FileService.generate_point_cloud_upload_link(
+            stage_id=stage.id,
+            file_data=FileModel(**file_data.model_dump(), key=key),
             session=uow.session,
             storage=storage
         )
 
-    link_data = FileLinkResponse(
-        key=key,
-        url=url,
-        filename=file_data.filename,
-        size=file_data.size,
-        content_type=file_data.content_type
-    )
+    response_data = FileLinkResponse.model_validate(file, from_attributes=True)
+    response_data.url = url
 
-    return link_data
+    return response_data
 
 
 @router.post(

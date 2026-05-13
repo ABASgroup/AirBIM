@@ -2,7 +2,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
-from services.file import FileService
 from core.exceptions import NotFoundError
 from repositories.stage import StageRepository
 from models.stage import Stage
@@ -57,13 +56,6 @@ async def delete_stage(stage_id: uuid.UUID, session: AsyncSession, storage: Stor
 
         if stage is None:
             raise NotFoundError("Stage was not found.")
-
-        # clear stage files first
-        FileService.clear_stage_files(
-            stage.project.workspace_id,
-            stage.project.id,
-            stage.id,
-            storage=storage)
 
         # drop entry and related entries
         await StageRepository.delete(stage, session=session)

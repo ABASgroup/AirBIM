@@ -12,33 +12,22 @@ from schemas.files import (
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
 from models.file import FileStatus, File, PointCloud
-from models.project import Project
-from models.stage import Stage
 
 from repositories.files import FileRepository, BimRepository, PointCloudRepository
-from repositories.stage import StageRepository
 from infrastructure.storage import Storage
 
 
 class FileService:
     @staticmethod
     def create_file_key(
-        workspace_id: uuid.UUID,
-        project_id: uuid.UUID,
         filename: str,
-        stage_id: uuid.UUID | None = None
     ) -> str:
         """
-        Provides a key for the file in the fixed format.
+        Provides a key (unique) for the file in the fixed format.
 
         **Never** create file keys on your own for consistency.
         """
-        key = f"workspace_{workspace_id}/project_{project_id}/"
-        if stage_id:
-            # append stage related part if stage_id is provided
-            key = f"{key}stage_{stage_id}/{filename}"
-        else:
-            key = f"{key}{filename}"
+        key = f"{uuid.uuid4()}/{filename}"
         return key
 
     @staticmethod
@@ -72,7 +61,8 @@ class FileService:
         - those, that are pending in the database for a long time
         - those, that are in the storage but not in the database
         """
-        files_deleted = 0
+        keys_to_delete = set()
+
         # delete files that are pending for far too long
         # they CAN be in the storage if there was no confirm
         # it was decided to delete them anyway
@@ -84,17 +74,19 @@ class FileService:
                 # db first
                 key = file.key
                 await FileRepository.delete(file, session=session)
-                storage.delete_file(key)
-                files_deleted += 1
+                keys_to_delete.add(key)
 
         # delete files that are in the storage but not in the database
         # no entry in the database about them is a sign of an "orphan" file
         keys = storage.get_all_keys()
+        db_keys = set(await FileRepository.get_all_keys(session=session))
+
         for key in keys:
-            file = await FileRepository.get_by_key(key, session=session)
-            if file is None:
-                storage.delete_file(key)
-                files_deleted += 1
+            if key not in db_keys:
+                keys_to_delete.add(key)
+
+        storage.delete_files(list(keys_to_delete))
+        files_deleted = len(keys_to_delete)
         return files_deleted
 
     @staticmethod
@@ -237,15 +229,15 @@ class FileService:
     @classmethod
     async def generate_bim_upload_link(
         cls,
-        project: Project,
+        project_id: uuid.UUID,
         file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> str:
+    ) -> tuple[str, File]:
         """
         Creates presigned URL for BIM upload and makes reservation in DB.
 
-        Returns url and file key.
+        Returns url and file.
         """
         # make pending file
         file = await cls.create_file(
@@ -253,26 +245,26 @@ class FileService:
             session=session,
         )
 
-        bim = BIMModel(project_id=project.id, file_id=file.id)
+        bim = BIMModel(project_id=project_id, file_id=file.id)
         await BimRepository.create(bim, session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
 
-        return link
+        return link, file
 
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
-        stage: Stage,
+        stage_id: uuid.UUID,
         file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> str:
+    ) -> tuple[str, File]:
         """
         Creates presigned URL for BIM upload and makes reservation in DB.
 
-        Returns url and file key.
+        Returns url and file.
         """
         # make pending file
         file = await cls.create_file(
@@ -280,10 +272,10 @@ class FileService:
             session=session,
         )
 
-        cloud = PointCloudModel(stage_id=stage.id, file_id=file.id)
+        cloud = PointCloudModel(stage_id=stage_id, file_id=file.id)
         await PointCloudRepository.create(cloud, session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
 
-        return link
+        return link, file
