@@ -7,6 +7,7 @@ from schemas.files import (
     FileDataRequest,
     FileLinkResponse,
     FileModel,
+    FileResponse,
 )
 from services import stage as stage_service
 from core.roles import Permission
@@ -89,8 +90,10 @@ async def get_point_cloud_upload_link(
             storage=storage
         )
 
-    response_data = FileLinkResponse.model_validate(file, from_attributes=True)
-    response_data.url = url
+    response_data = FileLinkResponse(
+        file=FileResponse.model_validate(file, from_attributes=True),
+        url=url
+    )
 
     return response_data
 
