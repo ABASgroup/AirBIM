@@ -80,28 +80,19 @@ async def get_point_cloud_upload_link(
     async with uow:
         stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
         key = FileService.create_file_key(
-            workspace_id=stage.project.workspace_id,
-            project_id=stage.project_id,
-            stage_id=stage.id,
             filename=file_data.filename
         )
-        file = FileModel(**file_data.model_dump(), key=key)
-        url = await FileService.generate_point_cloud_upload_link(
-            stage=stage,
-            file_data=file,
+        url, file = await FileService.generate_point_cloud_upload_link(
+            stage_id=stage.id,
+            file_data=FileModel(**file_data.model_dump(), key=key),
             session=uow.session,
             storage=storage
         )
 
-    link_data = FileLinkResponse(
-        key=key,
-        url=url,
-        filename=file_data.filename,
-        size=file_data.size,
-        content_type=file_data.content_type
-    )
+    response_data = FileLinkResponse.model_validate(file, from_attributes=True)
+    response_data.url = url
 
-    return link_data
+    return response_data
 
 
 @router.post(
@@ -110,6 +101,7 @@ async def get_point_cloud_upload_link(
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
 async def convert_point_cloud(
+    stage_id: uuid.UUID,
     point_cloud_id: uuid.UUID,
 ):
     task = convert_point_cloud_task.delay(point_cloud_id)  # type: ignore
@@ -137,17 +129,15 @@ async def get_converted_point_cloud_download_links(
     Requires permission.
     """
     async with uow:
-        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+        files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
 
-    if point_cloud.converted_key_prefix is None:
+    if len(files) == 0:
         raise NotFoundError(
             "No converted files: point cloud is not yet converted?")
 
-    keys = storage.get_keys_with_prefix(point_cloud.converted_key_prefix)
-
     links = []
 
-    for key in keys:
-        links.append(storage.get_download_link(key))
+    for file in files:
+        links.append(storage.get_download_link(file.key))
 
     return links

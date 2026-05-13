@@ -95,7 +95,7 @@ class Storage:
             Key=key
         )
 
-    def download_file_locally(self, key: str, file_path: str):
+    def download_file_locally(self, key: str, save_path: str):
         """
         Download file from the storage.
 
@@ -103,9 +103,9 @@ class Storage:
 
         Args:
             key (str): key/path of the file in the storage
-            file_path (str): save path of the file
+            save_path (str): save path of the file
         """
-        self._client.download_file(self._bucket_name, key, file_path)
+        self._client.download_file(self._bucket_name, key, save_path)
 
     def get_upload_link(self, key: str):
         """
@@ -199,6 +199,28 @@ class Storage:
         response = self._client.delete_object(
             Bucket=self._bucket_name, Key=key)
         return response
+
+    def delete_files(self, keys: list[str]):
+        """
+        Delete files from the storage.
+
+        Args:
+            keys (list[str]): keys/paths of the files in the storage
+        """
+        # format to S3 API
+        all_objects = [{'Key': key} for key in keys]
+
+        # batch deletion (1000 is the maximum)
+        batch_size = 1000
+        for i in range(0, len(all_objects), batch_size):
+            batch = all_objects[i:i + batch_size]
+            response = self._client.delete_objects(
+                Bucket=self._bucket_name,
+                Delete={
+                    'Objects': batch,
+                    'Quiet': True
+                }
+            )
 
     def file_exists(self, key: str) -> bool:
         """

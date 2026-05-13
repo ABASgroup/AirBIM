@@ -1,15 +1,27 @@
 import uuid
-from datetime import datetime, timedelta, time
-from typing import TypeVar
+from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models.file import File, Bim, PointCloud, FileStatus
+from models.file import File, Bim, PointCloud, FileStatus, PointCloudConverted
 from .base import BaseRepository
 
 
 class FileRepository(BaseRepository[File]):
     """Repository class for CRUD operations with File model."""
     _model = File
+
+    @classmethod
+    async def get_all_keys(
+        cls,
+        session: AsyncSession
+    ) -> Sequence[str]:
+        """Get all files using their keys."""
+        result = await session.execute(
+            select(cls._model.key)
+        )
+        found_keys = result.scalars().all()
+
+        return found_keys
 
     @classmethod
     async def get_by_key(
@@ -91,16 +103,20 @@ class PointCloudRepository(BaseRepository[PointCloud]):
     """Repository class for CRUD operations with PointCloud model."""
     _model = PointCloud
 
+
+class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
+    """Repository class for CRUD operations with PointCloudConverted model."""
+    _model = PointCloudConverted
+
     @classmethod
-    async def update_converted_key_prefix(
+    async def get_by_point_cloud_id(
         cls,
         point_cloud_id: uuid.UUID,
-        prefix: str,
         session: AsyncSession
-    ) -> PointCloud:
-        """Update converted files prefix key."""
-        entry = await session.get_one(cls._model, point_cloud_id)
-        entry.converted_key_prefix = prefix
-        await session.flush()
-        await session.refresh(entry)
-        return entry
+    ):
+        """Get files with point cloud ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.point_cloud_id == point_cloud_id)
+        )
+        return result.scalars().all()

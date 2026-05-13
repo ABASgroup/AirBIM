@@ -2,7 +2,7 @@
 import uuid
 from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from pydantic import BaseModel as BaseScheme
 from models.base import BaseModel
 
@@ -31,6 +31,22 @@ class BaseRepository(Generic[ModelT]):
         session.add(instance=entry)
         await session.flush()
         return entry
+
+    @classmethod
+    async def create_multiple(cls, data: list[BaseScheme], session: AsyncSession):
+        """Create multiple entries in the database at once.
+
+        Args:
+            data (`pydantic.BaseScheme`): list of pydantic schemes
+            session (`AsyncSession`): an asynchronous database session
+        """
+        rows = [data.model_dump(exclude_unset=True) for data in data]
+
+        result = await session.execute(
+            insert(cls._model).returning(cls._model),
+            rows
+        )
+        await session.flush()
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> Iterable[ModelT] | None:

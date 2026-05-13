@@ -4,24 +4,10 @@ from models.file import FileStatus
 from .base import Response
 
 
-# link schemas
 class FileDataRequest(BaseModel):
     filename: str
     content_type: str
     size: int
-
-
-class FileLinkResponse(BaseModel):
-    """
-    API response schema.
-
-    Universal response for any file presigned URL.
-    """
-    key: str
-    filename: str
-    url: str
-    size: int
-    content_type: str
 
 
 # file schemas
@@ -34,7 +20,17 @@ class FileResponse(Response):
     filename: str
     content_type: str
     size: int
+    key: str
     status: FileStatus
+
+
+class FileLinkResponse(FileResponse):
+    """
+    API response schema.
+
+    Universal response for any file presigned URL.
+    """
+    url: str
 
 
 class FileModel(BaseModel):
@@ -44,6 +40,15 @@ class FileModel(BaseModel):
     content_type: str
     size: int
     status: FileStatus = FileStatus.PENDING
+
+
+class FileUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    filename: str | None = None
+    key: str | None = None
+    content_type: str | None = None
+    size: int | None = None
+    status: FileStatus | None = None
 
 
 # schemas for point clouds
@@ -59,7 +64,14 @@ class PointCloudResponse(Response):
     file: FileResponse
 
 
+class PointCloudConvertedModel(BaseModel):
+    """Schema in DB. Use to create in db."""
+    point_cloud_id: uuid.UUID
+    file_id: uuid.UUID
+
 # schemas for bims
+
+
 class BIMModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     project_id: uuid.UUID

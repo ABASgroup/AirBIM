@@ -2,7 +2,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.storage import Storage
-from services.file import FileService
 from repositories.workspace import WorkspaceRepository
 from repositories.membership import MembershipRepository
 from core.exceptions import NotFoundError, ProhibitedWorkspaceActionError
@@ -53,9 +52,6 @@ async def delete_team_workspace(workspace_id: uuid.UUID, session: AsyncSession, 
     # check type
     if workspace.type != WorkspaceType.TEAM:
         raise ProhibitedWorkspaceActionError("deleting personal workspace")
-
-    # delete all files first
-    FileService.clear_workspace_files(workspace_id, storage=storage)
 
     # it's team workspace, deletion is safe
     await WorkspaceRepository.delete(workspace, session=session)
