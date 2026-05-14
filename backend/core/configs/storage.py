@@ -15,6 +15,8 @@ class StorageConfig(BaseSettings):
     STORAGE_SECRET_KEY: str
     STORAGE_PORT_INTERNAL: int
     STORAGE_BUCKET: str = "airbim"
+    STORAGE_INTERNAL_ENDPOINT: str
+    STORAGE_EXTERNAL_ENDPOINT: str
 
     # for presigned urls
     STORAGE_URL_EXP_TIME: int = 3600
@@ -22,11 +24,6 @@ class StorageConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
                                       extra='ignore')
-
-    @property
-    def endpoint(self) -> str:
-        """Endpoint for connection."""
-        return f"http://storage:{self.STORAGE_PORT_INTERNAL}"
 
 
 storage_config = StorageConfig()  # type: ignore
