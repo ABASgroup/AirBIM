@@ -41,10 +41,14 @@ export const ProjectsList = () => {
       });
 
       const presignedUrl = uploadLink.data.url;
-      const confirmData = { filename: uploadLink.data.filename, size: uploadLink.data.size, content_type: uploadLink.data.content_type };
-
+      const confirmData = {
+        filename: uploadLink.data.file.filename,
+        size: uploadLink.data.file.size,
+        content_type: uploadLink.data.file.content_type
+      };
+      
       await uploadFileWithPresignedLink(presignedUrl, file);
-      await confirmBimUpload(uploadLink.data.file_id, confirmData);
+      await confirmBimUpload(uploadLink.data.file.id, confirmData);
 
       return { success: true };
     } catch (error) {
