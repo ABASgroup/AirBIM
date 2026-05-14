@@ -4,7 +4,6 @@ services:
     image: quay.io/minio/minio:latest
     restart: unless-stopped
     environment:
-      - MINIO_ENDPOINT=${STORAGE_ENDPOINT}
       - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY_ID}
       - MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY}
       - MINIO_BUCKET=${STORAGE_BUCKET}
@@ -15,7 +14,7 @@ services:
     volumes:
       - storage_data:/data
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${STORAGE_PORT_EXTERNAL}/minio/health/live" ]
+      test: [ "CMD", "curl", "-f", "${STORAGE_INTERNAL_ENDPOINT}/minio/health/live" ]
       interval: 1s
       timeout: 5s
       retries: 5
@@ -46,7 +45,7 @@ services:
     container_name: airbim-cache
     image: redis:latest
     restart: unless-stopped
-    command: ["redis-server", "--requirepass", "${CACHE_PASSWORD}", "--appendonly", "yes"]
+    command: [ "redis-server", "--requirepass", "${CACHE_PASSWORD}", "--appendonly", "yes" ]
     ports:
       - "${CACHE_PORT_EXTERNAL:-6379}:${CACHE_PORT_INTERNAL:-6379}"
     volumes:
@@ -64,7 +63,7 @@ services:
     container_name: airbim-broker
     image: redis:latest
     restart: unless-stopped
-    command: ["redis-server", "--port", "6380", "--requirepass", "${BROKER_PASSWORD}", "--appendonly", "yes"]
+    command: [ "redis-server", "--port", "6380", "--requirepass", "${BROKER_PASSWORD}", "--appendonly", "yes" ]
     ports:
       - "${BROKER_PORT_EXTERNAL:-6380}:${BROKER_PORT_EXTERNAL:-6380}"
     volumes:
@@ -80,14 +79,14 @@ services:
 
   worker:
     container_name: airbim-worker
-    command: ["celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "default", "--concurrency=4"]
+    command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "default", "--concurrency=4" ]
     build:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME"]
+      test: [ "CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME" ]
       interval: 1s
       timeout: 5s
       retries: 5
@@ -99,14 +98,14 @@ services:
 
   worker-converter:
     container_name: airbim-worker-converter
-    command: ["celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "converter", "--concurrency=8"]
+    command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "converter", "--concurrency=8" ]
     build:
       context: ./backend
       dockerfile: Dockerfile.converter
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME"]
+      test: [ "CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME" ]
       interval: 1s
       timeout: 5s
       retries: 5
@@ -116,24 +115,24 @@ services:
 
   worker-heavy:
     container_name: airbim-worker-heavy
-    command: ["celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "heavy", "--concurrency=8"]
+    command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "heavy", "--concurrency=8" ]
     build:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME"]
+      test: [ "CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME" ]
       interval: 1s
       timeout: 5s
       retries: 5
     depends_on:
       worker-converter:
         condition: service_healthy
-  
+
   beat:
     container_name: airbim-beat
-    command: ["celery", "-A", "infrastructure.celery_app:celery_app", "beat", "-l", "info"]
+    command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "beat", "-l", "info" ]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -153,7 +152,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: ["celery", "-A", "infrastructure.celery_app:celery_app", "flower"]
+    command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "flower" ]
     env_file:
       - .env
     ports:
@@ -183,13 +182,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
-      storage:
-        condition: service_healthy
-      database:
-        condition: service_healthy
-      cache:
-        condition: service_healthy
-      broker:
+      worker-heavy:
         condition: service_healthy
 
 volumes:
