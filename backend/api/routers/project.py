@@ -10,7 +10,8 @@ from schemas.files import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,
-    FileModel
+    FileModel,
+    FileResponse
 )
 from core.roles import Permission
 from core.dependencies import (
@@ -163,8 +164,10 @@ async def get_bim_upload_link(
             storage=storage
         )
 
-    response_data = FileLinkResponse.model_validate(file, from_attributes=True)
-    response_data.url = url
+    response_data = FileLinkResponse(
+        file=FileResponse.model_validate(file, from_attributes=True),
+        url=url
+    )
 
     return response_data
 

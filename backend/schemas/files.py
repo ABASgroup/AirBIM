@@ -24,13 +24,14 @@ class FileResponse(Response):
     status: FileStatus
 
 
-class FileLinkResponse(FileResponse):
+class FileLinkResponse(BaseModel):
     """
     API response schema.
 
     Universal response for any file presigned URL.
     """
     url: str
+    file: FileResponse
 
 
 class FileModel(BaseModel):
