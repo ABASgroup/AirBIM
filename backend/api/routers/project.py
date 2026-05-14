@@ -19,6 +19,7 @@ from core.dependencies import (
     get_storage,
     DatabaseSessionUOW
 )
+from core.exceptions import NotFoundError
 
 from api.dependencies import require_project_permission
 
@@ -191,6 +192,11 @@ async def get_project_bim(
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)
-        bim = project.bim
+        bim_id = project.bim.id
+
+        if bim_id is None:
+            raise NotFoundError("Project has no BIM.")
+
+        bim = await FileService.get_bim(bim_id, session=uow.session)
 
     return bim
