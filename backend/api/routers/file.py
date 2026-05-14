@@ -105,12 +105,8 @@ async def get_download_link(
             storage=storage
         )
 
-    link_data = FileLinkResponse(
-        key=file.key,
-        url=url,
-        filename=file.filename,
-        size=file.size,
-        content_type=file.content_type
+    response_data = FileLinkResponse(
+        file=FileResponse.model_validate(file, from_attributes=True),
+        url=url
     )
-
-    return link_data
+    return response_data
