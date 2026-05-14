@@ -2,7 +2,7 @@
 import { Link, useParams } from "react-router-dom";
 import { getProject } from "@/api/project";
 import { getWorkspace } from "@/api/workspace";
-import { getBimDownloadLink } from "@/api/file";
+import { getBimDownloadLink, getProjectBim } from "@/api/file";
 import { useState, useEffect } from "react";
 import { FilledButton, LoadingSpinner } from "@ui";
 import { IfcViewerDrawer } from "@app/components/IfcViewerDrawer";
@@ -36,10 +36,20 @@ function ProjectPage() {
 
   const handleShowBim = async () => {
     setBimLoading(true);
-
     try {
-      const response = await getBimDownloadLink(projectId);
-      setBimUrl(response.data.url);
+      const bimRes = await getProjectBim(projectId);
+      const fileId = bimRes.data.file?.id;
+      if (!fileId) {
+        showToast({
+          type: "warning",
+          title: "Файл не найден",
+          message: "BIM файл не загружен для этого проекта"
+        });
+        return;
+      }
+
+      const dlRes = await getBimDownloadLink(fileId);
+      setBimUrl(dlRes.data.url);
       setIsModalOpen(true);
     } catch (error) {
       if (error.response?.status === 404) {
@@ -68,8 +78,8 @@ function ProjectPage() {
     <>
       <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-text-color/70">
         {workspace && (
-          <Link 
-            to="/app/dashboard" 
+          <Link
+            to="/app/dashboard"
             className="hover:underline"
             onClick={() => workspace && switchWorkspace(workspace.id)}
           >
