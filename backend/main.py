@@ -5,20 +5,20 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from configs import api_config
-from exceptions.handlers import add_exception_handlers
+from core.configs.api import api_config
+from api.handlers import add_exception_handlers
 
-from routers.auth import router as auth_router
-from routers.workspace import router as workspace_router
-from routers.project import router as project_router
-from routers.stage import router as stage_router
-from routers.invite import router as invite_router
+from api.routers.auth import router as auth_router
+from api.routers.workspace import router as workspace_router
+from api.routers.project import router as project_router
+from api.routers.stage import router as stage_router
+from api.routers.invite import router as invite_router
+from api.routers.file import router as file_router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     # startup: resource initialization
-
     yield
 
     # shutdown: resource cleanup
@@ -36,6 +36,7 @@ app.include_router(workspace_router)
 app.include_router(project_router)
 app.include_router(stage_router)
 app.include_router(invite_router)
+app.include_router(file_router)
 
 # add exception handlers
 add_exception_handlers(app)
@@ -45,7 +46,6 @@ add_exception_handlers(app)
 async def ping():
     """Simple API check endpoint."""
     return {"message": "I'm fine, thank you!"}
-
 
 # launch
 if __name__ == "__main__":

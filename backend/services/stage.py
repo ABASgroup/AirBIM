@@ -1,9 +1,8 @@
 """Service layer logic for Stage."""
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
-from services.file import FileService
-from exceptions.exceptions import NotFoundError
+from infrastructure.storage import Storage
+from core.exceptions import NotFoundError
 from repositories.stage import StageRepository
 from models.stage import Stage
 from schemas.stage import StageModel
@@ -44,13 +43,8 @@ async def create_stage(stage_data: StageModel, session: AsyncSession) -> Stage:
     """
     Create a new stage for the project.
     """
-    try:
-        stage = await StageRepository.create(stage_data, session=session)
-        await session.commit()
-        return stage
-    except Exception:
-        await session.rollback()
-        raise
+    stage = await StageRepository.create(stage_data, session=session)
+    return stage
 
 
 async def delete_stage(stage_id: uuid.UUID, session: AsyncSession, storage: Storage) -> Stage:
@@ -63,21 +57,9 @@ async def delete_stage(stage_id: uuid.UUID, session: AsyncSession, storage: Stor
         if stage is None:
             raise NotFoundError("Stage was not found.")
 
-        # clear stage files first
-        FileService.clear_stage_files(
-            stage.project.workspace_id,
-            stage.project.id,
-            stage.id,
-            storage)
-
         # drop entry and related entries
         await StageRepository.delete(stage, session=session)
 
-        await session.commit()
         return stage
     except AttributeError as exc:
-        await session.rollback()
         raise NotFoundError("Stage was not found.") from exc
-    except Exception:
-        await session.rollback()
-        raise

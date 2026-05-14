@@ -1,231 +1,308 @@
 """Service layer logic for files."""
 import uuid
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.files import (
-    FileUploadConfirmRequest,
-    PointCloudFileModel,
-    BIMFileModel,
-    FileUploadLinkRequest
+    FileModel,
+    BIMModel,
+    FileDataRequest,
+    PointCloudModel,
+    PointCloudConvertedModel
 )
 
-from exceptions.exceptions import NotFoundError
+from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.files import PointCloudFile, BimFile, FileStatus
+from models.file import FileStatus, File, PointCloud
 
-from repositories.files import PointCloudFileRepository, BimFileRepository
-from storage import Storage
+from repositories.files import (
+    FileRepository,
+    BimRepository,
+    PointCloudRepository,
+    PointCloudConvertedRepository
+)
+from infrastructure.storage import Storage
 
 
 class FileService:
-    def __init__(self):
-        pass
-
-    @classmethod
+    @staticmethod
     def create_file_key(
-        cls,
-        workspace_id: uuid.UUID,
-        project_id: uuid.UUID,
         filename: str,
-        stage_id: uuid.UUID | None = None
-    ):
+    ) -> str:
         """
-        Provides a key for the file in the fixed format.
+        Provides a key (unique) for the file in the fixed format.
 
         **Never** create file keys on your own for consistency.
         """
-        base = f"workspace_{workspace_id}/project_{project_id}/"
-        if stage_id:
-            # append stage related part if stage_id is provided
-            key = f"{base}stage_{stage_id}/{filename}"
-            return key
-        return base
+        key = f"{uuid.uuid4()}/{filename}"
+        return key
+
+    @staticmethod
+    async def clean_up_files(
+            storage: Storage,
+            session: AsyncSession,
+            pending_for_limit: timedelta = timedelta(days=1)
+    ):
+        """
+        Cleans up files from the database and the storage.
+
+        Which files are being cleaned:
+        - those, that are pending in the database for a long time
+        - those, that are in the storage but not in the database
+        """
+        keys_to_delete = set()
+
+        # delete files that are pending for far too long
+        # they CAN be in the storage if there was no confirm
+        # it was decided to delete them anyway
+        files = await FileRepository.get_by_status(FileStatus.PENDING, session=session)
+
+        for file in files:
+            file_pending_for = datetime.now(timezone.utc) - file.created_at
+            if file_pending_for > pending_for_limit:
+                # db first
+                key = file.key
+                await FileRepository.delete(file, session=session)
+                keys_to_delete.add(key)
+
+        # delete files that are in the storage but not in the database
+        # no entry in the database about them is a sign of an "orphan" file
+        # usually there is always db and then storage
+        keys = storage.get_all_keys()
+        db_keys = set(await FileRepository.get_all_keys(session=session))
+
+        for key in keys:
+            if key not in db_keys:
+                keys_to_delete.add(key)
+
+        storage.delete_files(list(keys_to_delete))
+        files_deleted = len(keys_to_delete)
+        return files_deleted
+
+    @staticmethod
+    def check_file_meta(
+        file: File,
+        content_type: str,
+        size: int,
+        filename: str
+    ):
+        """
+        Check provided file metadata with meta that is already in the database.
+
+        You can register there metadata checks you need.
+        """
+        failed = (file.filename != filename) or (
+            file.content_type != content_type) or (file.size != size)
+
+        if failed:
+            raise InvalidFileMetaDataError()
+
+    @staticmethod
+    async def delete_file(
+        file_id: uuid.UUID,
+        session: AsyncSession,
+        storage: Storage
+    ):
+        """Delete file using its ID."""
+        file = await FileRepository.get_by_id(file_id, session=session)
+
+        if not file:
+            raise NotFoundError("File is not found.")
+
+        # delete file from storage
+        storage.delete_file(file.key)
+        # delete from storage
+        file = await FileRepository.delete(file, session=session)
+        return file
 
     @classmethod
-    def clear_stage_files(cls, workspace_id, project_id, stage_id, storage: Storage):
-        """Clear all files related to the stage from the storage."""
-        prefix = f"workspace_{workspace_id}/project_{project_id}/stage_{stage_id}/"
-        storage.delete_files_by_prefix(prefix)
+    async def generate_file_download_link(
+        cls,
+        file_id: uuid.UUID,
+        session: AsyncSession,
+        storage: Storage
+    ) -> str:
+        """
+        Creates presigned URL for BIM download.
+
+        Returns url and file.
+        """
+        file = await FileRepository.get_by_id(
+            file_id,
+            session=session
+        )
+
+        if file is None:
+            raise NotFoundError(
+                "File is not found.")
+
+        link = storage.get_download_link(file.key)
+
+        return link
 
     @classmethod
-    def clear_project_files(cls, workspace_id, project_id, storage: Storage):
-        """Clear all files related to the project from the storage."""
-        prefix = f"workspace_{workspace_id}/project_{project_id}/"
-        storage.delete_files_by_prefix(prefix)
+    async def confirm_file_upload(
+        cls,
+        file_id: uuid.UUID,
+        file_data: FileDataRequest,
+        storage: Storage,
+        session: AsyncSession
+    ) -> File:
+        """
+        Runs checks on the file.
+
+        If everything is fine, returns entry in DB.
+        """
+        # in the database
+        file = await FileRepository.get_by_id(file_id, session=session)
+
+        if file is None:
+            raise NotFoundError(
+                "File not found: no entry about it.")
+
+        cls.check_file_meta(file, **file_data.model_dump())
+
+        # in the storage
+        if not storage.file_exists(file.key):
+            raise NotFoundError(
+                "File not found: not uploaded to the storage")
+
+        # everything seems clear, set new status
+        await FileRepository.update_status(
+            file,
+            FileStatus.UPLOADED,
+            session=session)
+        return file
 
     @classmethod
-    def clear_workspace_files(cls, workspace_id, storage: Storage):
-        """Clear all files related to the workspace from the storage."""
-        prefix = f"workspace_{workspace_id}/"
-        storage.delete_files_by_prefix(prefix)
+    async def create_file(
+        cls,
+        file_data: FileModel,
+        session: AsyncSession,
+    ) -> File:
+        """
+        Creates file entry in the database.
+        """
+        # make pending file
+        file = await FileRepository.create(file_data, session=session)
+        return file
+
+    @classmethod
+    async def get_file(
+        cls,
+        file_id: uuid.UUID,
+        session: AsyncSession
+    ) -> File:
+        """Get file entry from the database."""
+        file = await FileRepository.get_by_id(file_id, session=session)
+
+        if file is None:
+            raise NotFoundError(
+                "File not found: no such ID.")
+
+        return file
+
+    @classmethod
+    async def get_point_cloud(
+        cls,
+        point_cloud_id: uuid.UUID,
+        session: AsyncSession
+    ) -> PointCloud:
+        cloud = await PointCloudRepository.get_by_id(point_cloud_id, session=session)
+
+        if cloud is None:
+            raise NotFoundError(
+                "Point cloud is not found: no such ID.")
+
+        return cloud
 
     @classmethod
     async def generate_bim_upload_link(
         cls,
-        workspace_id: uuid.UUID,
         project_id: uuid.UUID,
-        file_data: FileUploadLinkRequest,
+        file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> tuple[str, str]:
+    ) -> tuple[str, File]:
         """
         Creates presigned URL for BIM upload and makes reservation in DB.
 
-        Returns url and file key.
+        Returns url and file.
         """
-        try:
-            # create key
-            key = cls.create_file_key(
-                workspace_id=workspace_id,
-                project_id=project_id,
-                filename=file_data.filename
-            )
+        # make pending file
+        file = await cls.create_file(
+            file_data=file_data,
+            session=session,
+        )
 
-            # make pending file
-            file_data_db = BIMFileModel(
-                filename=file_data.filename,
-                key=key,
-                content_type=file_data.content_type,
-                size=file_data.size,
-                project_id=project_id
-            )
+        bim = BIMModel(project_id=project_id, file_id=file.id)
+        await BimRepository.create(bim, session=session)
 
-            await BimFileRepository.create(file_data_db, session=session)
+        # generate temporary upload link
+        link = storage.get_upload_link(file.key)
 
-            # generate temporary upload link
-            link = storage.get_upload_link(key)
-
-            await session.commit()
-            return link, key
-        except Exception:
-            await session.rollback()
-            raise
-
-    @classmethod
-    async def confirm_bim_upload(
-        cls,
-        file_data: FileUploadConfirmRequest,
-        storage: Storage,
-        session: AsyncSession
-    ) -> BimFile:
-        """
-        Runs checks on the file.
-
-        If everything is fine, returns file entry in DB.
-        """
-        try:
-            # in the database
-            # check fields we want to check
-            file_db = await BimFileRepository.get_file_by_metadata(
-                file_data.filename,
-                file_data.content_type,
-                file_data.size,
-                session=session
-            )
-
-            if file_db is None:
-                raise NotFoundError(
-                    "File not found: no entry in the database.")
-
-            # in the storage
-            exists = storage.file_exists(file_db.key)
-            if not exists:
-                raise NotFoundError(
-                    "File not found: not uploaded to the storage")
-
-            # everything seems clear, set new status
-            await BimFileRepository.update_status(
-                file_db,
-                FileStatus.UPLOADED,
-                session=session)
-            await session.commit()
-            return file_db
-        except:
-            await session.rollback()
-            raise
+        return link, file
 
     @classmethod
     async def generate_point_cloud_upload_link(
         cls,
-        workspace_id: uuid.UUID,
-        project_id: uuid.UUID,
         stage_id: uuid.UUID,
-        file_data: FileUploadLinkRequest,
+        file_data: FileModel,
         storage: Storage,
         session: AsyncSession
-    ) -> tuple[str, str]:
+    ) -> tuple[str, File]:
         """
-        Creates presigned URL for point cloud upload and makes reservation in DB.
+        Creates presigned URL for BIM upload and makes reservation in DB.
 
-        Returns url and file key.
+        Returns url and file.
         """
-        try:
-            # create key
-            key = cls.create_file_key(
-                workspace_id=workspace_id,
-                project_id=project_id,
-                filename=file_data.filename,
-                stage_id=stage_id
-            )
+        # make pending file
+        file = await cls.create_file(
+            file_data=file_data,
+            session=session,
+        )
 
-            # make pending file
-            file_data_db = PointCloudFileModel(
-                filename=file_data.filename,
-                key=key,
-                content_type=file_data.content_type,
-                size=file_data.size,
-                stage_id=stage_id
-            )
+        cloud = PointCloudModel(stage_id=stage_id, file_id=file.id)
+        await PointCloudRepository.create(cloud, session=session)
 
-            await PointCloudFileRepository.create(file_data_db, session=session)
+        # generate temporary upload link
+        link = storage.get_upload_link(file.key)
 
-            # generate temporary upload link
-            link = storage.get_upload_link(key)
-
-            await session.commit()
-            return link, key
-        except Exception:
-            await session.rollback()
-            raise
+        return link, file
 
     @classmethod
-    async def confirm_point_cloud_upload(
+    async def save_converted_point_cloud_file(
         cls,
-        file_data: FileUploadConfirmRequest,
-        storage: Storage,
+        point_cloud_id: uuid.UUID,
+        file_data: FileModel,
         session: AsyncSession
-    ) -> PointCloudFile:
-        """
-        Runs checks on the file.
+    ):
+        """Saves converted file in the database and creates connection."""
+        # create files first
+        file = await cls.create_file(file_data, session=session)
 
-        If everything is fine, returns file entry in DB.
-        """
-        try:
-            # in the database
-            # check fields we want to check
-            file_db = await PointCloudFileRepository.get_file_by_metadata(
-                file_data.filename,
-                file_data.content_type,
-                file_data.size,
-                session=session
-            )
+        # then connection
+        data = PointCloudConvertedModel(
+            point_cloud_id=point_cloud_id,
+            file_id=file.id
+        )
+        await PointCloudConvertedRepository.create(data, session=session)
 
-            if file_db is None:
-                raise NotFoundError(
-                    "File not found: no entry in the database.")
+    @classmethod
+    async def get_converted_point_cloud_files(
+        cls,
+        point_cloud_id: uuid.UUID,
+        session: AsyncSession
+    ) -> list[File]:
+        """Get all files for a converted point cloud."""
+        records = await PointCloudConvertedRepository.get_by_point_cloud_id(
+            point_cloud_id=point_cloud_id,
+            session=session
+        )
 
-            # in the storage
-            exists = storage.file_exists(file_db.key)
-            if not exists:
-                raise NotFoundError(
-                    "File not found: not uploaded to the storage")
+        files = []
 
-            # everything seems clear, set new status
-            await PointCloudFileRepository.update_status(
-                file_db,
-                FileStatus.UPLOADED,
-                session=session)
-            await session.commit()
-            return file_db
-        except:
-            await session.rollback()
-            raise
+        for record in records:
+            record = await PointCloudConvertedRepository.refresh(record, session=session, relations=["file"])
+            files.append(record.file)
+
+        return files

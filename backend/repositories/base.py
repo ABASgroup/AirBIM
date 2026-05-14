@@ -2,7 +2,7 @@
 import uuid
 from typing import Generic, TypeVar, Iterable
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from pydantic import BaseModel as BaseScheme
 from models.base import BaseModel
 
@@ -31,6 +31,22 @@ class BaseRepository(Generic[ModelT]):
         session.add(instance=entry)
         await session.flush()
         return entry
+
+    @classmethod
+    async def create_multiple(cls, data: list[BaseScheme], session: AsyncSession):
+        """Create multiple entries in the database at once.
+
+        Args:
+            data (`pydantic.BaseScheme`): list of pydantic schemes
+            session (`AsyncSession`): an asynchronous database session
+        """
+        rows = [data.model_dump(exclude_unset=True) for data in data]
+
+        result = await session.execute(
+            insert(cls._model).returning(cls._model),
+            rows
+        )
+        await session.flush()
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> Iterable[ModelT] | None:
@@ -79,6 +95,29 @@ class BaseRepository(Generic[ModelT]):
         return entry
 
     @classmethod
+    async def update(
+        cls,
+        entry: ModelT,
+        update_data: BaseScheme,
+        session: AsyncSession
+    ):
+        """Update an entry with new data by its ID/primary key.
+
+        Args:
+            entry_id (`uuid.UUID`): entry's ID OR primary key
+            update_data (`pydantic.BaseScheme`): a pydantic scheme instance with new data
+            session (`AsyncSession`): an asynchronous database session
+        """
+        update_data_dict = update_data.model_dump(exclude_unset=True)
+
+        for key, value in update_data_dict.items():
+            setattr(entry, key, value)
+
+        await session.flush()
+        await session.refresh(entry)
+        return entry
+
+    @classmethod
     async def delete(cls, entry: ModelT, session: AsyncSession):
         """Delete entry using its object"""
         await session.delete(entry)
@@ -97,4 +136,23 @@ class BaseRepository(Generic[ModelT]):
 
         await session.delete(entry)
         await session.flush()
+        return entry
+
+    @classmethod
+    async def refresh(
+        cls,
+        entry: ModelT,
+        session: AsyncSession,
+        relations: list[str] | None = None
+    ):
+        """Refresh model fields.
+
+        Useful when you need to load additional fields.
+
+        Args:
+            entry_id (`uuid.UUID`): entry itself, which you need to refresh
+            session (`AsyncSession`): an asynchronous database session
+            relations (`list[str]`): list of relations to refresh (if None, only uploaded relations will be refreshed)
+        """
+        await session.refresh(entry, attribute_names=relations)
         return entry

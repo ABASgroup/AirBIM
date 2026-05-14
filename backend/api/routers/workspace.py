@@ -1,23 +1,23 @@
 import uuid
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from storage import Storage
-from dependencies import (
-    get_db_session,
-    get_current_user_id,
+from infrastructure.storage import Storage
+from core.dependencies import (
+    get_database_uow,
     get_storage,
-    require_workspace_permission,
+    DatabaseSessionUOW
 )
-from roles import Role, get_role_permissions, Permission
+from api.dependencies import require_workspace_permission, get_current_user_id
+from core.roles import Role, get_role_permissions, Permission
 from models.membership import Membership
 from models.workspace import WorkspaceType
-from schemas.invite_link import InviteLinkRequest, InviteLinkResponse
+from schemas.invite_link import InviteLinkRequest, NewInviteLinkResponse
 from schemas.project import ProjectModel, ProjectCreateRequest, ProjectResponse
-from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspacePublic
+from schemas.user import UserResponse
+from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspaceResponse
 from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,
-    MembershipPublic,
+    MembershipResponse,
     MembershipUserResponse
 )
 from services import project as project_service
@@ -33,18 +33,19 @@ router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 async def access(
     workspace_id: uuid.UUID,
     user_id: uuid.UUID = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Get current user access, including permissions and role in the workspace.
 
     Use if you need to specify permissions.
-    
+
     If user is not a member of the workspace, returns an error.
     """
-    membership = await membership_service.get_membership(
-        user_id, workspace_id, session=session
-    )
+    async with uow:
+        membership = await membership_service.get_membership(
+            user_id, workspace_id, session=uow.session
+        )
 
     permissions = get_role_permissions(membership.role)
     return MembershipPermissionsResponse(
@@ -65,29 +66,31 @@ async def access(
         Depends(require_workspace_permission(Permission.MEMBERS_VIEW))],
 )
 async def get_workspace_members(
-    workspace_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+    workspace_id: uuid.UUID,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Get all workspace members.
 
     Permission required.
     """
-    memberships = await membership_service.get_workspace_members(
-        workspace_id, session=session
-    )
+    async with uow:
+        memberships = await membership_service.get_workspace_members(
+            workspace_id, session=uow.session
+        )
     return memberships
 
 
 @router.delete(
     "/{workspace_id}/memberships/{user_id}",
-    response_model=MembershipPublic,
+    response_model=MembershipResponse,
     dependencies=[
         Depends(require_workspace_permission(Permission.MEMBERS_REMOVE))],
 )
 async def remove_user_from_workspace(
     workspace_id: uuid.UUID,
     user_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session)
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Remove user from the workspace
@@ -95,16 +98,45 @@ async def remove_user_from_workspace(
     - Permission required
     - You can't remove the owner from his own workspace
     """
-    removed_membership = await membership_service.delete_membership(
-        user_id, workspace_id, session=session
-    )
+    async with uow:
+        removed_membership = await membership_service.delete_membership(
+            user_id, workspace_id, session=uow.session
+        )
     return removed_membership
 
 
-@router.get("/my", response_model=list[WorkspacePublic])
+@router.patch(
+    "/{workspace_id}/memberships/{user_id}/role",
+    response_model=MembershipResponse,
+)
+async def change_user_role(
+    workspace_id: uuid.UUID,
+    user_id: uuid.UUID,
+    role: Role,
+    editor: Membership = Depends(
+        require_workspace_permission(Permission.MEMBERS_EDIT_ROLE)),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
+):
+    """
+    Change user role in the workspace.
+
+    Permission required.
+    """
+    async with uow:
+        membership = await membership_service.change_user_role(
+            editor_id=editor.user_id,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            new_role=role,
+            session=uow.session
+        )
+    return membership
+
+
+@router.get("/my", response_model=list[WorkspaceResponse])
 async def get_user_workspaces(
     user_id: uuid.UUID = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Get all workspaces where current user is the member.
@@ -113,60 +145,63 @@ async def get_user_workspaces(
     - Personal workspace
     - Team workspaces
     """
-    workspaces = await workspace_service.get_user_workspaces(user_id, session=session)
+    async with uow:
+        workspaces = await workspace_service.get_user_workspaces(user_id, session=uow.session)
     return workspaces
 
 
 @router.get(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_VIEW))],
 )
 async def get_workspace(
     workspace_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Get all workspace data.
     """
-    workspaces = await workspace_service.get_workspace(workspace_id, session=session)
+    async with uow:
+        workspaces = await workspace_service.get_workspace(workspace_id, session=uow.session)
     return workspaces
 
 
-@router.post("", response_model=WorkspacePublic)
+@router.post("", response_model=WorkspaceResponse)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     user_id: uuid.UUID = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Creates a new workspace, making current user its owner.
-    
+
     You can create only team workspace, personal workspace is created automatically during registration.
     """
-    workspace = WorkspaceModel(
-        name=workspace_data.name, type=WorkspaceType.TEAM)
-    workspace = await workspace_service.create_workspace(workspace, session)
+    async with uow:
+        workspace = WorkspaceModel(
+            name=workspace_data.name, type=WorkspaceType.TEAM)
+        workspace = await workspace_service.create_workspace(workspace, uow.session)
 
-    # current user is the owner
-    membership = MembershipModel(
-        workspace_id=workspace.id, user_id=user_id, role=Role.OWNER
-    )
-    await membership_service.create_membership(membership, session)
+        # current user is the owner
+        membership = MembershipModel(
+            workspace_id=workspace.id, user_id=user_id, role=Role.OWNER
+        )
+        await membership_service.create_membership(membership, uow.session)
 
     return workspace
 
 
 @router.delete(
     "/{workspace_id}",
-    response_model=WorkspacePublic,
+    response_model=WorkspaceResponse,
     dependencies=[Depends(require_workspace_permission(
         Permission.WORKSPACE_DELETE))],
 )
 async def delete_team_workspace(
     workspace_id: uuid.UUID,
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -176,34 +211,43 @@ async def delete_team_workspace(
 
     Requires permission.
     """
-    workspace = await workspace_service.delete_team_workspace(
-        workspace_id,
-        session=session,
-        storage=storage
-    )
+    async with uow:
+        workspace = await workspace_service.delete_team_workspace(
+            workspace_id,
+            session=uow.session,
+            storage=storage
+        )
     return workspace
 
 
-@router.post("/{workspace_id}/invites", response_model=InviteLinkResponse)
+@router.post("/{workspace_id}/invites", response_model=NewInviteLinkResponse)
 async def get_invite_link(
     workspace_id: uuid.UUID,
     link_data: InviteLinkRequest,
     membership: Membership = Depends(
         require_workspace_permission(Permission.PROJECT_CREATE)
     ),
-    session: AsyncSession = Depends(get_db_session),
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Get invite link for the workspace associated with that role.
 
     Use if you need a new link.
-    
+
     Always save token from the response, otherwise it will be lost.
     """
-    link = await invite_link_service.generate_invite_link(
-        workspace_id, membership.user_id, link_data.role, session=session
+    async with uow:
+        link, token = await invite_link_service.generate_invite_link(
+            workspace_id, membership.user_id, link_data.role, session=uow.session
+        )
+    return NewInviteLinkResponse(
+        token=token,
+        workspace=WorkspaceResponse.model_validate(
+            link.workspace, from_attributes=True),
+        created_by=UserResponse.model_validate(
+            link.created_by, from_attributes=True),
+        expires_at=link.expires_at,
     )
-    return link
 
 
 @router.post(
@@ -214,14 +258,16 @@ async def get_invite_link(
     ],
 )
 async def revoke_invite_links(
-    workspace_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+    workspace_id: uuid.UUID,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
     Revoke invite links for the workspace.
 
     Old links (created before the call) will become obsolete and invalid.
     """
-    await invite_link_service.revoke_links(workspace_id, session=session)
+    async with uow:
+        await invite_link_service.revoke_links(workspace_id, session=uow.session)
 
 
 @router.get(
@@ -231,12 +277,14 @@ async def revoke_invite_links(
         Depends(require_workspace_permission(Permission.PROJECT_VIEW))],
 )
 async def get_workspace_projects(
-    workspace_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+    workspace_id: uuid.UUID,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """Get all projects related to the workspace."""
-    projects = await project_service.get_workspace_projects(
-        workspace_id, session=session
-    )
+    async with uow:
+        projects = await project_service.get_workspace_projects(
+            workspace_id, session=uow.session
+        )
     return projects
 
 
@@ -249,10 +297,11 @@ async def get_workspace_projects(
 async def create_project(
     workspace_id: uuid.UUID,
     project_data: ProjectCreateRequest,
-    session: AsyncSession = Depends(get_db_session)
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
-    project_data_db = ProjectModel(workspace_id=workspace_id,
-                                   name=project_data.name,
-                                   description=project_data.description)
-    project = await project_service.create_project(project_data_db, session=session)
+    async with uow:
+        project_data_db = ProjectModel(workspace_id=workspace_id,
+                                    name=project_data.name,
+                                    description=project_data.description)
+        project = await project_service.create_project(project_data_db, session=uow.session)
     return project

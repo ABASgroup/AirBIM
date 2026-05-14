@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Enum, ForeignKey, UniqueConstraint
 from .base import BaseModel
-from roles import Role
+from core.roles import Role
 
 
 class Membership(BaseModel):
