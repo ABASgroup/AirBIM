@@ -12,7 +12,7 @@ from schemas.files import (
 
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.file import FileStatus, File, PointCloud
+from models.file import FileStatus, File, PointCloud, Bim
 
 from repositories.files import (
     FileRepository,
@@ -214,6 +214,20 @@ class FileService:
                 "Point cloud is not found: no such ID.")
 
         return cloud
+
+    @classmethod
+    async def get_bim(
+        cls,
+        bim_id: uuid.UUID,
+        session: AsyncSession
+    ) -> Bim:
+        bim = await BimRepository.get_by_id(bim_id, session=session)
+
+        if bim is None:
+            raise NotFoundError(
+                "BIM is not found: no such ID.")
+
+        return bim
 
     @classmethod
     async def generate_bim_upload_link(
