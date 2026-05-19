@@ -7,8 +7,6 @@ from repositories.project import ProjectRepository
 from models.project import Project
 from schemas.project import ProjectModel, ProjectUpdate
 
-from services.file import FileService
-
 
 async def get_project(project_id: uuid.UUID, session: AsyncSession) -> Project:
     """Get project using its ID"""
@@ -17,7 +15,7 @@ async def get_project(project_id: uuid.UUID, session: AsyncSession) -> Project:
     if project is None:
         raise NotFoundError("No project with this ID")
 
-    project = await ProjectRepository.refresh(project, session=session, relations=["bim"])
+    project = await ProjectRepository.refresh(project, session=session, relations=["bim", "stages"])
 
     return project
 
