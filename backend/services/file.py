@@ -209,8 +209,6 @@ class FileService:
     ) -> PointCloud:
         cloud = await PointCloudRepository.get_by_id(point_cloud_id, session=session)
 
-        cloud = await PointCloudRepository.refresh(cloud, session=session, relations=["file"])
-
         if cloud is None:
             raise NotFoundError(
                 "Point cloud is not found: no such ID.")
@@ -226,8 +224,6 @@ class FileService:
         session: AsyncSession
     ) -> Bim:
         bim = await BimRepository.get_by_id(bim_id, session=session)
-
-        bim = await BimRepository.refresh(bim, session=session, relations=["file"])
 
         if bim is None:
             raise NotFoundError(
