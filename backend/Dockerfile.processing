@@ -1,0 +1,30 @@
+FROM mambaorg/micromamba:latest
+
+ENV MAMBA_DOCKERFILE_ACTIVATE=1
+
+USER root
+WORKDIR /app
+
+COPY requirements.txt .
+COPY requirements.processing.txt .
+
+
+RUN micromamba install -y -n base -c conda-forge \
+    python=3.12 \
+    pip "python-pdal>=3.5" \
+    && micromamba clean --all --yes
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt .
+COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.processing.txt .
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER airbim_processing-0.1.0-py3-none-any.whl .
+
+USER $MAMBA_USER
+
+RUN micromamba run -n base pip install --no-cache-dir -r requirements.txt \
+    && micromamba run -n base pip install --no-cache-dir -r requirements.processing.txt
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER . .
+
+# TODO: TEMPORARY MEASURE
+RUN micromamba run -n base pip install --no-cache-dir airbim_processing-0.1.0-py3-none-any.whl

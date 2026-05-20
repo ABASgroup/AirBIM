@@ -1,6 +1,6 @@
 from uuid import UUID
 from pydantic import BaseModel
-from models.file import FileStatus
+from models.file import FileStatus, PointCloudType
 from .base import Response
 
 
@@ -55,8 +55,9 @@ class FileUpdate(BaseModel):
 
 class PointCloudModel(BaseModel):
     """Schema in DB. Use to create in DB."""
-    stage_id: UUID
+    stage_id: UUID | None = None
     file_id: UUID
+    type: PointCloudType = PointCloudType.SCAN
 
 
 class PointCloudResponse(Response):

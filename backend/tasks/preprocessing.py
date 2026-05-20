@@ -66,14 +66,12 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
             files = {}
 
             for file in file_dir:
-                # save in the storage
+                # generate keys
                 key = FileService.create_file_key(
                     filename=file.name
                 )
 
-                # upload to the storage
-                storage.upload_file_locally(key, str(file))
-
+                # make models
                 size = get_file_size(str(file.absolute()))
                 content_type = get_file_mime_type(str(file.absolute()))
                 file_data = FileModel(

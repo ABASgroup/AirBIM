@@ -12,11 +12,11 @@ from schemas.files import (
 
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.file import FileStatus, File, PointCloud, Bim
+from models.file import FileStatus, File, PointCloud, BIM, PointCloudType
 
 from repositories.files import (
     FileRepository,
-    BimRepository,
+    BIMRepository,
     PointCloudRepository,
     PointCloudConvertedRepository
 )
@@ -222,14 +222,14 @@ class FileService:
         cls,
         bim_id: uuid.UUID,
         session: AsyncSession
-    ) -> Bim:
-        bim = await BimRepository.get_by_id(bim_id, session=session)
+    ) -> BIM:
+        bim = await BIMRepository.get_by_id(bim_id, session=session)
 
         if bim is None:
             raise NotFoundError(
                 "BIM is not found: no such ID.")
 
-        bim = await BimRepository.refresh(bim, session=session, relations=["file"])
+        bim = await BIMRepository.refresh(bim, session=session, relations=["file"])
 
         return bim
 
@@ -253,7 +253,7 @@ class FileService:
         )
 
         bim = BIMModel(project_id=project_id, file_id=file.id)
-        await BimRepository.create(bim, session=session)
+        await BIMRepository.create(bim, session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
@@ -286,6 +286,28 @@ class FileService:
         link = storage.get_upload_link(file.key)
 
         return link, file
+
+    @classmethod
+    async def save_converted_bim_file(
+        cls,
+        bim_id: uuid.UUID,
+        file_data: FileModel,
+        session: AsyncSession
+    ):
+        """Saves converted point cloud you've got from the BIM."""
+        # create file first
+        file = await cls.create_file(file_data, session=session)
+
+        # create point cloud record
+        data = PointCloudModel(
+            file_id=file.id,
+            type=PointCloudType.PLAN
+        )
+        point_cloud = await PointCloudConvertedRepository.create(data, session=session)
+
+        # set a connection
+        bim = await cls.get_bim(bim_id, session=session)
+        await BIMRepository.set_point_cloud(bim=bim, point_cloud_id=point_cloud.id, session=session)
 
     @classmethod
     async def save_converted_point_cloud_file(
