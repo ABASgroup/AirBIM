@@ -15,7 +15,7 @@ from core.dependencies import (
     DatabaseSessionUOW
 )
 
-from api.dependencies import require_workspace_permission
+from api.dependencies import require_file_permission
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -23,6 +23,8 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.post(
     "/{file_id}/confirm",
     response_model=FileResponse,
+    dependencies=[
+        Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
 async def confirm_upload(
     file_id: uuid.UUID,
@@ -50,7 +52,7 @@ async def confirm_upload(
     "/{file_id}",
     response_model=BIMResponse,
     dependencies=[
-        Depends(require_workspace_permission(Permission.FILES_DELETE))],
+        Depends(require_file_permission(Permission.FILES_DELETE))],
 )
 async def delete_file(
     file_id: uuid.UUID,
@@ -80,7 +82,7 @@ async def delete_file(
     "/{file_id}/download",
     response_model=FileLinkResponse,
     dependencies=[
-        Depends(require_workspace_permission(Permission.FILES_DOWNLOAD))],
+        Depends(require_file_permission(Permission.FILES_DOWNLOAD))],
 )
 async def get_download_link(
     file_id: uuid.UUID,
