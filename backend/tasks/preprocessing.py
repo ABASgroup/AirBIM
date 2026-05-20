@@ -95,7 +95,5 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
                         file_data=data,
                         session=uow.session
                     )
-                # save in the storage
-                storage.upload_file_locally(data.key, file_path)
 
     run_async(run_task())
