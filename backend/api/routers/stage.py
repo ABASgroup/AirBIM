@@ -85,7 +85,8 @@ async def get_point_cloud_upload_link(
         )
         url, file = await FileService.generate_point_cloud_upload_link(
             stage_id=stage.id,
-            file_data=FileModel(**file_data.model_dump(), key=key),
+            file_data=FileModel(**file_data.model_dump(), key=key,
+                                workspace_id=stage.project.workspace_id),
             session=uow.session,
             storage=storage
         )

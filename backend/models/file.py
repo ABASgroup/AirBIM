@@ -28,6 +28,9 @@ class File(BaseModel):
         default=FileStatus.PENDING
     )
 
+    workspace_id: Mapped["uuid.UUID"] = mapped_column(
+        ForeignKey("workspaces.id"))
+
 
 class PointCloud(BaseModel):
     __tablename__ = "point_clouds"
