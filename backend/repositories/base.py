@@ -30,23 +30,8 @@ class BaseRepository(Generic[ModelT]):
         entry = cls._model(**data_dict)
         session.add(instance=entry)
         await session.flush()
+        await session.refresh(entry)
         return entry
-
-    @classmethod
-    async def create_multiple(cls, data: list[BaseScheme], session: AsyncSession):
-        """Create multiple entries in the database at once.
-
-        Args:
-            data (`pydantic.BaseScheme`): list of pydantic schemes
-            session (`AsyncSession`): an asynchronous database session
-        """
-        rows = [data.model_dump(exclude_unset=True) for data in data]
-
-        result = await session.execute(
-            insert(cls._model).returning(cls._model),
-            rows
-        )
-        await session.flush()
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> Iterable[ModelT] | None:

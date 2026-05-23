@@ -15,14 +15,14 @@ from services.file import FileService
 # save artifacts
 
 class ProcessingTask(celery_app.Task):
-    queue = 'heavy'
+    queue = 'processing'
 
 
-@celery_app.task()
+@celery_app.task(base=ProcessingTask)
 def convert_bim_to_point_cloud(bim_id: UUID):
-    # Lazy imports keep heavy deps only for the processing worker image.
-    import ifcopenshell
-    from airbim_processing import resolve_geo_transform, ifc_to_laz
+    # lazy imports so your main app would work
+    import ifcopenshell  # type: ignore
+    from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
     # fixed parameters for conversion
     geom_settings_params = [

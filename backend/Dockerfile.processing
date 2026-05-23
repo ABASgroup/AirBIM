@@ -5,9 +5,12 @@ ENV MAMBA_DOCKERFILE_ACTIVATE=1
 USER root
 WORKDIR /app
 
-COPY requirements.txt .
-COPY requirements.processing.txt .
-
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    libx11-6 \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN micromamba install -y -n base -c conda-forge \
     python=3.12 \
@@ -28,3 +31,4 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 
 # TODO: TEMPORARY MEASURE
 RUN micromamba run -n base pip install --no-cache-dir airbim_processing-0.1.0-py3-none-any.whl
+

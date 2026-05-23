@@ -99,7 +99,7 @@ class PointCloudConverted(BaseModel):
         ForeignKey("files.id", ondelete="CASCADE")
     )
     point_cloud: Mapped["PointCloud"] = relationship(
-        back_populates="converted_file_links")
+        back_populates="converted_files")
     file: Mapped["File"] = relationship(
         cascade="all, delete"
     )

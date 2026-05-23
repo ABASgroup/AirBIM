@@ -303,7 +303,7 @@ class FileService:
             file_id=file.id,
             type=PointCloudType.PLAN
         )
-        point_cloud = await PointCloudConvertedRepository.create(data, session=session)
+        point_cloud = await PointCloudRepository.create(data, session=session)
 
         # set a connection
         bim = await cls.get_bim(bim_id, session=session)
