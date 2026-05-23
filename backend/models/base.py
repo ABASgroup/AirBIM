@@ -13,6 +13,11 @@ class BaseModel(AsyncAttrs, DeclarativeBase):
     All of the models must inherit this model.
     """
     __abstract__ = True
+    
+    # to correctly load default values
+    __mapper_args__ = {
+        "eager_defaults": True
+    }
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID,

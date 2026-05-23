@@ -208,3 +208,4 @@ __marimo__/
 
 # AirBIM specific ignores
 .airbim_deploy_mode
+micromamba
