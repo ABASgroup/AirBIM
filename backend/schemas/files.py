@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 from pydantic import BaseModel
 from models.file import FileStatus
 from .base import Response
@@ -10,13 +10,23 @@ class FileDataRequest(BaseModel):
     size: int
 
 
-# file schemas
+class FileModel(BaseModel):
+    """Schema in DB. Use to create in db."""
+    workspace_id: UUID
+    filename: str
+    key: str
+    content_type: str
+    size: int
+    status: FileStatus = FileStatus.PENDING
+
+
 class FileResponse(Response):
     """
     API response schema. 
 
     Use as a mixin for other file responses.
     """
+    workspace_id: UUID
     filename: str
     content_type: str
     size: int
@@ -34,15 +44,6 @@ class FileLinkResponse(BaseModel):
     file: FileResponse
 
 
-class FileModel(BaseModel):
-    """Schema in DB. Use to create in db."""
-    filename: str
-    key: str
-    content_type: str
-    size: int
-    status: FileStatus = FileStatus.PENDING
-
-
 class FileUpdate(BaseModel):
     """Update schema. Use to update in DB."""
     filename: str | None = None
@@ -52,34 +53,31 @@ class FileUpdate(BaseModel):
     status: FileStatus | None = None
 
 
-# schemas for point clouds
 class PointCloudModel(BaseModel):
     """Schema in DB. Use to create in DB."""
-    stage_id: uuid.UUID
-    file_id: uuid.UUID
+    stage_id: UUID
+    file_id: UUID
 
 
 class PointCloudResponse(Response):
     """API response schema."""
-    stage_id: uuid.UUID
+    stage_id: UUID
     file: FileResponse
 
 
 class PointCloudConvertedModel(BaseModel):
     """Schema in DB. Use to create in db."""
-    point_cloud_id: uuid.UUID
-    file_id: uuid.UUID
-
-# schemas for bims
+    point_cloud_id: UUID
+    file_id: UUID
 
 
 class BIMModel(BaseModel):
     """Schema in DB. Use to create in DB."""
-    project_id: uuid.UUID
-    file_id: uuid.UUID
+    project_id: UUID
+    file_id: UUID
 
 
 class BIMResponse(Response):
     """API response schema."""
-    project_id: uuid.UUID
+    project_id: UUID
     file: FileResponse
