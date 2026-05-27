@@ -22,7 +22,7 @@ class ProcessingTask(celery_app.Task):
 def convert_bim_to_point_cloud(bim_id: UUID):
     # lazy imports so your main app would work
     import ifcopenshell  # type: ignore
-    from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
+    from airbim_processing import resolve_geo_transform, ifc_to_laz, compute_deviations  # type: ignore
 
     # fixed parameters for conversion
     geom_settings_params = [
@@ -121,3 +121,20 @@ def convert_bim_to_point_cloud(bim_id: UUID):
                 )
 
     run_async(run_task())
+
+
+@celery_app.task(base=ProcessingTask)
+def compare_plan_and_fact(stage_id: UUID):
+    import ifcopenshell  # type: ignore
+    from airbim_processing import resolve_geo_transform, ifc_to_laz, compute_deviations
+
+    async def run_task():
+        # get stage
+        # get project
+        # get bim
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # download files
+            # run compare
+            # save result cloud
+            pass

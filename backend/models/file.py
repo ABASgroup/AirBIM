@@ -2,7 +2,8 @@ import uuid
 from typing import Optional
 from enum import StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum, CheckConstraint
+from sqlalchemy import Column, ForeignKey, Enum, CheckConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from .base import BaseModel
 
 
@@ -128,3 +129,73 @@ class BIM(BaseModel):
         cascade="all, delete",
         passive_deletes=True
     )
+
+
+class RecordingResultType(StrEnum):
+    """
+    Types of results in the system.
+
+    - Progress type is for comparing two different real scans results
+    - Plan fact type is for comparing a real scan and a project
+    """
+    PROGRESS = "progress"
+    PLAN_FACT = "plan_fact"
+
+
+class RecordingResult(BaseModel):
+    __tablename__ = "recording_results"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"))
+    project: Mapped["Project"] = relationship(
+        passive_deletes=True
+    )
+
+    data = Column(JSONB)
+
+    pdf_report_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True
+    )
+    pdf_report: Mapped["File"] = relationship(
+        cascade="all, delete",
+        passive_deletes=True
+    )
+
+    xlsx_report_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True
+    )
+    xlsx_report: Mapped["File"] = relationship(
+        cascade="all, delete",
+        passive_deletes=True
+    )
+
+    photos_links: Mapped[list["ResultPhoto"]] = relationship(
+        back_populates="result",
+    )
+
+    type: Mapped[PointCloudType] = mapped_column(
+        Enum(RecordingResultType, name="recording_result_types",
+             create_constraint=True),
+        nullable=False
+    )
+
+
+class ResultPhoto(BaseModel):
+    """Photos of a recording result (e.g. photo of the actual progress)."""
+    __tablename__ = "result_photos"
+
+    result_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("recording_results.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    result: Mapped["RecordingResult"] = relationship(back_populates="photos")
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    file: Mapped["File"] = relationship()

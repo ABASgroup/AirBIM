@@ -1,8 +1,8 @@
 """Base repository for CRUD operations."""
 import uuid
-from typing import Generic, TypeVar, Iterable
+from typing import Generic, TypeVar, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
+from sqlalchemy import select
 from pydantic import BaseModel as BaseScheme
 from models.base import BaseModel
 
@@ -34,7 +34,7 @@ class BaseRepository(Generic[ModelT]):
         return entry
 
     @classmethod
-    async def get_all(cls, session: AsyncSession) -> Iterable[ModelT] | None:
+    async def get_all(cls, session: AsyncSession) -> Sequence[ModelT] | None:
         """Get all model's entries in the database.
 
         Args:
