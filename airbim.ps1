@@ -8,6 +8,7 @@ $PROJECT_NAME = "airbim"
 $COMPOSE_BASE = "docker-compose.yml"
 $COMPOSE_PROD = "docker-compose.prod.yml"
 $COMPOSE_DEV = "docker-compose.dev.yml"
+$COMPOSE_GPU = "docker-compose.gpu.yml"
 $MODE_FILE = ".airbim_deploy_mode"
 
 # ─── Colors / Helpers ────────────────────────────────────────────────────────
@@ -66,23 +67,56 @@ function Check-Docker {
 # ─── Compose command builder ─────────────────────────────────────────────────
 
 function Get-ComposeCmd {
-    param([string]$mode)
+    param(
+        [string]$mode,
+        [bool]$gpu = $false
+    )
+
+    $cmd = "docker compose -p $PROJECT_NAME -f $COMPOSE_BASE"
+
     if ($mode -eq "dev") {
-        return "docker compose -p $PROJECT_NAME -f $COMPOSE_BASE -f $COMPOSE_DEV"
+        $cmd += " -f $COMPOSE_DEV"
     }
     else {
-        return "docker compose -p $PROJECT_NAME -f $COMPOSE_BASE -f $COMPOSE_PROD"
+        $cmd += " -f $COMPOSE_PROD"
     }
+
+    if ($gpu) {
+        $cmd += " -f $COMPOSE_GPU"
+    }
+
+    return $cmd
 }
 
 # ─── Mode persistence ────────────────────────────────────────────────────────
 
-function Save-Mode { param($m) Set-Content -Path $MODE_FILE -Value $m }
+function Save-Mode {
+    param(
+        [string]$mode,
+        [bool]$gpu = $false
+    )
+
+    $gpuValue = if ($gpu) { "true" } else { "false" }
+    Set-Content -Path $MODE_FILE -Value "$mode|$gpuValue"
+}
 
 function Load-Mode {
     if (Test-Path $MODE_FILE) {
-        return (Get-Content $MODE_FILE -Raw).Trim()
+        $raw = (Get-Content $MODE_FILE -Raw).Trim()
+        $parts = $raw -split '\|', 2
+
+        $script:LoadedMode = $parts[0]
+        if ($parts.Count -gt 1) {
+            $script:LoadedGpu = $parts[1] -eq "true"
+        }
+        else {
+            $script:LoadedGpu = $false
+        }
+        return $script:LoadedMode
     }
+
+    $script:LoadedMode = "prod"
+    $script:LoadedGpu = $false
     return "prod"
 }
 
@@ -93,10 +127,12 @@ function Cmd-Start {
 
     $mode = "prod"
     $detached = $false
+    $gpu = $false
 
     foreach ($arg in $cmdArgs) {
         switch ($arg) {
             "--dev" { $mode = "dev" }
+            "--gpu" { $gpu = $true }
             "-d" { $detached = $true }
             "" { }
             default { err "Unknown option: $arg"; Show-Usage; exit 1 }
@@ -105,9 +141,9 @@ function Cmd-Start {
 
     Check-Docker
     Check-Env
-    Save-Mode $mode
+    Save-Mode $mode $gpu
 
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $mode $gpu
     $vitePort = Get-EnvValue "VITE_PORT"     "5173"
     $apiPort = Get-EnvValue "API_PORT"      "8000"
     $nginxPort = Get-EnvValue "NGINX_PORT" "80"
@@ -166,7 +202,7 @@ function Cmd-Up {
     Check-Docker
     Check-Env
     $mode = Load-Mode
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $script:LoadedMode $script:LoadedGpu
     info "Starting containers without rebuilding (mode: $mode)..."
     Invoke-Expression "$cmd up -d"
     success "Containers started."
@@ -175,7 +211,7 @@ function Cmd-Up {
 function Cmd-Stop {
     Check-Docker
     $mode = Load-Mode
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $script:LoadedMode $script:LoadedGpu
     info "Stopping containers..."
     Invoke-Expression "$cmd stop"
     success "All containers stopped."
@@ -184,7 +220,7 @@ function Cmd-Stop {
 function Cmd-Down {
     Check-Docker
     $mode = Load-Mode
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $script:LoadedMode $script:LoadedGpu
     info "Stopping and removing containers..."
     Invoke-Expression "$cmd down"
     success "All containers removed."
@@ -195,14 +231,16 @@ function Cmd-Rebuild {
     Check-Docker
     Check-Env
     $mode = Load-Mode
+    $gpu = $false
     foreach ($arg in $cmdArgs) {
         switch ($arg) {
             "--dev" { $mode = "dev" }
             "--prod" { $mode = "prod" }
+            "--gpu" { $gpu = $true }
         }
     }
-    Save-Mode $mode
-    $cmd = Get-ComposeCmd $mode
+    Save-Mode $mode $gpu
+    $cmd = Get-ComposeCmd $mode $gpu
     $noCache = ""
     if ($cmdArgs -contains "--no-cache") { $noCache = "--no-cache" }
     info "Rebuilding containers (mode: $mode)..."
@@ -214,7 +252,7 @@ function Cmd-Logs {
     param([string[]]$cmdArgs)
     Check-Docker
     $mode = Load-Mode
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $script:LoadedMode $script:LoadedGpu
     $extra = $cmdArgs -join " "
     Invoke-Expression "$cmd logs -f $extra"
 }
@@ -222,7 +260,7 @@ function Cmd-Logs {
 function Cmd-Status {
     Check-Docker
     $mode = Load-Mode
-    $cmd = Get-ComposeCmd $mode
+    $cmd = Get-ComposeCmd $script:LoadedMode $script:LoadedGpu
     info "Current mode: $mode"
     Write-Host ""
     Invoke-Expression "$cmd ps"
@@ -305,6 +343,7 @@ function Show-Usage {
     Write-Host "Commands:"
     Write-Host "  start [flags]    Start all containers (builds images only if missing)"
     Write-Host "      --dev        Start in development mode (Vite HMR + hot reload)"
+    Write-Host "      --gpu        Start with GPU support (only for processing worker, requires compatible hardware and drivers)"
     Write-Host "      -d           Run in detached mode (background, no log output)"
     Write-Host "  up               Start existing containers without rebuilding"
     Write-Host "  stop             Stop all running containers"
