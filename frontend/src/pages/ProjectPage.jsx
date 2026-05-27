@@ -5,7 +5,6 @@ import { getWorkspace } from "@/api/workspace";
 import { getBimDownloadLink, getProjectBim } from "@/api/file";
 import { useState, useEffect } from "react";
 import { FilledButton, LoadingSpinner } from "@ui";
-import { IfcViewerDrawer } from "@app/components/IfcViewerDrawer";
 import { useToast } from "@/context/ToastContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 
@@ -93,11 +92,6 @@ function ProjectPage() {
       <p>{project?.description}</p>
       <FilledButton onClick={handleShowBim} disabled={bimLoading}>Показать BIM</FilledButton>
       {bimError && <p style={{ color: "red" }}>{bimError}</p>}
-      <IfcViewerDrawer
-        url={bimUrl}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   )
 }
