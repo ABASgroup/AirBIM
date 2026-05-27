@@ -107,6 +107,19 @@ class BIMRepository(BaseRepository[BIM]):
         return result.scalar_one_or_none()
 
     @classmethod
+    async def get_by_file_id(
+        cls,
+        file_id: UUID,
+        session: AsyncSession
+    ):
+        """Get BIM by file ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.file_id == file_id)
+        )
+        return result.scalar_one_or_none()
+
+    @classmethod
     async def set_point_cloud(
         cls,
         bim: BIM,

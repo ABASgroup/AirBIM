@@ -8,6 +8,7 @@ from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
+import services.stage as stage_service
 
 
 # heavy tasks with long duration must never use database transaction for far too long
@@ -129,12 +130,4 @@ def compare_plan_and_fact(stage_id: UUID):
     from airbim_processing import resolve_geo_transform, ifc_to_laz, compute_deviations
 
     async def run_task():
-        # get stage
-        # get project
-        # get bim
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # download files
-            # run compare
-            # save result cloud
-            pass
+        pass

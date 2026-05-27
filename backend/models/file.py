@@ -198,4 +198,4 @@ class ResultPhoto(BaseModel):
         ForeignKey("files.id", ondelete="CASCADE"),
         primary_key=True
     )
-    file: Mapped["File"] = relationship()
+    file: Mapped["File"] = relationship(lazy="selectin")

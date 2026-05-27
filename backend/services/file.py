@@ -234,6 +234,15 @@ class FileService:
         return bim
 
     @classmethod
+    async def get_bim_by_file_id(
+        cls,
+        file_id: uuid.UUID,
+        session: AsyncSession
+    ) -> BIM | None:
+        """Get BIM by the underlying file ID, if it exists."""
+        return await BIMRepository.get_by_file_id(file_id, session=session)
+
+    @classmethod
     async def generate_bim_upload_link(
         cls,
         project_id: uuid.UUID,

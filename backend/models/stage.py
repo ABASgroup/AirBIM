@@ -11,6 +11,8 @@ class Stage(BaseModel):
         ForeignKey("projects.id", ondelete="CASCADE"))
     project: Mapped["Project"] = relationship(back_populates="stages")
 
-    point_clouds: Mapped[list["PointCloud"]] = relationship(
-        back_populates="stage", cascade="all, delete-orphan"
+    point_cloud_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("point_clouds.id", ondelete="CASCADE"))
+    point_cloud: Mapped[list["PointCloud"]] = relationship(
+        back_populates="stage"
     )
