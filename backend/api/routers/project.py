@@ -160,7 +160,8 @@ async def get_bim_upload_link(
 
         url, file = await FileService.generate_bim_upload_link(
             project_id=project.id,
-            file_data=FileModel(**file_data.model_dump(), key=key),
+            file_data=FileModel(**file_data.model_dump(),
+                                key=key, workspace_id=project.workspace_id),
             session=uow.session,
             storage=storage
         )

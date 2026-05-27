@@ -13,6 +13,7 @@ from core.dependencies import get_session_maker
 from services.membership import get_membership
 from services.stage import get_stage_with_project
 from services.project import get_project
+from services.file import FileService
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -21,13 +22,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 async def get_db_session_dependency():
     """
     DEPRECATED: use :func:`core.dependencies.get_database_uow` instead.
-    
+
     Provides session.
 
     Use as a dependency.
 
     DOES NOT COMMIT CHANGES AUTOMATICALLY.
-    
+
     HAS NOT ANY SESSION CONTROL MECHANISMS.
 
     Don't forget to use `session.commit()` when
@@ -71,9 +72,6 @@ def require_workspace_permission(permission: Permission):
     Uses workspace to validate permission.
 
     Requires membership in the workspace.
-
-    You can use it instead of :func:`get_current_user_id` to
-    protect an endpoint.
     """
     async def checker(
         workspace_id: uuid.UUID,
@@ -101,9 +99,6 @@ def require_project_permission(permission: Permission):
     Uses project to validate permission.
 
     Requires membership in the workspace.
-
-    You can use it instead of :func:`get_current_user_id` to
-    protect an endpoint.
     """
     async def checker(
         project_id: uuid.UUID,
@@ -111,9 +106,6 @@ def require_project_permission(permission: Permission):
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
         project = await get_project(project_id, session=session)
-
-        if project is None:
-            raise NotFoundError("No project with this ID.")
 
         membership = await get_membership(
             user_id,
@@ -136,9 +128,6 @@ def require_stage_permission(permission: Permission):
     Uses stage to validate permission.
 
     Requires membership in the workspace.
-
-    You can use it instead of :func:`get_current_user_id` to
-    protect an endpoint.
     """
     async def checker(
         stage_id: uuid.UUID,
@@ -147,12 +136,38 @@ def require_stage_permission(permission: Permission):
     ):
         stage = await get_stage_with_project(stage_id, session=session)
 
-        if stage is None:
-            raise NotFoundError("No stage with this ID.")
-
         membership = await get_membership(
             user_id,
             stage.project.workspace_id,
+            session)
+
+        if membership is None:
+            raise NotMemberError()
+
+        if permission not in ROLE_PERMISSIONS[membership.role]:
+            raise NoRequiredPermissionError(permission.value)
+        return membership
+    return checker
+
+
+def require_file_permission(permission: Permission):
+    """
+    Require certain membership permission from user to access an endpoint.
+
+    Uses file to validate permission.
+
+    Requires membership in the workspace.
+    """
+    async def checker(
+        file_id: uuid.UUID,
+        user_id: uuid.UUID = Depends(get_current_user_id),
+        session: AsyncSession = Depends(get_db_session_dependency)
+    ):
+        file = await FileService.get_file(file_id, session=session)
+
+        membership = await get_membership(
+            user_id,
+            file.workspace_id,
             session)
 
         if membership is None:

@@ -213,6 +213,8 @@ class FileService:
             raise NotFoundError(
                 "Point cloud is not found: no such ID.")
 
+        cloud = await PointCloudRepository.refresh(cloud, session=session, relations=["file"])
+
         return cloud
 
     @classmethod
@@ -226,6 +228,8 @@ class FileService:
         if bim is None:
             raise NotFoundError(
                 "BIM is not found: no such ID.")
+
+        bim = await BimRepository.refresh(bim, session=session, relations=["file"])
 
         return bim
 

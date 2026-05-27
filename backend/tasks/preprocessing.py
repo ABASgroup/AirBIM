@@ -81,7 +81,8 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
                     key=key,
                     size=size,
                     content_type=content_type,
-                    status=FileStatus.UPLOADED
+                    status=FileStatus.UPLOADED,
+                    workspace_id=point_cloud_file.workspace_id
                 )
 
                 files[str(file)] = file_data
@@ -94,7 +95,5 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
                         file_data=data,
                         session=uow.session
                     )
-                # save in the storage
-                storage.upload_file_locally(data.key, file_path)
 
     run_async(run_task())
