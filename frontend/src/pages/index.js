@@ -6,4 +6,3 @@ export { default as SettingsPage } from "./SettingsPage";
 export { default as DashboardPage } from "./DashboardPage";
 export { default as ProjectPage } from "./ProjectPage";
 export { default as InvitePage } from "./InvitePage";
-export { default as PotreeScenePage } from "./PotreeScenePage";
