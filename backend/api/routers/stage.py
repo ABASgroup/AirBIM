@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from core.exceptions import NotFoundError
 from infrastructure.storage import Storage
 from schemas.stage import StageResponse
-from schemas.files import (
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     FileModel,
@@ -21,6 +21,7 @@ from api.dependencies import (
     require_stage_permission
 )
 from tasks.preprocessing import convert_point_cloud_task
+from tasks.processing import compare_scan_and_plan
 from services.file import FileService
 
 router = APIRouter(prefix="/stages", tags=["project stages"])
@@ -145,3 +146,14 @@ async def get_converted_point_cloud_download_links(
         links.append(storage.get_download_link(file.key))
 
     return links
+
+
+@router.post(
+    "/{stage_id}/compare",
+)
+async def compare_stage_scan_and_project_plan(
+    stage_id: uuid.UUID,
+    tolerance: float = 0.05
+):
+    task = compare_scan_and_plan.delay(stage_id, tolerance)  # type: ignore
+    return f"started: {task.id}"

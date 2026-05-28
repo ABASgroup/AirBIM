@@ -82,3 +82,4 @@ class BIMResponse(Response):
     """API response schema."""
     project_id: UUID
     file: FileResponse
+    point_cloud_id: UUID | None = None

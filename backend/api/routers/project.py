@@ -6,7 +6,7 @@ from services import stage as stage_service
 from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StageResponse
-from schemas.files import (
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,
@@ -204,9 +204,7 @@ async def get_project_bim(
 
 
 @router.post(
-    "/{project_id}/bim/convert",
-    dependencies=[
-        Depends(require_project_permission(Permission.FILES_VIEW))],
+    "/{project_id}/bim/convert"
 )
 async def convert_project_bim(
     project_id: uuid.UUID,
@@ -215,7 +213,7 @@ async def convert_project_bim(
     """
     Convert project BIM into a point cloud for comparing.
     
-    Requires permission.
+    ONLY FOR TESTS
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)

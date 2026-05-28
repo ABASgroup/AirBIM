@@ -2,7 +2,13 @@ from uuid import UUID
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models.file import File, BIM, PointCloud, FileStatus, PointCloudConverted
+from models.file import (
+    File,
+    BIM,
+    PointCloud,
+    FileStatus,
+    PointCloudConverted,
+)
 from .base import BaseRepository
 
 
@@ -98,6 +104,19 @@ class BIMRepository(BaseRepository[BIM]):
         return result.scalar_one_or_none()
 
     @classmethod
+    async def get_by_file_id(
+        cls,
+        file_id: UUID,
+        session: AsyncSession
+    ):
+        """Get BIM by file ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.file_id == file_id)
+        )
+        return result.scalar_one_or_none()
+
+    @classmethod
     async def set_point_cloud(
         cls,
         bim: BIM,
@@ -132,3 +151,4 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
             .where(cls._model.point_cloud_id == point_cloud_id)
         )
         return result.scalars().all()
+

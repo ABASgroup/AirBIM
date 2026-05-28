@@ -8,7 +8,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from models.base import BaseModel
 from core.configs.database import database_config
 # !!!IMPORT OUR MODELS HERE!!!
-from models.file import BIM, PointCloud, PointCloudConverted, File
+from models.file import (
+    BIM,
+    PointCloud,
+    PointCloudConverted,
+    File,
+    ResultPhoto
+)
+from models.recording_result import RecordingResult
 from models.workspace import Workspace
 from models.invite_link import InviteLink
 from models.membership import Membership

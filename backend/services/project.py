@@ -29,9 +29,7 @@ async def get_workspace_projects(workspace_id: uuid.UUID, session: AsyncSession)
 
 
 async def create_project(project_data: ProjectModel, session: AsyncSession) -> Project:
-    """
-    Create a new project for the workspace.
-    """
+    """Create a new project for the workspace."""
     project = await ProjectRepository.create(project_data, session=session)
     return project
 

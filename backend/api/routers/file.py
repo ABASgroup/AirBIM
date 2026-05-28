@@ -2,7 +2,8 @@ import uuid
 from fastapi import APIRouter, Depends
 from infrastructure.storage import Storage
 from services.file import FileService
-from schemas.files import (
+from tasks.processing import convert_bim_to_point_cloud
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,
@@ -37,6 +38,7 @@ async def confirm_upload(
 
     You can't confirm file upload if file is not uploaded.
     """
+    bim_id: uuid.UUID | None = None
     async with uow:
         file = await FileService.confirm_file_upload(
             file_id=file_id,
@@ -44,6 +46,17 @@ async def confirm_upload(
             session=uow.session,
             storage=storage
         )
+
+        bim = await FileService.get_bim_by_file_id(
+            file_id=file.id,
+            session=uow.session
+        )
+        if bim and bim.point_cloud_id is None:
+            bim_id = bim.id
+
+    # if it's BIM - run the conversion
+    if bim_id is not None:
+        convert_bim_to_point_cloud.delay(bim_id)  # type: ignore
 
     return file
 
