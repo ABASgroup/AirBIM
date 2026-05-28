@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from infrastructure.storage import Storage
 from services.file import FileService
 from tasks.processing import convert_bim_to_point_cloud
-from schemas.files import (
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,

@@ -1,19 +1,25 @@
 import os
 import tempfile
 from uuid import UUID
-from models.file import FileStatus
-from schemas.files import FileModel
-from utils.files import clean_path, get_file_mime_type, get_file_size
+from models.file import FileStatus, PointCloudType
+from models.recording_result import RecordingResultType
+from schemas.file import FileModel
+from schemas.recording_result import RecordingResultModel
+from utils.files import clean_path
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
 import services.stage as stage_service
+from services.recording_result import RecordingResultService
 
 
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
 # save artifacts
+
+storage = get_storage()
+
 
 class ProcessingTask(celery_app.Task):
     queue = 'processing'
@@ -52,8 +58,6 @@ def convert_bim_to_point_cloud(bim_id: UUID):
         ("no-parallel-mapping", False),
         ("cache-shapes", False)
     ]
-
-    storage = get_storage()
 
     async def run_task():
         async with get_database_uow() as uow:
@@ -95,21 +99,17 @@ def convert_bim_to_point_cloud(bim_id: UUID):
                 remove_context_objects=True
             )
 
-            # save in the storage
-            key = FileService.create_file_key(
-                filename=output_path.name
-            )
-            # upload to the storage
-            storage.upload_file_locally(key, str(output_path))
+            # collect file info
+            file_info = FileService.collect_file_data(output_path)
+            # upload result laz to the storage
+            storage.upload_file_locally(file_info["key"], str(output_path))
 
-            # save in the database
-            size = get_file_size(str(output_path.absolute()))
-            content_type = get_file_mime_type(str(output_path.absolute()))
+            # collect file info
             file_data = FileModel(
-                filename=output_path.name,
-                key=key,
-                size=size,
-                content_type=content_type,
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
                 status=FileStatus.UPLOADED,
                 workspace_id=bim_file.workspace_id
             )
@@ -125,9 +125,86 @@ def convert_bim_to_point_cloud(bim_id: UUID):
 
 
 @celery_app.task(base=ProcessingTask)
-def compare_plan_and_fact(stage_id: UUID):
-    import ifcopenshell  # type: ignore
-    from airbim_processing import resolve_geo_transform, ifc_to_laz, compute_deviations
+def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
+    from airbim_processing import compute_deviations    # type: ignore
 
     async def run_task():
-        pass
+        async with get_database_uow() as uow:
+            # get stage and its point cloud
+            stage = await stage_service.get_stage(stage_id, session=uow.session)
+            stage_point_cloud = await FileService.get_point_cloud(
+                stage.point_cloud.id, session=uow.session)
+            # get bim (POINT CLOUD MUST ALREADY EXIST)
+            bim = await FileService.get_bim_by_project_id(stage.project_id, session=uow.session)
+            bim_point_cloud = await FileService.get_point_cloud(bim.point_cloud_id, session=uow.session)
+
+            # get point cloud files
+            # bim point cloud is the ideal point cloud
+            # stage point cloud is the real point cloud (scan)
+            stage_point_cloud_file = stage_point_cloud.file
+            bim_point_cloud_file = bim_point_cloud.file
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bim_point_cloud_path = clean_path(
+                os.path.join(tmp_dir, stage_point_cloud_file.filename))
+            stage_point_cloud_path = clean_path(os.path.join(
+                tmp_dir, bim_point_cloud_file.filename))
+            output_path = clean_path(tmp_dir) / f"{stage_id}.laz"
+
+            # download files
+            storage.download_file_locally(
+                bim_point_cloud_file.key,
+                save_path=str(bim_point_cloud_path)
+            )
+            storage.download_file_locally(
+                stage_point_cloud_file.key,
+                save_path=str(stage_point_cloud_path)
+            )
+
+            # run comparison
+            # takes time
+            results = compute_deviations(
+                real_laz_path=stage_point_cloud_path,
+                ideal_laz_path=bim_point_cloud_path,
+                output_laz_path=output_path,
+                tolerance=tolerance
+            )
+
+            # collect file info
+            file_info = FileService.collect_file_data(output_path)
+            # upload result laz to the storage
+            storage.upload_file_locally(file_info["key"], str(output_path))
+
+            # save everything in the database
+            async with get_database_uow() as uow:
+                # result point cloud
+                file_data = FileModel(
+                    filename=file_info["filename"],
+                    key=file_info["key"],
+                    size=file_info["size"],
+                    content_type=file_info["content_type"],
+                    status=FileStatus.UPLOADED,
+                    workspace_id=bim_point_cloud_file.workspace_id
+                )
+                result_point_cloud, _ = await FileService.create_point_cloud(
+                    point_cloud_type=PointCloudType.RECORDING,
+                    file_data=file_data,
+                    session=uow.session
+                )
+                print(results)
+                # recording result
+                result_data = RecordingResultModel(
+                    project_id=stage.project_id,
+                    data=results,
+                    type=RecordingResultType.PLAN_FACT,
+                    point_cloud_id=result_point_cloud.id)
+
+                recording_result = await RecordingResultService.create_recording_result(
+                    result_data,
+                    session=uow.session
+                )
+
+            return recording_result
+    result = run_async(run_task())
+    print(result)
+    return result

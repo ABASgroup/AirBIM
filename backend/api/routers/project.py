@@ -6,7 +6,7 @@ from services import stage as stage_service
 from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StageResponse
-from schemas.files import (
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,

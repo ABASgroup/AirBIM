@@ -4,6 +4,25 @@ services:
       - ./backend:/app
     command: ["sh", "entrypoint.dev.sh"]
 
+  worker:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4 --pool=solo' /app"]
+
+  worker-converter:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=8 --pool=solo' /app"]
+
+  worker-processing:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=8 --pool=solo' /app"]
+
+  beat:
+    volumes:
+      - ./backend:/app
+
   frontend:
     container_name: airbim-frontend-dev
     build:

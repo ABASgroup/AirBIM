@@ -13,9 +13,9 @@ from models.file import (
     PointCloud,
     PointCloudConverted,
     File,
-    RecordingResult,
     ResultPhoto
 )
+from models.recording_result import RecordingResult
 from models.workspace import Workspace
 from models.invite_link import InviteLink
 from models.membership import Membership

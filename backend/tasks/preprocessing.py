@@ -6,12 +6,10 @@ from core.dependencies import get_database_uow, get_storage
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from services.file import FileService
-from schemas.files import FileModel
+from schemas.file import FileModel
 from utils.convert import convert_point_cloud
 from utils.files import (
     get_all_dir_files,
-    get_file_size,
-    get_file_mime_type,
     clean_path
 )
 
@@ -66,19 +64,17 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
             files = {}
 
             for file in file_dir:
-                # generate keys
-                key = FileService.create_file_key(
-                    filename=file.name
-                )
+                # collect file info
+                file_info = FileService.collect_file_data(file)
+                # upload to the storage
+                storage.upload_file_locally(file_info["key"], str(output_path))
 
                 # make models
-                size = get_file_size(str(file.absolute()))
-                content_type = get_file_mime_type(str(file.absolute()))
                 file_data = FileModel(
-                    filename=file.name,
-                    key=key,
-                    size=size,
-                    content_type=content_type,
+                    filename=file_info["filename"],
+                    key=file_info["key"],
+                    size=file_info["size"],
+                    content_type=file_info["content_type"],
                     status=FileStatus.UPLOADED,
                     workspace_id=point_cloud_file.workspace_id
                 )
