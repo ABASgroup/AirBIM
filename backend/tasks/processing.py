@@ -1,4 +1,5 @@
 import os
+from dataclasses import asdict
 import tempfile
 from uuid import UUID
 from models.file import FileStatus, PointCloudType
@@ -169,6 +170,7 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
                 output_laz_path=output_path,
                 tolerance=tolerance
             )
+            results = asdict(results)
 
             # collect file info
             file_info = FileService.collect_file_data(output_path)
@@ -191,7 +193,6 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
                     file_data=file_data,
                     session=uow.session
                 )
-                print(results)
                 # recording result
                 result_data = RecordingResultModel(
                     project_id=stage.project_id,
@@ -206,5 +207,4 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
 
             return recording_result
     result = run_async(run_task())
-    print(result)
-    return result
+    print(result.id)
