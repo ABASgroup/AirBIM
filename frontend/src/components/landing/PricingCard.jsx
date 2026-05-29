@@ -1,12 +1,14 @@
-import { UnfilledButton } from "../UnfilledButton";
+// Панель для таблицы с ценами продукта
+import { UnfilledButton } from "@ui";
 
 export const PricingCard = ({ tariff, isFeatured }) => {
   return (
-    <div className={`relative flex flex-col items-center p-6 rounded-lg transition-all bg-surface text-main-purple w-80
-      ${isFeatured ? "border-3 border-main-purple" : "none"}
+    <div className={`relative flex flex-col items-center p-6 rounded-lg transition-all 
+      bg-surface text-primary-color w-80 shadow-bottom
+      ${isFeatured ? "border-3 border-primary-color" : "none"}
     `}>
       {isFeatured && (
-        <div className="absolute -top-4 bg-main-purple text-main-dark text-sm px-4 py-1 rounded-full">
+        <div className="absolute -top-4 bg-primary-color text-background-color text-sm px-4 py-1 rounded-full">
           Особое предложение
         </div>
       )}
@@ -15,17 +17,17 @@ export const PricingCard = ({ tariff, isFeatured }) => {
 
       <p>{tariff.desc}</p>
 
-      <ul className="text-md text-main-white space-y-2 mb-5 list-disc">
+      <ul className="text-md text-text-color space-y-2 mb-5 list-disc">
         {tariff.features.map((feature, index) => (
           <li key={index} className="">
-            <span className="text-main-white"></span> {feature}
+            <span className="text-text-color"></span> {feature}
           </li>
         ))}
       </ul>
 
-      <p className="text-2xl mb-6 text-main-purple">
+      <p className="text-2xl mb-6 text-primary-color">
         {tariff.price} ₽
-        <span className="text-sm text-main-white">/месяц</span>
+        <span className="text-sm text-text-color">/месяц</span>
       </p>
       <UnfilledButton color="purple">Выбрать</UnfilledButton>
     </div>

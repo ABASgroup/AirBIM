@@ -1,4 +1,5 @@
-import { PricingCard } from "../landing/PricingCard";
+// Таблица с ценами продукта
+import { PricingCard } from "@landing";
 
 const tariffs = [
   {

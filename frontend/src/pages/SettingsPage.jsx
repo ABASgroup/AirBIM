@@ -1,8 +1,8 @@
-import { UnfilledButton } from "../../components/UnfilledButton";
+// Страница настроек
+import { UnfilledButton } from "@ui";
 import { useNavigate } from 'react-router-dom';
 
-function Dashboard() {
-
+function SettingsPage() {
     // Временный выход из аккаунта
     const navigate = useNavigate();
     const handleLogout = () => {
@@ -12,10 +12,10 @@ function Dashboard() {
 
     return (
         <>
-            <h1>Дышборд</h1>
+            <h1>Настройки</h1>
             <UnfilledButton onClick={handleLogout}>Выйти</UnfilledButton>
         </>
     )
 }
 
-export default Dashboard;
+export default SettingsPage;

@@ -1,12 +1,10 @@
+// Странциа регистрации
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { Modal, FilledButton, Input } from "@ui";
+import { acceptInviteLink } from "@/api/invites";
 import api from "../api/index";
-
-import { LandingHeader } from "../components/landing/LandingHeader";
-import { Modal } from "../components/Modal";
-import { FilledButton } from "../components/FilledButton";
-import { Input } from "../components/Input";
 
 function RegistrationPage() {
   const { register, handleSubmit, watch } = useForm();
@@ -29,54 +27,61 @@ function RegistrationPage() {
       });
 
       localStorage.setItem("access_token", response.data.access_token);
+      const pendingInvite = sessionStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        await acceptInviteLink(pendingInvite);
+        sessionStorage.removeItem("pendingInvite");
+      }
       navigate("/app/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Ошибка регистрации");
+      if (err.response?.status === 409) {
+        setError("Данная почта уже зарегистрирована");
+      } else {
+        setError("Ошибка регистрации");
+      }
     }
   };
 
   return (
     <>
-      <LandingHeader />
-      <main className="flex items-center justify-center min-h-[80vh]">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Modal title="Регистрация">
-            <div>
-              <p>Логин</p>
-              <Input
-                {...register("username", { required: true })}
-                placeholder="Ваше имя"
-              />
-            </div>
-            <div>
-              <p>Почта</p>
-              <Input {...register("email", { required: true })}
-                type="email"
-                placeholder="email@example.com"
-              />
-            </div>
-            <div>
-              <p>Пароль</p>
-              <Input {...register("password", { required: true })}
-                type="password"
-                placeholder="Пароль"
-              />
-            </div>
-            <div>
-              <p>Подтверждение пароля</p>
-              <Input {...register("confirm_password", { required: true })}
-                type="password"
-                placeholder="Повторите пароль"
-              />
-            </div>
-            <div className="flex justify-between mt-10">
-              <FilledButton type="submit">
-                Подтвердить
-              </FilledButton>
-            </div>
-          </Modal>
-        </form>
-      </main>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Modal title="Регистрация" className="z-10">
+          <div>
+            <label>Логин</label>
+            <Input
+              {...register("username", { required: true })}
+              placeholder="Ваше имя"
+            />
+          </div>
+          <div>
+            <label>Почта</label>
+            <Input {...register("email", { required: true })}
+              type="email"
+              placeholder="email@example.com"
+            />
+          </div>
+          <div>
+            <label>Пароль</label>
+            <Input {...register("password", { required: true })}
+              type="password"
+              placeholder="Пароль"
+            />
+          </div>
+          <div>
+            <label>Подтверждение пароля</label>
+            <Input {...register("confirm_password", { required: true })}
+              type="password"
+              placeholder="Повторите пароль"
+            />
+          </div>
+          {error && <p className="text-warning">{error}</p>}
+          <div className="flex justify-end mt-5">
+            <FilledButton type="submit">
+              Подтвердить
+            </FilledButton>
+          </div>
+        </Modal>
+      </form>
     </>
   );
 }

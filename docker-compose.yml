@@ -119,6 +119,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.processing
+      args:
+        EXTRAS: ""
+      secrets:
+        - github_token
     env_file:
       - .env
     healthcheck:
@@ -190,3 +194,7 @@ volumes:
   storage_data:
   cache_data:
   broker_data:
+
+secrets:
+  github_token:
+    file: ./.github_token
