@@ -35,12 +35,12 @@ export const AppSidebar = () => {
 
   return (
     <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
-      <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
+      <div className="bg-surface/70 h-14 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
           isOpen={isOpen}
           onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}
-          className="h-15 px-4"
+          className="h-14 px-4"
         >
           {workspaces.map((ws) => (
             <div

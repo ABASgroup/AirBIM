@@ -5,6 +5,7 @@ import { getWorkspace } from "@/api/workspace";
 import { useState, useEffect } from "react";
 import { FilledButton, LoadingSpinner } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { StageUploadModal, StagesAccordion } from "@app/components";
 
 function ProjectPage() {
   const { projectId } = useParams();
@@ -12,6 +13,7 @@ function ProjectPage() {
   const [workspace, setWorkspace] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { switchWorkspace } = useWorkspace();
+  const [showStageModal, setShowStageModal] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -52,6 +54,21 @@ function ProjectPage() {
           Перейти к сцене
         </FilledButton>
       </Link>
+
+      <FilledButton onClick={() => setShowStageModal(true)}>
+        Загрузить этап
+      </FilledButton>
+
+      <div className="mt-6">
+        <StagesAccordion projectId={projectId} />
+      </div>
+
+      {showStageModal && (
+        <StageUploadModal
+          projectId={projectId}
+          onClose={() => setShowStageModal(false)}
+        />
+      )}
     </>
   )
 }

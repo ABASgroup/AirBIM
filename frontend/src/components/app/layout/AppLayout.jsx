@@ -10,11 +10,11 @@ export const AppLayout = () => {
 
   return (
     <WorkspaceProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-screen">
         {isSidebarVisible && <AppSidebar />}
-        <div className="grow">
+        <div className="grow flex flex-col">
           <AppHeader />
-          <main className="grow pr-10 pl-10">
+          <main className="grow pr-10 pl-10 overflow-y-auto">
             <Outlet />
           </main>
         </div>

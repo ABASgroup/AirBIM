@@ -6,8 +6,8 @@ export const AppHeader = () => {
   const location = useLocation();
   const isSettings = location.pathname === "/app/settings" || location.pathname.startsWith("/app/workspace/");
   return (
-    <header className="h-15 flex items-center justify-between sticky top-0 z-50 px-5 
-    bg-surface/70 backdrop-blur-md border-border-color border-b-3">
+    <header className="h-14 flex items-center justify-between sticky top-0 z-50 px-5 
+    bg-surface/70 backdrop-blur-md border-border-color border-b-3 shrink-0">
       <div className="flex items-center justify-between gap-5">
         <Logo />
         {isSettings && (

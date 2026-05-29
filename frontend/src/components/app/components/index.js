@@ -6,3 +6,5 @@ export { ProjectsList } from "./ProjectsList";
 export { WorkspaceTabPanel } from "./WorkspaceTabPanel";
 export { RoleTooltip } from "./RoleTooltip";
 export { Can } from "./Can";
+export { StageUploadModal } from "./StageUploadModal";
+export { StagesAccordion } from "./StagesAccordion";
