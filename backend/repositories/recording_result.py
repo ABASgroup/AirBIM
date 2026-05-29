@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -13,6 +14,15 @@ from .base import BaseRepository
 class RecordingResultRepository(BaseRepository[RecordingResult]):
     """Repository class for CRUD operations with RecordingResult model."""
     _model = RecordingResult
+
+    @classmethod
+    async def get_by_project_id(cls, project_id: UUID, session: AsyncSession) -> Sequence[RecordingResult]:
+        """Get all recording results for a given project."""
+        result = await session.execute(
+            select(cls._model).where(cls._model.project_id == project_id)
+        )
+        recording_results = result.scalars().all()
+        return recording_results
 
     @classmethod
     async def add_photos(

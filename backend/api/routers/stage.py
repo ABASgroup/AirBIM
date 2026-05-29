@@ -24,11 +24,11 @@ from tasks.preprocessing import convert_point_cloud_task
 from tasks.processing import compare_scan_and_plan
 from services.file import FileService
 
-router = APIRouter(prefix="/stages", tags=["project stages"])
+router = APIRouter(prefix="/stages/{stage_id}", tags=["project stages"])
 
 
 @router.get(
-    "/{stage_id}",
+    "",
     response_model=StageResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_VIEW))],
@@ -40,7 +40,7 @@ async def get_stage(stage_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_d
 
 
 @router.delete(
-    "/{stage_id}",
+    "",
     response_model=StageResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.STAGE_DELETE))],
@@ -61,7 +61,7 @@ async def delete_stage(
 
 
 @router.post(
-    "/{stage_id}/clouds/upload",
+    "/clouds/upload",
     response_model=FileLinkResponse,
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_UPLOAD))],
@@ -101,7 +101,7 @@ async def get_point_cloud_upload_link(
 
 
 @router.post(
-    "/{stage_id}/clouds/{point_cloud_id}/convert",
+    "/clouds/{point_cloud_id}/convert",
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
@@ -114,7 +114,7 @@ async def convert_point_cloud(
 
 
 @router.post(
-    "/{stage_id}/clouds/{point_cloud_id}/converted",
+    "/clouds/{point_cloud_id}/converted",
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
@@ -149,7 +149,7 @@ async def get_converted_point_cloud_download_links(
 
 
 @router.post(
-    "/{stage_id}/compare",
+    "/compare",
 )
 async def compare_stage_scan_and_project_plan(
     stage_id: uuid.UUID,

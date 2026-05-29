@@ -12,6 +12,13 @@ from infrastructure.storage import Storage
 
 class RecordingResultService:
     @classmethod
+    async def get_recording_results_for_project(cls, project_id: UUID, session: AsyncSession) -> list[RecordingResult]:
+        """Get all recording results for a given project."""
+        results = await RecordingResultRepository.get_by_project_id(project_id, session=session)
+
+        return list(results)
+
+    @classmethod
     async def create_recording_result(
         cls,
         results_data: RecordingResultModel,

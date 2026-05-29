@@ -37,7 +37,8 @@ class RecordingResult(BaseModel):
     pdf_report: Mapped["File"] = relationship(
         foreign_keys=[pdf_report_id],
         cascade="all, delete",
-        passive_deletes=True
+        passive_deletes=True,
+        lazy="selectin"
     )
 
     xlsx_report_id: Mapped["UUID"] = mapped_column(
@@ -49,6 +50,7 @@ class RecordingResult(BaseModel):
         foreign_keys=[xlsx_report_id],
         cascade="all, delete",
         passive_deletes=True,
+        lazy="selectin"
     )
 
     point_cloud_id: Mapped["UUID"] = mapped_column(
