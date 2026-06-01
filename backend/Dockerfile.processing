@@ -11,6 +11,7 @@ RUN apt-get update \
     libx11-6 \
     libgl1 \
     libglib2.0-0 \
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 USER $MAMBA_USER
