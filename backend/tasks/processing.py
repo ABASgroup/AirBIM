@@ -265,20 +265,34 @@ def create_recording_result_pdf_report(recording_result_id: UUID):
                 output_dir=tmp_dir
             )
 
+            # append path dir
+            # the library provides only names for the files
+            photo_paths = [clean_path(os.path.join(tmp_dir, photo_path))
+                           for photo_path in photo_paths]
+
             photos_data = []
 
             for photo_path in photo_paths:
                 # save data
-                photo_data = FileService.collect_file_data(
-                    clean_path(photo_path)
-                )
-                photos_data.append(photo_data)
+                photo_data = FileService.collect_file_data(photo_path)
+
                 # upload to the storage
-                storage.upload_file_locally(photo_data["key"], photo_path)
+                storage.upload_file_locally(photo_data["key"], str(photo_path))
+
+                photo_data = FileModel(
+                    filename=photo_data["filename"],
+                    key=photo_data["key"],
+                    size=photo_data["size"],
+                    content_type=photo_data["content_type"],
+                    status=FileStatus.UPLOADED,
+                    workspace_id=workspace_id
+                )
+
+                photos_data.append(photo_data)
 
             # generate report
             generate_pdf_report(
-                title, data, report_path, imgs=photos_data
+                title, data, report_path, imgs=photo_paths
             )
 
             # collect file data

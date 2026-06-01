@@ -35,13 +35,14 @@ def generate_excel_report(title: str, data: dict, file_path: Path | str):
         sheet.cell(row=1, column=row, value=header)
         sheet.cell(row=2, column=row, value=value)
 
-    # style headers, adjust column widths
+    # style headers
     header_fill = PatternFill(
         start_color="FFCF40",
         end_color="FFCF40",
         fill_type="solid"
     )
 
+    # adjust column widths
     for col in sheet.columns:
         max_len = max(len(str(cell.value or '')) for cell in col)
         col_letter = get_column_letter(col[0].column)
@@ -89,12 +90,15 @@ def generate_pdf_report(
     # document's elements
     story = []
 
+    # add title
     story.append(Paragraph(title, styles['Title']))
     story.append(Spacer(1, 10))
 
+    # start table
     headers = ["Parameter", "Value"]
     table_data = [headers] + list(data.items())
 
+    # construct table
     table = Table(table_data)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
@@ -117,7 +121,7 @@ def generate_pdf_report(
         story.append(PageBreak())
         story.append(Paragraph(f"{title}: images", styles['Title']))
         for img in imgs:
-            img = Image(img)
+            img = Image(str(img))
             # scale
             width = document.width * 0.7
             scale = width / img.imageWidth

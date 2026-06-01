@@ -9,8 +9,6 @@ class TaskStatus(enum.StrEnum):
     Task statuses.
 
     Represent current state of a task.
-
-    From Celery.
     """
     PENDING = "pending"
     STARTED = "started"
