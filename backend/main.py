@@ -14,6 +14,7 @@ from api.routers.project import router as project_router
 from api.routers.stage import router as stage_router
 from api.routers.invite import router as invite_router
 from api.routers.file import router as file_router
+from api.routers.project_result import router as result_router
 
 
 @asynccontextmanager
@@ -34,6 +35,7 @@ app = FastAPI(root_path="/api", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(workspace_router)
 app.include_router(project_router)
+app.include_router(result_router)
 app.include_router(stage_router)
 app.include_router(invite_router)
 app.include_router(file_router)

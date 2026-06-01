@@ -14,10 +14,16 @@ def generate_excel_report(title: str, data: dict, file_path: Path):
     """
     Generates an Excel (`.xlsx`) report with the given title and data.
 
-    Saves your data in two rows (headers and values).
+    Saves your data in two rows (headers and values) as a table.
 
     The report will be saved at the specified file path (use `.xlsx` format).
+
+    Args:
+        title (str): the title that will be used for the report
+        data (dict): dict data that will be placed in the table
+        file_path (Path): where you need to save the path
     """
+
     workbook = Workbook()
     sheet = workbook.active
 
@@ -59,7 +65,13 @@ def generate_pdf_report(title: str, data: dict, file_path: Path, imgs: list[Path
 
     The report will be saved at the specified file path (use `.pdf` format).
 
-    ONLY ENGLISH.
+    **ONLY ENGLISH (for now)**
+
+    Args:
+        title (str): the title that will be used for the report
+        data (dict): dict data that will be placed in the table
+        file_path (Path): where you need to save the path
+        imgs (list[Path] | None, optional): the images you want to add to the report. Defaults to None.
     """
     document = SimpleDocTemplate(
         filename=str(file_path),

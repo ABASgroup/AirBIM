@@ -25,11 +25,9 @@ from core.exceptions import NotFoundError
 from tasks.processing import convert_bim_to_point_cloud
 from api.dependencies import require_project_permission
 
-from api.routers.project_result import router as results_router
 
 router = APIRouter(
     prefix="/projects/{project_id}", tags=["workspace projects"])
-router.include_router(results_router)
 
 
 @router.get(

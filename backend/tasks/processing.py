@@ -177,34 +177,64 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
             # upload result laz to the storage
             storage.upload_file_locally(file_info["key"], str(output_path))
 
-            # save everything in the database
-            async with get_database_uow() as uow:
-                # result point cloud
-                file_data = FileModel(
-                    filename=file_info["filename"],
-                    key=file_info["key"],
-                    size=file_info["size"],
-                    content_type=file_info["content_type"],
-                    status=FileStatus.UPLOADED,
-                    workspace_id=bim_point_cloud_file.workspace_id
-                )
-                result_point_cloud, _ = await FileService.create_point_cloud(
-                    point_cloud_type=PointCloudType.RECORDING,
-                    file_data=file_data,
-                    session=uow.session
-                )
-                # recording result
-                result_data = RecordingResultModel(
-                    project_id=stage.project_id,
-                    data=results,
-                    type=RecordingResultType.PLAN_FACT,
-                    point_cloud_id=result_point_cloud.id)
+        # save everything in the database
+        async with get_database_uow() as uow:
+            # result point cloud
+            file_data = FileModel(
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=bim_point_cloud_file.workspace_id
+            )
+            result_point_cloud, _ = await FileService.create_point_cloud(
+                point_cloud_type=PointCloudType.RECORDING,
+                file_data=file_data,
+                session=uow.session
+            )
+            # recording result
+            result_data = RecordingResultModel(
+                project_id=stage.project_id,
+                data=results,
+                type=RecordingResultType.PLAN_FACT,
+                point_cloud_id=result_point_cloud.id)
 
-                recording_result = await RecordingResultService.create_recording_result(
-                    result_data,
-                    session=uow.session
-                )
+            recording_result = await RecordingResultService.create_recording_result(
+                result_data,
+                session=uow.session
+            )
 
             return recording_result
     result = run_async(run_task())
     print(result.id)
+
+
+@celery_app.task(base=ProcessingTask)
+def create_recording_result_pdf_report(recording_result_id: UUID):
+    """
+    Generates a .pdf report for the recording result and stores it.
+
+    The following report will contain:
+        - data from the recording result
+        - photos from the resulting point cloud
+    """
+    from airbim_processing import compute_deviations    # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            recording_result = await RecordingResultService.get_recording_result(
+                recording_result_id,
+                session=uow.session
+            )
+
+            data = recording_result.data
+            print(type(data))
+            print(data)
+        # get result
+        # get data
+        # get point cloud
+        # get images
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pass
+    run_async(run_task())

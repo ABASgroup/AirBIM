@@ -46,6 +46,24 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
         await session.flush()
 
     @classmethod
+    async def add_excel_report(
+        cls,
+        recording_result: RecordingResult,
+        report: File,
+        session: AsyncSession
+    ):
+        """Add excel report to the result.
+
+        Args:
+            recording_result (`RecordingResult`): the result you need to pass a list of photos
+            report (`File`): an .xlsx file of the report
+            session (`AsyncSession`): an asynchronous database session
+        """
+        recording_result.xlsx_report_id = report.id
+
+        await session.flush()
+
+    @classmethod
     async def get_photos(
         cls,
         recording_result: RecordingResult,

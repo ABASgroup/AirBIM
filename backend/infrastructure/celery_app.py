@@ -10,7 +10,7 @@ from infrastructure.async_runtime import init_worker_event_loop, close_worker_ev
 # register tasks modules here
 TASK_MODULES = (
     'tasks.processing',
-    'tasks.periodic',
+    'tasks.default',
     'tasks.preprocessing'
 )
 
@@ -39,7 +39,7 @@ celery_app.conf.task_queues = (
 # if you don't register task here - it would not be executed
 celery_app.conf.beat_schedule = {
     'periodic-cleanup-every-hour': {
-        'task': 'tasks.periodic.clean_up_files',
+        'task': 'tasks.default.clean_up_files',
         'schedule': crontab(minute=0),
         'options': {'queue': 'default'}
     },
