@@ -10,8 +10,6 @@ from schemas.file import FileModel
 from models.recording_result import RecordingResult
 from services.file import FileService
 
-from infrastructure.storage import Storage
-
 
 class RecordingResultService:
     @classmethod
@@ -38,20 +36,6 @@ class RecordingResultService:
         return result
 
     @classmethod
-    async def create_excel_report(
-        cls,
-        recording_result_id: UUID,
-        file_data: FileModel,
-        session: AsyncSession
-    ):
-        """Create `.xlsx` report for the recording result."""
-        result = await cls.get_recording_result(recording_result_id, session)
-        
-        file = await FileService.create_file(file_data, session)
-        
-        await RecordingResultRepository.add_excel_report(result, file, session)
-
-    @classmethod
     async def create_recording_result(
         cls,
         results_data: RecordingResultModel,
@@ -62,9 +46,43 @@ class RecordingResultService:
         return recording_result
 
     @classmethod
-    async def add_photos_to_result(
+    async def create_excel_report(
         cls,
         recording_result_id: UUID,
+        report_file_data: FileModel,
         session: AsyncSession
     ):
-        pass
+        """Create `.xlsx` report for the recording result."""
+        result = await cls.get_recording_result(recording_result_id, session)
+
+        file = await FileService.create_file(report_file_data, session)
+
+        await RecordingResultRepository.add_excel_report(result, file, session)
+
+    @classmethod
+    async def create_pdf_report(
+        cls,
+        recording_result_id: UUID,
+        report_file_data: FileModel,
+        session: AsyncSession,
+        photos_file_data: list[FileModel] | None = None,
+    ):
+        """
+        Create `.pdf` report for the recording result.
+
+        Optionally add photos to the report if you need to save them in the database.
+        """
+        result = await cls.get_recording_result(recording_result_id, session)
+
+        file = await FileService.create_file(report_file_data, session)
+
+        if photos_file_data and len(photos_file_data) > 0:
+            photos = []
+            for photo_data in photos_file_data:
+                photo = await FileService.create_file(photo_data, session)
+                photos.append(photo)
+            await RecordingResultRepository.add_photos(result, photos, session)
+        else:
+            photos = None
+
+        await RecordingResultRepository.add_pdf_report(result, file, session)

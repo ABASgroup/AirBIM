@@ -119,7 +119,7 @@ class FileService:
     @classmethod
     def collect_file_data(
         cls,
-        abs_path: Path
+        path: Path
     ) -> dict:
         """
         Collects file data of a local file.
@@ -127,16 +127,17 @@ class FileService:
         Returns dict with filename, key, size and content type.
         """
         key = cls.create_file_key(
-            filename=abs_path.name
+            filename=path.name
         )
-        size = get_file_size(str(abs_path.absolute()))
-        content_type = get_file_mime_type(str(abs_path.absolute()))
+        size = get_file_size(str(path.absolute()))
+        content_type = get_file_mime_type(str(path.absolute()))
 
         return {
-            "filename": abs_path.name,
+            "filename": path.name,
             "key": key,
             "size": size,
-            "content_type": content_type
+            "content_type": content_type,
+            "path": path
         }
 
     @classmethod

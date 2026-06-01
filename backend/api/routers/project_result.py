@@ -10,6 +10,7 @@ from core.dependencies import (
 )
 from api.dependencies import require_recording_result_permission
 from tasks.default import create_recording_result_excel_report
+from tasks.processing import create_recording_result_pdf_report
 
 router = APIRouter(
     prefix="/recording_results/{recording_result_id}",
@@ -22,18 +23,15 @@ router = APIRouter(
     response_model=ProjectResponse,
 )
 async def get_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
-    """
-    TEST ONLY.
+    pass
 
-    Get excel report on recording result.
-    """
-    async with uow:
-        recording_result = await RecordingResultService.get_recording_result(
-            recording_result_id,
-            session=uow.session,
-        )
-        project = await project_service.get_project(recording_result.project_id, session=uow.session)
-    return project
+
+@router.get(
+    "/pdf",
+    response_model=ProjectResponse,
+)
+async def get_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    pass
 
 
 @router.post(
@@ -49,25 +47,6 @@ async def generate_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSes
     return create_recording_result_excel_report.delay(recording_result_id)
 
 
-@router.get(
-    "/pdf",
-    response_model=ProjectResponse,
-)
-async def get_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
-    """
-    TEST ONLY.
-
-    Get PDF report on recording result.
-    """
-    async with uow:
-        recording_result = await RecordingResultService.get_recording_result(
-            recording_result_id,
-            session=uow.session,
-        )
-        project = await project_service.get_project(recording_result.project_id, session=uow.session)
-    return project
-
-
 @router.post(
     "/pdf",
     response_model=ProjectResponse,
@@ -78,3 +57,4 @@ async def generate_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessi
 
     Generate PDF report on recording result.
     """
+    return create_recording_result_pdf_report.delay(recording_result_id)

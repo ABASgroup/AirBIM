@@ -61,7 +61,7 @@ def create_recording_result_excel_report(recording_result_id: UUID):
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = clean_path(os.path.join(tmp_dir, f"report.xlsx"))
 
-            # generate data
+            # generate report
             generate_excel_report(title, data, file_path)
 
             # collect file data

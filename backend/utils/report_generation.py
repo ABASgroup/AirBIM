@@ -4,13 +4,11 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
 
-def generate_excel_report(title: str, data: dict, file_path: Path):
+def generate_excel_report(title: str, data: dict, file_path: Path | str):
     """
     Generates an Excel (`.xlsx`) report with the given title and data.
 
@@ -21,7 +19,7 @@ def generate_excel_report(title: str, data: dict, file_path: Path):
     Args:
         title (str): the title that will be used for the report
         data (dict): dict data that will be placed in the table
-        file_path (Path): where you need to save the path
+        file_path (Path | str): where you need to save the path
     """
 
     workbook = Workbook()
@@ -59,7 +57,12 @@ def generate_excel_report(title: str, data: dict, file_path: Path):
     workbook.save(file_path)
 
 
-def generate_pdf_report(title: str, data: dict, file_path: Path, imgs: list[Path] | None = None):
+def generate_pdf_report(
+    title: str,
+    data: dict,
+    file_path: Path | str,
+    imgs: list[Path] | list[str] | None = None
+):
     """
     Generates a PDF report with the given title and data.
 
@@ -70,8 +73,8 @@ def generate_pdf_report(title: str, data: dict, file_path: Path, imgs: list[Path
     Args:
         title (str): the title that will be used for the report
         data (dict): dict data that will be placed in the table
-        file_path (Path): where you need to save the path
-        imgs (list[Path] | None, optional): the images you want to add to the report. Defaults to None.
+        file_path (Path | str): where you need to save the path
+        imgs (list[Path] | list[str] | None, optional): the images you want to add to the report. Defaults to None.
     """
     document = SimpleDocTemplate(
         filename=str(file_path),
@@ -110,7 +113,7 @@ def generate_pdf_report(title: str, data: dict, file_path: Path, imgs: list[Path
 
     story.append(table)
     # add optional images
-    if imgs is not None:
+    if imgs is not None and len(imgs) != 0:
         story.append(PageBreak())
         story.append(Paragraph(f"{title}: images", styles['Title']))
         for img in imgs:

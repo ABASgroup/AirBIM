@@ -7,7 +7,9 @@ from models.recording_result import RecordingResultType
 from schemas.file import FileModel
 from schemas.recording_result import RecordingResultModel
 from utils.files import clean_path
+from utils.report_generation import generate_pdf_report
 from infrastructure.celery_app import celery_app
+
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
@@ -219,7 +221,7 @@ def create_recording_result_pdf_report(recording_result_id: UUID):
         - data from the recording result
         - photos from the resulting point cloud
     """
-    from airbim_processing import compute_deviations    # type: ignore
+    from airbim_processing import laz_to_images    # type: ignore
 
     async def run_task():
         async with get_database_uow() as uow:
@@ -228,13 +230,78 @@ def create_recording_result_pdf_report(recording_result_id: UUID):
                 session=uow.session
             )
 
+            workspace_id = recording_result.project.workspace_id
+
+            # get data
+            # it is dict, for real
             data = recording_result.data
-            print(type(data))
-            print(data)
-        # get result
-        # get data
-        # get point cloud
-        # get images
+
+            # get resulting point cloud
+            result_point_cloud = await FileService.get_point_cloud(
+                recording_result.point_cloud_id,
+                session=uow.session
+            )
+            # get file
+            result_point_cloud_file = result_point_cloud.file
+
+        # title for the report
+        title = f"{recording_result.type} report".capitalize().replace("_", " ")
+
         with tempfile.TemporaryDirectory() as tmp_dir:
-            pass
+            result_point_cloud_file_path = clean_path(
+                os.path.join(tmp_dir, result_point_cloud_file.filename)
+            )
+            report_path = clean_path(os.path.join(tmp_dir, "report.pdf"))
+
+            # download file
+            storage.download_file_locally(
+                result_point_cloud_file.key,
+                save_path=str(result_point_cloud_file_path)
+            )
+
+            # collect images of the result
+            photo_paths = laz_to_images(
+                laz_path=result_point_cloud_file_path,
+                output_dir=tmp_dir
+            )
+
+            photos_data = []
+
+            for photo_path in photo_paths:
+                # save data
+                photo_data = FileService.collect_file_data(
+                    clean_path(photo_path)
+                )
+                photos_data.append(photo_data)
+                # upload to the storage
+                storage.upload_file_locally(photo_data["key"], photo_path)
+
+            # generate report
+            generate_pdf_report(
+                title, data, report_path, imgs=photos_data
+            )
+
+            # collect file data
+            report_file_data = FileService.collect_file_data(report_path)
+
+            # upload to the storage
+            storage.upload_file_locally(
+                report_file_data["key"], str(report_path))
+
+        # save everything in the database
+        async with get_database_uow() as uow:
+            file_data = FileModel(
+                filename=report_file_data["filename"],
+                key=report_file_data["key"],
+                size=report_file_data["size"],
+                content_type=report_file_data["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=workspace_id
+            )
+            await RecordingResultService.create_pdf_report(
+                recording_result_id,
+                file_data,
+                photos_file_data=photos_data,
+                session=uow.session
+            )
     run_async(run_task())

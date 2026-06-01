@@ -55,10 +55,9 @@ class RecordingResult(BaseModel):
 
     point_cloud_id: Mapped["UUID"] = mapped_column(
         ForeignKey("point_clouds.id", ondelete="SET NULL"),
-        nullable=True,
         unique=True
     )
-    point_cloud: Mapped[Optional["PointCloud"]] = relationship()
+    point_cloud: Mapped["PointCloud"] = relationship()
 
     photos: Mapped[list["ResultPhoto"]] = relationship(
         back_populates="result",
