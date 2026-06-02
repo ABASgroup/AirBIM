@@ -6,7 +6,7 @@ from services import stage as stage_service
 from services.file import FileService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StageResponse
-from schemas.files import (
+from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,
@@ -20,7 +20,7 @@ from core.dependencies import (
     DatabaseSessionUOW
 )
 from core.exceptions import NotFoundError
-
+from tasks.processing import convert_bim_to_point_cloud
 from api.dependencies import require_project_permission
 
 router = APIRouter(prefix="/projects", tags=["workspace projects"])
@@ -201,3 +201,25 @@ async def get_project_bim(
         bim = await FileService.get_bim(bim_id, session=uow.session)
 
     return bim
+
+
+@router.post(
+    "/{project_id}/bim/convert"
+)
+async def convert_project_bim(
+    project_id: uuid.UUID,
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
+):
+    """
+    Convert project BIM into a point cloud for comparing.
+    
+    ONLY FOR TESTS
+    """
+    async with uow:
+        project = await project_service.get_project(project_id, session=uow.session)
+        bim_id = project.bim.id
+
+        if bim_id is None:
+            raise NotFoundError("Project has no BIM.")
+    task = convert_bim_to_point_cloud.delay(bim_id)  # type: ignore
+    return f"started: {task.id}"

@@ -1,8 +1,14 @@
-import uuid
+from uuid import UUID
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models.file import File, Bim, PointCloud, FileStatus, PointCloudConverted
+from models.file import (
+    File,
+    BIM,
+    PointCloud,
+    FileStatus,
+    PointCloudConverted,
+)
 from .base import BaseRepository
 
 
@@ -47,7 +53,6 @@ class FileRepository(BaseRepository[File]):
         file.status = status
 
         await session.flush()
-        await session.refresh(file)
         return file
 
     @classmethod
@@ -81,14 +86,14 @@ class FileRepository(BaseRepository[File]):
         return result.scalars().all()
 
 
-class BimRepository(BaseRepository[Bim]):
-    """Repository class for CRUD operations with Bim model."""
-    _model = Bim
+class BIMRepository(BaseRepository[BIM]):
+    """Repository class for CRUD operations with BIM model."""
+    _model = BIM
 
     @classmethod
     async def get_by_project_id(
         cls,
-        project_id: uuid.UUID,
+        project_id: UUID,
         session: AsyncSession
     ):
         """Get BIM by project ID."""
@@ -97,6 +102,32 @@ class BimRepository(BaseRepository[Bim]):
             .where(cls._model.project_id == project_id)
         )
         return result.scalar_one_or_none()
+
+    @classmethod
+    async def get_by_file_id(
+        cls,
+        file_id: UUID,
+        session: AsyncSession
+    ):
+        """Get BIM by file ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.file_id == file_id)
+        )
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def set_point_cloud(
+        cls,
+        bim: BIM,
+        point_cloud_id: UUID,
+        session: AsyncSession
+    ):
+        """Set connection to the converted BIM in a point cloud form."""
+        bim.point_cloud_id = point_cloud_id
+
+        await session.flush()
+        return bim
 
 
 class PointCloudRepository(BaseRepository[PointCloud]):
@@ -111,7 +142,7 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
     @classmethod
     async def get_by_point_cloud_id(
         cls,
-        point_cloud_id: uuid.UUID,
+        point_cloud_id: UUID,
         session: AsyncSession
     ):
         """Get files with point cloud ID."""
@@ -120,3 +151,4 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
             .where(cls._model.point_cloud_id == point_cloud_id)
         )
         return result.scalars().all()
+

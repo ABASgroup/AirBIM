@@ -43,7 +43,7 @@ class Permission(enum.StrEnum):
     STAGE_CREATE = "stage:create"
     STAGE_EDIT = "stage:edit"
     STAGE_DELETE = "stage:delete"
-    # files (hierarchical structure)
+    # files
     FILES_VIEW = "files:view"
     FILES_DOWNLOAD = "files:download"
     FILES_UPLOAD = "files:upload"

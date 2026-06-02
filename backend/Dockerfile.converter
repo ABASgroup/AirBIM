@@ -4,11 +4,11 @@ ARG POTREE_CONVERTER_REF=2.1.1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
-        cmake \
-        git \
-        liblaszip-dev \
-        libtbb-dev \
+    build-essential \
+    cmake \
+    git \
+    liblaszip-dev \
+    libtbb-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --branch "${POTREE_CONVERTER_REF}" https://github.com/potree/PotreeConverter.git /tmp/PotreeConverter \
@@ -21,9 +21,9 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        liblaszip8 \
-        liblaszip-dev \
-        libtbb12 \
+    liblaszip8 \
+    liblaszip-dev \
+    libtbb12 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -40,7 +40,3 @@ COPY --from=potree-builder /tmp/PotreeConverter/build/licenses /opt/potreeconver
 RUN ln -s /opt/potreeconverter/PotreeConverter /usr/local/bin/PotreeConverter
 
 ENV POTREE_CONVERTER_HOME=/opt/potreeconverter
-
-EXPOSE 8000
-    
-CMD ["sh", "entrypoint.sh"]

@@ -1,24 +1,26 @@
 """Service layer logic for files."""
 import uuid
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.files import (
+from utils.files import get_file_size, get_file_mime_type
+from schemas.file import (
     FileModel,
     BIMModel,
     FileDataRequest,
     PointCloudModel,
-    PointCloudConvertedModel
+    PointCloudConvertedModel,
 )
 
 from core.exceptions import NotFoundError, InvalidFileMetaDataError
 
-from models.file import FileStatus, File, PointCloud, Bim
+from models.file import FileStatus, File, PointCloud, BIM, PointCloudType
 
 from repositories.files import (
     FileRepository,
-    BimRepository,
+    BIMRepository,
     PointCloudRepository,
-    PointCloudConvertedRepository
+    PointCloudConvertedRepository,
 )
 from infrastructure.storage import Storage
 
@@ -38,9 +40,9 @@ class FileService:
 
     @staticmethod
     async def clean_up_files(
-            storage: Storage,
-            session: AsyncSession,
-            pending_for_limit: timedelta = timedelta(days=1)
+        storage: Storage,
+        session: AsyncSession,
+        pending_for_limit: timedelta = timedelta(days=1)
     ):
         """
         Cleans up files from the database and the storage.
@@ -113,6 +115,29 @@ class FileService:
         # delete from storage
         file = await FileRepository.delete(file, session=session)
         return file
+
+    @classmethod
+    def collect_file_data(
+        cls,
+        abs_path: Path
+    ) -> dict:
+        """
+        Collects file data of a local file.
+
+        Returns dict with filename, key, size and content type.
+        """
+        key = cls.create_file_key(
+            filename=abs_path.name
+        )
+        size = get_file_size(str(abs_path.absolute()))
+        content_type = get_file_mime_type(str(abs_path.absolute()))
+
+        return {
+            "filename": abs_path.name,
+            "key": key,
+            "size": size,
+            "content_type": content_type
+        }
 
     @classmethod
     async def generate_file_download_link(
@@ -222,16 +247,34 @@ class FileService:
         cls,
         bim_id: uuid.UUID,
         session: AsyncSession
-    ) -> Bim:
-        bim = await BimRepository.get_by_id(bim_id, session=session)
+    ) -> BIM:
+        bim = await BIMRepository.get_by_id(bim_id, session=session)
 
         if bim is None:
             raise NotFoundError(
                 "BIM is not found: no such ID.")
 
-        bim = await BimRepository.refresh(bim, session=session, relations=["file"])
+        bim = await BIMRepository.refresh(bim, session=session, relations=["file"])
 
         return bim
+
+    @classmethod
+    async def get_bim_by_file_id(
+        cls,
+        file_id: uuid.UUID,
+        session: AsyncSession
+    ) -> BIM | None:
+        """Get BIM by the underlying file ID, if it exists."""
+        return await BIMRepository.get_by_file_id(file_id, session=session)
+
+    @classmethod
+    async def get_bim_by_project_id(
+        cls,
+        project_id: uuid.UUID,
+        session: AsyncSession
+    ) -> BIM:
+        """Get BIM by the project it is connected to."""
+        return await BIMRepository.get_by_project_id(project_id, session=session)
 
     @classmethod
     async def generate_bim_upload_link(
@@ -253,7 +296,7 @@ class FileService:
         )
 
         bim = BIMModel(project_id=project_id, file_id=file.id)
-        await BimRepository.create(bim, session=session)
+        await BIMRepository.create(bim, session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
@@ -286,6 +329,28 @@ class FileService:
         link = storage.get_upload_link(file.key)
 
         return link, file
+
+    @classmethod
+    async def save_converted_bim_file(
+        cls,
+        bim_id: uuid.UUID,
+        file_data: FileModel,
+        session: AsyncSession
+    ):
+        """Saves converted point cloud you've got from the BIM."""
+        # create file first
+        file = await cls.create_file(file_data, session=session)
+
+        # create point cloud record
+        data = PointCloudModel(
+            file_id=file.id,
+            type=PointCloudType.PLAN
+        )
+        point_cloud = await PointCloudRepository.create(data, session=session)
+
+        # set a connection
+        bim = await cls.get_bim(bim_id, session=session)
+        await BIMRepository.set_point_cloud(bim=bim, point_cloud_id=point_cloud.id, session=session)
 
     @classmethod
     async def save_converted_point_cloud_file(
@@ -324,3 +389,41 @@ class FileService:
             files.append(record.file)
 
         return files
+
+    @classmethod
+    async def create_point_cloud(
+        cls,
+        point_cloud_type: PointCloudType,
+        file_data: FileModel,
+        session: AsyncSession,
+        stage_id: uuid.UUID | None = None
+    ) -> tuple[PointCloud, File]:
+        """Creates point cloud entry in the database and its file."""
+        file = await cls.create_file(file_data, session=session)
+
+        cloud_data = PointCloudModel(
+            stage_id=stage_id,
+            file_id=file.id,
+            type=point_cloud_type
+        )
+
+        # we don't need to store stage_id for some types
+        if point_cloud_type in [PointCloudType.RECORDING, PointCloudType.PLAN]:
+            cloud_data.stage_id = None
+
+        cloud_data.file_id = file.id
+        cloud = await PointCloudRepository.create(cloud_data, session=session)
+        return cloud, file
+
+    @classmethod
+    async def create_bim(
+        cls,
+        bim_data: BIMModel,
+        file_data: FileModel,
+        session: AsyncSession
+    ) -> tuple[BIM, File]:
+        """Creates BIM entry in the database and its file."""
+        file = await cls.create_file(file_data, session=session)
+        bim_data.file_id = file.id
+        bim = await BIMRepository.create(bim_data, session=session)
+        return bim, file

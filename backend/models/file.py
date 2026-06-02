@@ -1,14 +1,33 @@
-import uuid
+from uuid import UUID
 from typing import Optional
 from enum import StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum
+from sqlalchemy import ForeignKey, Enum, CheckConstraint
 from .base import BaseModel
 
 
 class FileStatus(StrEnum):
+    """
+    Statuses of files in the system.
+
+    - Pending files are not confirmed or not uploaded yet
+    - Uploaded files are ready to be used
+    """
     UPLOADED = "uploaded"
     PENDING = "pending"
+
+
+class PointCloudType(StrEnum):
+    """
+    Types of point clouds in the system.
+
+    - Plan type is for point clouds that represent project's BIM (e.g. converted)
+    - Scan type is for real scans of a project, actual scanning
+    - Recording type is for point clouds that are results of recording processing (e.g. comparison of plan and scan, progress, etc.)
+    """
+    PLAN = "plan"
+    SCAN = "scan"
+    RECORDING = "recording"
 
 
 class File(BaseModel):
@@ -28,71 +47,83 @@ class File(BaseModel):
         default=FileStatus.PENDING
     )
 
-    workspace_id: Mapped["uuid.UUID"] = mapped_column(
+    workspace_id: Mapped["UUID"] = mapped_column(
         ForeignKey("workspaces.id"))
 
 
 class PointCloud(BaseModel):
     __tablename__ = "point_clouds"
 
-    stage_id: Mapped["uuid.UUID"] = mapped_column(
-        ForeignKey("stages.id", ondelete="CASCADE"))
+    stage_id: Mapped["UUID"] = mapped_column(
+        ForeignKey("stages.id", ondelete="CASCADE"),
+        nullable=True
+    )
     stage: Mapped["Stage"] = relationship(
-        back_populates="point_clouds")
+        back_populates="point_cloud")
 
-    converted_file_links: Mapped[list["PointCloudConverted"]] = relationship(
+    converted_files: Mapped[list["PointCloudConverted"]] = relationship(
         back_populates="point_cloud",
         cascade="all, delete-orphan"
     )
 
-    file_id: Mapped[uuid.UUID] = mapped_column(
+    type: Mapped[PointCloudType] = mapped_column(
+        Enum(PointCloudType, name="point_cloud_types", create_constraint=True),
+        nullable=False,
+        default=PointCloudType.SCAN
+    )
+
+    file_id: Mapped["UUID"] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=False,
         unique=True
     )
     file: Mapped["File"] = relationship(
         cascade="all, delete",
-        passive_deletes=True
+        passive_deletes=True,
+        lazy="selectin"
     )
 
-    bim: Mapped[Optional["Bim"]] = relationship(
-        back_populates="point_cloud", uselist=False)
+    __table_args__ = (
+        CheckConstraint(
+            "(type = 'scan' AND stage_id IS NOT NULL) OR "
+            "(type = 'plan' AND stage_id IS NULL) OR "
+            "(type = 'recording' AND stage_id IS NULL)",
+            name="ck_point_cloud_kind_stage"
+        ),
+    )
 
 
 class PointCloudConverted(BaseModel):
     __tablename__ = "point_cloud_converted"
 
-    point_cloud_id: Mapped[uuid.UUID] = mapped_column(
+    point_cloud_id: Mapped["UUID"] = mapped_column(
         ForeignKey("point_clouds.id", ondelete="CASCADE")
     )
-    file_id: Mapped[uuid.UUID] = mapped_column(
+    file_id: Mapped["UUID"] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE")
     )
     point_cloud: Mapped["PointCloud"] = relationship(
-        back_populates="converted_file_links")
+        back_populates="converted_files")
     file: Mapped["File"] = relationship(
         cascade="all, delete"
     )
 
 
-class Bim(BaseModel):
+class BIM(BaseModel):
     __tablename__ = "bims"
 
-    project_id: Mapped[uuid.UUID] = mapped_column(
+    project_id: Mapped["UUID"] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"))
     project: Mapped["Project"] = relationship(back_populates="bim")
 
-    point_cloud_id: Mapped[uuid.UUID] = mapped_column(
+    point_cloud_id: Mapped["UUID"] = mapped_column(
         ForeignKey("point_clouds.id", ondelete="SET NULL"),
         nullable=True,
         unique=True
     )
-    point_cloud: Mapped[Optional["PointCloud"]] = relationship(
-        "PointCloud",
-        back_populates="bim"
-    )
+    point_cloud: Mapped[Optional["PointCloud"]] = relationship()
 
-    file_id: Mapped[uuid.UUID] = mapped_column(
+    file_id: Mapped["UUID"] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=False,
         unique=True
@@ -101,3 +132,20 @@ class Bim(BaseModel):
         cascade="all, delete",
         passive_deletes=True
     )
+
+
+class ResultPhoto(BaseModel):
+    """Photos of a recording result (e.g. photo of the actual progress)."""
+    __tablename__ = "result_photos"
+
+    result_id: Mapped["UUID"] = mapped_column(
+        ForeignKey("recording_results.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    result: Mapped["RecordingResult"] = relationship(back_populates="photos")
+
+    file_id: Mapped["UUID"] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    file: Mapped["File"] = relationship(lazy="selectin")

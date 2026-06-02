@@ -209,7 +209,4 @@ __marimo__/
 
 # AirBIM specific ignores
 .airbim_deploy_mode
-<<<<<<< Updated upstream
-=======
 micromamba
->>>>>>> Stashed changes
