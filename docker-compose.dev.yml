@@ -5,11 +5,15 @@ services:
     command: ["sh", "entrypoint.dev.sh"]
 
   worker:
+    environment:
+      - C_FORCE_ROOT=true
     volumes:
       - ./backend:/app
     command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4 --pool=solo' /app"]
 
   worker-converter:
+    environment:
+      - C_FORCE_ROOT=true
     volumes:
       - ./backend:/app
     command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=8 --pool=solo' /app"]
