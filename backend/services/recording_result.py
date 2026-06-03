@@ -42,7 +42,7 @@ class RecordingResultService:
         session: AsyncSession
     ) -> RecordingResult:
         """Create a new results record in the database."""
-        recording_result = await RecordingResultRepository.create(results_data, session=session)
+        recording_result = await RecordingResultRepository.create(results_data.model_dump(exclude_unset=True), session=session)
         return recording_result
 
     @classmethod

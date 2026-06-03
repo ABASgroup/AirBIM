@@ -14,7 +14,7 @@ from tasks.processing import create_recording_result_pdf_report
 
 router = APIRouter(
     prefix="/recording_results/{recording_result_id}",
-    tags=["project recording results"]
+    tags=["recording results"]
 )
 
 
@@ -31,6 +31,21 @@ async def get_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSessionU
     response_model=ProjectResponse,
 )
 async def get_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    pass
+
+
+@router.delete(
+    "",
+    response_model=ProjectResponse,
+)
+async def delete_recording_result(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    """
+    Delete recording result.
+
+    All relevant data will be lost (reports, photos, point cloud, etc.).
+
+    Requires permission.
+    """
     pass
 
 

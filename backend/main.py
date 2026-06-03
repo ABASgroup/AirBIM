@@ -14,7 +14,7 @@ from api.routers.project import router as project_router
 from api.routers.stage import router as stage_router
 from api.routers.invite import router as invite_router
 from api.routers.file import router as file_router
-from api.routers.project_result import router as result_router
+from api.routers.recording_result import router as result_router
 from api.routers.task import router as task_router
 
 
@@ -43,11 +43,12 @@ app.include_router(file_router)
 app.include_router(task_router)
 
 # add exception handlers
+# allows for consistent error responses and handling across the app
 add_exception_handlers(app)
 
 
 @app.get('/ping')
-async def ping():
+async def ping() -> dict:
     """Simple API check endpoint."""
     return {"message": "I'm fine, thank you!"}
 

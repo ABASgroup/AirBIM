@@ -4,17 +4,18 @@ import tempfile
 from uuid import UUID
 from models.file import FileStatus, PointCloudType
 from models.recording_result import RecordingResultType
+from models.task import TaskStatus
 from schemas.file import FileModel
 from schemas.recording_result import RecordingResultModel
 from utils.files import clean_path
 from utils.report_generation import generate_pdf_report
 from infrastructure.celery_app import celery_app
-
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
 import services.stage as stage_service
 from services.recording_result import RecordingResultService
+from services.task import TaskService
 
 
 # heavy tasks with long duration must never use database transaction for far too long
@@ -28,11 +29,11 @@ class ProcessingTask(celery_app.Task):
     queue = 'processing'
 
 
-@celery_app.task(base=ProcessingTask)
-def convert_bim_to_point_cloud(bim_id: UUID):
+@celery_app.task(base=ProcessingTask, bind=True)
+def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
     # lazy imports so your main app would work
     import ifcopenshell  # type: ignore
-    from airbim_processing import resolve_geo_transform, ifc_to_laz, compute_deviations  # type: ignore
+    from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
     # fixed parameters for conversion
     geom_settings_params = [
@@ -64,11 +65,24 @@ def convert_bim_to_point_cloud(bim_id: UUID):
 
     async def run_task():
         async with get_database_uow() as uow:
+            # task that is being executed
+            await TaskService.start_task(
+                task_id,
+                celery_task_id=self.request.id,
+                session=uow.session
+            )
+
             bim = await FileService.get_bim(
                 bim_id,
                 session=uow.session
             )
             bim_file = bim.file
+
+            await TaskService.update_task_progress(
+                task_id,
+                progress=10,
+                session=uow.session
+            )
 
         # all in temp_dir will be deleted after its done
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -86,7 +100,7 @@ def convert_bim_to_point_cloud(bim_id: UUID):
             bim_data = ifcopenshell.open(file_path)
             geo_result = resolve_geo_transform(bim_data)
 
-            result = ifc_to_laz(
+            ifc_to_laz(
                 ifc_file=bim_data,
                 output_laz_path=str(output_path),
                 global_matrix=geo_result.matrix,
@@ -118,21 +132,37 @@ def convert_bim_to_point_cloud(bim_id: UUID):
             )
 
             async with get_database_uow() as uow:
-                await FileService.save_converted_bim_file(
+                point_cloud_id = await FileService.save_converted_bim_file(
                     bim.id,
                     file_data=file_data,
                     session=uow.session
                 )
 
-    run_async(run_task())
+                await TaskService.update_task_progress(
+                    task_id,
+                    progress=100,
+                    session=uow.session
+                )
+                await TaskService.update_task_status(
+                    task_id,
+                    status=TaskStatus.SUCCEEDED,
+                    session=uow.session
+                )
+
+            return point_cloud_id
+
+    return run_async(run_task())
 
 
-@celery_app.task(base=ProcessingTask)
-def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
+@celery_app.task(base=ProcessingTask, bind=True)
+def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float = 0.05):
     from airbim_processing import compute_deviations    # type: ignore
 
     async def run_task():
         async with get_database_uow() as uow:
+            # task that is being executed
+            await TaskService.start_task(task_id, self.request.id, uow.session)
+
             # get stage and its point cloud
             stage = await stage_service.get_stage(stage_id, session=uow.session)
             stage_point_cloud = await FileService.get_point_cloud(
@@ -147,12 +177,18 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
             stage_point_cloud_file = stage_point_cloud.file
             bim_point_cloud_file = bim_point_cloud.file
 
+            await TaskService.update_task_progress(
+                task_id,
+                progress=10,
+                session=uow.session
+            )
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             bim_point_cloud_path = clean_path(
                 os.path.join(tmp_dir, stage_point_cloud_file.filename))
             stage_point_cloud_path = clean_path(os.path.join(
                 tmp_dir, bim_point_cloud_file.filename))
-            output_path = clean_path(tmp_dir) / f"{stage_id}.laz"
+            output_path = clean_path(tmp_dir) / f"result.laz"
 
             # download files
             storage.download_file_locally(
@@ -181,6 +217,11 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
 
         # save everything in the database
         async with get_database_uow() as uow:
+            await TaskService.update_task_progress(
+                task_id,
+                progress=50,
+                session=uow.session
+            )
             # result point cloud
             file_data = FileModel(
                 filename=file_info["filename"],
@@ -207,13 +248,19 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05):
                 session=uow.session
             )
 
-            return recording_result
-    result = run_async(run_task())
-    print(result.id)
+            await TaskService.update_task_progress(
+                task_id,
+                progress=70,
+                session=uow.session
+            )
+
+            return recording_result.id
+    result_id = run_async(run_task())
+    return result_id
 
 
 @celery_app.task(base=ProcessingTask)
-def create_recording_result_pdf_report(recording_result_id: UUID):
+def create_recording_result_pdf_report(recording_result_id: UUID, task_id: UUID):
     """
     Generates a .pdf report for the recording result and stores it.
 
@@ -243,6 +290,13 @@ def create_recording_result_pdf_report(recording_result_id: UUID):
             )
             # get file
             result_point_cloud_file = result_point_cloud.file
+
+            # the task was already started, need to update the progress
+            await TaskService.update_task_progress(
+                task_id,
+                progress=85,
+                session=uow.session
+            )
 
         # title for the report
         title = f"{recording_result.type} report".capitalize().replace("_", " ")
@@ -316,6 +370,17 @@ def create_recording_result_pdf_report(recording_result_id: UUID):
                 recording_result_id,
                 file_data,
                 photos_file_data=photos_data,
+                session=uow.session
+            )
+
+            await TaskService.update_task_progress(
+                task_id,
+                progress=100,
+                session=uow.session
+            )
+            await TaskService.update_task_status(
+                task_id,
+                status=TaskStatus.SUCCEEDED,
                 session=uow.session
             )
     run_async(run_task())

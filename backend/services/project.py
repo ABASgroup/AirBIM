@@ -30,14 +30,14 @@ async def get_workspace_projects(workspace_id: uuid.UUID, session: AsyncSession)
 
 async def create_project(project_data: ProjectModel, session: AsyncSession) -> Project:
     """Create a new project for the workspace."""
-    project = await ProjectRepository.create(project_data, session=session)
+    project = await ProjectRepository.create(project_data.model_dump(exclude_unset=True), session=session)
     return project
 
 
 async def update_project(project_id: uuid.UUID, project_data: ProjectUpdate, session: AsyncSession) -> Project:
     """Update information about project using its ID"""
     try:
-        project = await ProjectRepository.update_by_id(project_id, project_data, session=session)
+        project = await ProjectRepository.update_by_id(project_id, project_data.model_dump(exclude_unset=True), session=session)
 
         if project is None:
             raise NotFoundError("Project was not found")

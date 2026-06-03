@@ -6,6 +6,7 @@ from core.dependencies import get_database_uow, get_storage
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from services.file import FileService
+from services.task import TaskService
 from schemas.file import FileModel
 from utils.convert import convert_point_cloud
 from utils.files import (
@@ -22,13 +23,28 @@ class ConverterTask(celery_app.Task):
     queue = 'converter'
 
 
-@celery_app.task(base=ConverterTask)
-def convert_point_cloud_task(point_cloud_id: uuid.UUID):
+@celery_app.task(base=ConverterTask, bind=True)
+def convert_point_cloud_task(
+    self,
+    point_cloud_id: uuid.UUID,
+    task_id: uuid.UUID,
+):
     """Converts point cloud into Potree format."""
     storage = get_storage()
 
     async def run_task():
         async with get_database_uow() as uow:
+            # get task that is being executed
+            task = await TaskService.get_task(task_id, session=uow.session)
+            # check if it's a step in a process
+            current_progress = task.progress
+            if current_progress == 0:
+                await TaskService.start_task(
+                    task_id,
+                    celery_task_id=self.request.id,
+                    session=uow.session
+                )
+
             # get point cloud
             point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
             # check if we already have converted files
@@ -39,6 +55,16 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
                 print("ALREADY CONVERTED")
                 return
             point_cloud_file = await FileService.get_file(point_cloud.file_id, session=uow.session)
+
+            if current_progress == 0:
+                current_progress = 50
+            else:
+                current_progress = 75
+            await TaskService.update_task_progress(
+                task_id,
+                progress=current_progress,
+                session=uow.session
+            )
 
         # all in temp_dir will be deleted after its done
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -89,5 +115,15 @@ def convert_point_cloud_task(point_cloud_id: uuid.UUID):
                         file_data=data,
                         session=uow.session
                     )
+                await TaskService.update_task_progress(
+                    task_id,
+                    progress=100,
+                    session=uow.session
+                )
+                await TaskService.update_task_status(
+                    task_id,
+                    status=TaskStatus.SUCCEDED,
+                    session=uow.session
+                )
 
     run_async(run_task())

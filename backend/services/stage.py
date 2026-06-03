@@ -43,7 +43,7 @@ async def create_stage(stage_data: StageModel, session: AsyncSession) -> Stage:
     """
     Create a new stage for the project.
     """
-    stage = await StageRepository.create(stage_data, session=session)
+    stage = await StageRepository.create(stage_data.model_dump(exclude_unset=True), session=session)
     return stage
 
 

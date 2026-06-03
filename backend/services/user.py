@@ -28,7 +28,7 @@ async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
     user_data_db = UserModel(username=user_data.username,
                              password_hashed=password_hashed,
                              email=user_data.email)
-    user = await UserRepository.create(user_data_db, session=session)
+    user = await UserRepository.create(user_data_db.model_dump(exclude_unset=True), session=session)
     return user
 
 

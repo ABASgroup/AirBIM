@@ -2,14 +2,16 @@ import os
 from uuid import UUID
 import tempfile
 from models.file import FileStatus
+from models.task import TaskStatus
 from schemas.file import FileModel
-from utils.files import clean_path
 from services.recording_result import RecordingResultService
+from services.task import TaskService
+from services.file import FileService
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
-from services.file import FileService
 from core.dependencies import get_database_uow, get_storage
 from utils.report_generation import generate_excel_report
+from utils.files import clean_path
 
 
 class DefaultTask(celery_app.Task):
@@ -33,7 +35,7 @@ def clean_up_files():
 
 
 @celery_app.task(base=DefaultTask)
-def create_recording_result_excel_report(recording_result_id: UUID):
+def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUID):
     """
     Generates .xlxs report for the recording result and stores it.
 
@@ -85,4 +87,11 @@ def create_recording_result_excel_report(recording_result_id: UUID):
                 file_data,
                 uow.session
             )
-    run_async(run_task())
+            # the task was already started, need to finish
+            await TaskService.update_task_progress(
+                task_id,
+                progress=70,
+                session=uow.session
+            )
+        return recording_result_id
+    return run_async(run_task())
