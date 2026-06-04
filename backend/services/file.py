@@ -12,7 +12,7 @@ from schemas.file import (
     PointCloudConvertedModel,
 )
 
-from core.exceptions import NotFoundError, InvalidFileMetaDataError
+from core.exceptions import NotFoundError, InvalidFileMetaDataError, AlreadyExistsError
 
 from models.file import FileStatus, File, PointCloud, BIM, PointCloudType
 
@@ -191,6 +191,10 @@ class FileService:
         if not storage.file_exists(file.key):
             raise NotFoundError(
                 "File not found: not uploaded to the storage")
+
+        # you can't confirm files that are not pending
+        if file.status != FileStatus.PENDING:
+            raise AlreadyExistsError("file")
 
         # everything seems clear, set new status
         await FileRepository.update_status(

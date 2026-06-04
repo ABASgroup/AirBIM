@@ -94,8 +94,8 @@ class TaskService:
         if status == TaskStatus.FAILED or status == TaskStatus.SUCCEEDED:
             task_update_data = TaskUpdateModel(
                 status=status, finished_at=datetime.now(timezone.utc))
-
-        task_update_data = TaskUpdateModel(status=status)
+        else:
+            task_update_data = TaskUpdateModel(status=status)
         task = await TaskRepository.update(task, task_update_data.model_dump(exclude_unset=True), session=session)
 
         await session.flush()

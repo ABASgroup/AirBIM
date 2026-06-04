@@ -2,6 +2,7 @@ import uuid
 import tempfile
 import os
 from models.file import FileStatus
+from models.task import TaskStatus
 from core.dependencies import get_database_uow, get_storage
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
@@ -60,6 +61,7 @@ def convert_point_cloud_task(
                 current_progress = 50
             else:
                 current_progress = 75
+
             await TaskService.update_task_progress(
                 task_id,
                 progress=current_progress,
@@ -87,13 +89,14 @@ def convert_point_cloud_task(
             # all files in the output dir
             file_dir = get_all_dir_files(output_path)
 
-            files = {}
+            files: list[FileModel] = []
 
             for file in file_dir:
                 # collect file info
                 file_info = FileService.collect_file_data(file)
                 # upload to the storage
-                storage.upload_file_locally(file_info["key"], str(output_path))
+                storage.upload_file_locally(
+                    file_info["key"], str(file_info["path"]))
 
                 # make models
                 file_data = FileModel(
@@ -105,16 +108,17 @@ def convert_point_cloud_task(
                     workspace_id=point_cloud_file.workspace_id
                 )
 
-                files[str(file)] = file_data
+                files.append(file_data)
 
-            for file_path, data in files.items():
-                # save in the db
-                async with get_database_uow() as uow:
+            # persist converted files and finish task in one short transaction
+            async with get_database_uow() as uow:
+                for data in files:
                     await FileService.save_converted_point_cloud_file(
                         point_cloud_id,
                         file_data=data,
                         session=uow.session
                     )
+
                 await TaskService.update_task_progress(
                     task_id,
                     progress=100,
@@ -122,8 +126,20 @@ def convert_point_cloud_task(
                 )
                 await TaskService.update_task_status(
                     task_id,
-                    status=TaskStatus.SUCCEDED,
+                    status=TaskStatus.SUCCEEDED,
                     session=uow.session
                 )
 
-    run_async(run_task())
+    try:
+        run_async(run_task())
+    except Exception:
+        async def mark_failed():
+            async with get_database_uow() as uow:
+                await TaskService.update_task_status(
+                    task_id,
+                    status=TaskStatus.FAILED,
+                    session=uow.session
+                )
+
+        run_async(mark_failed())
+        raise

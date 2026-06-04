@@ -30,8 +30,8 @@ def clean_up_files():
             )
         return files_deleted
     files_deleted = run_async(run_task())
-    # temporary no logger
-    print(f"FILE CLEAN UP: FILES DELETED - {files_deleted}")
+    message = f"FILE CLEAN UP: FILES DELETED - {files_deleted}"
+    return message
 
 
 @celery_app.task(base=DefaultTask)

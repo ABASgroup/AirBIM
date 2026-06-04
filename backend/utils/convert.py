@@ -29,7 +29,7 @@ def convert_point_cloud(
     if tool_path:
         tool_path = clean_path(tool_path)
     else:
-        raise Exception("PotreeConverter not found")
+        raise FileNotFoundError("PotreeConverter not found")
 
     # make paths safe, so it would not crash with 123 error
     clean_file_path = clean_path(file_path)
@@ -66,8 +66,15 @@ def convert_point_cloud(
     if result.returncode != 0:
         raise RuntimeError(f"PotreeConverter failed: {result.stderr}")
 
-    # extract output location from logs
-    out = re.search(r'output location: .+\n', result.stdout)
-    out = out.group(0).split()[2]
-    out = str(clean_path(out))
-    return out
+    # when the output directory is provided explicitly, return it directly
+    if output_path:
+        return str(clean_output_path)
+
+    # fallback: parse the converter output for the generated directory
+    out = re.search(r"(?:output location|target directory):\s+'?([^\n']+)'?", result.stdout)
+    if out is None:
+        raise RuntimeError(
+            "PotreeConverter finished successfully, but output directory was not reported in stdout"
+        )
+
+    return str(clean_path(out.group(1)))

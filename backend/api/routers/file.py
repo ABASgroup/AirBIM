@@ -12,8 +12,10 @@ from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     BIMResponse,
-    FileResponse
+    FileResponse,
+    FileTaskResponse
 )
+from schemas.task import TaskResponse
 from core.roles import Permission
 from core.dependencies import (
     get_database_uow,
@@ -28,7 +30,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post(
     "/{file_id}/confirm",
-    response_model=FileResponse,
+    response_model=FileResponse | FileTaskResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
@@ -52,7 +54,7 @@ async def confirm_upload(
             file_id=file_id,
             file_data=file_data,
             session=uow.session,
-            storage=storage
+            storage=storage,
         )
 
         bim = await FileService.get_bim_by_file_id(
@@ -108,7 +110,16 @@ async def confirm_upload(
             task_id=created_task_id,
         )
 
-    return file, created_task
+    if created_task_id is not None:
+        response = FileTaskResponse(
+            file=FileResponse.model_validate(file, from_attributes=True),
+            task=TaskResponse.model_validate(
+                created_task, from_attributes=True)
+        )
+    else:
+        response = FileResponse.model_validate(file, from_attributes=True)
+
+    return response
 
 
 @router.delete(

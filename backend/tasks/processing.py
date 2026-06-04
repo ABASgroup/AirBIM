@@ -140,18 +140,25 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
 
                 await TaskService.update_task_progress(
                     task_id,
-                    progress=100,
-                    session=uow.session
-                )
-                await TaskService.update_task_status(
-                    task_id,
-                    status=TaskStatus.SUCCEEDED,
+                    progress=60,
                     session=uow.session
                 )
 
             return point_cloud_id
 
-    return run_async(run_task())
+    try:
+        return run_async(run_task())
+    except Exception:
+        async def mark_failed():
+            async with get_database_uow() as uow:
+                await TaskService.update_task_status(
+                    task_id,
+                    status=TaskStatus.FAILED,
+                    session=uow.session
+                )
+
+        run_async(mark_failed())
+        raise
 
 
 @celery_app.task(base=ProcessingTask, bind=True)
