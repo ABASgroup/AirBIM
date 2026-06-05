@@ -12,7 +12,7 @@ async def test_user_repository_create_and_get_by_email(db_session):
         username="repo-user",
         email="repo@example.com",
         password_hashed="hashed-password",
-    )
+    ).model_dump(exclude_unset=True)
 
     created_user = await UserRepository.create(user_data, session=db_session)
     assert created_user.id is not None
@@ -22,6 +22,7 @@ async def test_user_repository_create_and_get_by_email(db_session):
     assert fetched_user.id == created_user.id
     assert fetched_user.username == "repo-user"
     assert fetched_user.email == "repo@example.com"
+
 
 @pytest.mark.asyncio
 async def test_user_repository_get_by_email_nonexistent(db_session):

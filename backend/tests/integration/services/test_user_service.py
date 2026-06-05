@@ -74,6 +74,6 @@ async def test_authenticate_user_invalid_credentials(db_session):
 
     with pytest.raises(InvalidLoginInfoError):
         _ = await authenticate_user(request.email, "incorrect-password", session=db_session)
-    
+
     with pytest.raises(InvalidLoginInfoError):
         _ = await authenticate_user("nonexisten-user", request.password, session=db_session)

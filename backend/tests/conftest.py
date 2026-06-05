@@ -19,28 +19,19 @@ FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 TEST_BUILDING_IFC = FIXTURES_DIR / "TestBuilding.ifc"
 TEST_BUILDING_LAZ = FIXTURES_DIR / "TestBuilding.laz"
 TEST_BUILDING_SHIFTED_LAZ = FIXTURES_DIR / "TestBuildingShifted.laz"
+TEST_PHOTO_1_JPG = FIXTURES_DIR / "TestPhoto1.jpg"
+TEST_PHOTO_2_JPG = FIXTURES_DIR / "TestPhoto2.jpg"
+TEST_PHOTO_3_PNG = FIXTURES_DIR / "TestPhoto3.png"
+TEST_REPORT_PDF = FIXTURES_DIR / "TestReport.pdf"
+TEST_REPORT_XLSX = FIXTURES_DIR / "TestReport.xlsx"
 
 
+# ------------------------------ Fixture to create test data ------------------------------
 def assert_existing_file(path: Path) -> Path:
     """Assert that the given path points to an existing, non-empty file."""
     assert path.is_file(), f"Missing test fixture: {path}"
     assert path.stat().st_size > 0, f"Empty test fixture: {path}"
     return path
-
-
-async def _clean_database(session: AsyncSession) -> None:
-    """Delete test data from tables used in sample tests."""
-    await session.execute(delete(User))
-    await session.execute(delete(Membership))
-    await session.execute(delete(Workspace))
-    await session.execute(delete(Project))
-    await session.execute(delete(Stage))
-    await session.execute(delete(BIM))
-    await session.execute(delete(PointCloud))
-    await session.execute(delete(File))
-    await session.execute(delete(PointCloudConverted))
-    await session.execute(delete(InviteLink))
-    await session.commit()
 
 
 @pytest.fixture(scope="session")
@@ -59,6 +50,54 @@ def test_building_laz_path() -> Path:
 def test_building_shifted_laz_path() -> Path:
     """Provide path to the test shifted LAZ file."""
     return assert_existing_file(TEST_BUILDING_SHIFTED_LAZ)
+
+
+@pytest.fixture(scope="session")
+def test_photo_1_jpg_path() -> Path:
+    """Provide path to the first test photo."""
+    return assert_existing_file(TEST_PHOTO_1_JPG)
+
+
+@pytest.fixture(scope="session")
+def test_photo_2_jpg_path() -> Path:
+    """Provide path to the second test photo."""
+    return assert_existing_file(TEST_PHOTO_2_JPG)
+
+
+@pytest.fixture(scope="session")
+def test_photo_3_png_path() -> Path:
+    """Provide path to the third test photo."""
+    return assert_existing_file(TEST_PHOTO_3_PNG)
+
+
+@pytest.fixture(scope="session")
+def test_report_pdf_path() -> Path:
+    """Provide path to the test PDF report."""
+    return assert_existing_file(TEST_REPORT_PDF)
+
+
+@pytest.fixture(scope="session")
+def test_report_xlsx_path() -> Path:
+    """Provide path to the test XLSX report."""
+    return assert_existing_file(TEST_REPORT_XLSX)
+# ----------------------------------------------------------------------------------------------
+
+
+# ------------------------------ Database and API client fixtures ------------------------------
+async def _clean_database(session: AsyncSession) -> None:
+    """Delete test data in child-to-parent order to satisfy foreign keys."""
+    await session.rollback()
+    await session.execute(delete(PointCloudConverted))
+    await session.execute(delete(BIM))
+    await session.execute(delete(PointCloud))
+    await session.execute(delete(File))
+    await session.execute(delete(Stage))
+    await session.execute(delete(Project))
+    await session.execute(delete(InviteLink))
+    await session.execute(delete(Membership))
+    await session.execute(delete(User))
+    await session.execute(delete(Workspace))
+    await session.commit()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -98,3 +137,4 @@ async def storage() -> AsyncIterator[Storage]:
                     Bucket=storage_instance._bucket_name,
                     Delete={"Objects": batch}
                 )
+# ----------------------------------------------------------------------------------------------

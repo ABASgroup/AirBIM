@@ -201,8 +201,7 @@ async def create_workspace(
 )
 async def delete_team_workspace(
     workspace_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Delete workspace and all related data and files.
@@ -215,7 +214,6 @@ async def delete_team_workspace(
         workspace = await workspace_service.delete_team_workspace(
             workspace_id,
             session=uow.session,
-            storage=storage
         )
     return workspace
 
