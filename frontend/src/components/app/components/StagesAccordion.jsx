@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { ActionMenu, Accordion, LoadingSpinner } from "@ui";
 import { getProjectStages, deleteStage } from "@/api/stage";
+import { useToast } from "@/context";
 
 const formatDate = (value) => new Date(value).toLocaleString();
 
@@ -9,6 +10,7 @@ export const StagesAccordion = ({ projectId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const menuButtonRefs = useRef({});
+  const { showToast } = useToast();
 
   const loadStages = async () => {
     setIsLoading(true);

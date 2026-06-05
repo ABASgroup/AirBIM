@@ -29,20 +29,13 @@ class BaseRepository(Generic[ModelT]):
         entry = cls._model(**data)
         session.add(instance=entry)
         await session.flush()
-<<<<<<< HEAD
-=======
         # this makes a request to the DB when you create something
         # can we get rid of that safely?
->>>>>>> backend
         await session.refresh(entry)
         return entry
 
     @classmethod
-<<<<<<< HEAD
-    async def get_all(cls, session: AsyncSession) -> Sequence[ModelT] | None:
-=======
     async def get_all(cls, session: AsyncSession) -> Sequence[ModelT]:
->>>>>>> backend
         """Get all model's entries in the database.
 
         Args:

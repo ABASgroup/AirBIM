@@ -1,5 +1,5 @@
 import api from "./index";
-import { uploadFileWithPresignedLink } from "./file";
+import { uploadFileWithPresignedLink, confirmBimUpload } from "./file";
 
 export const createStage = (projectId) => api.post(`/projects/${projectId}/stages`);
 export const getProjectStages = (projectId) => api.get(`/projects/${projectId}/stages`);
@@ -22,15 +22,21 @@ export const uploadAndConvertPointCloud = async (stageId, file, onProgress) => {
     });
 
     const presignedUrl = uploadLinkRes.data.url;
-    const pointCloudId = uploadLinkRes.data.point_cloud.id;
+    const pointCloudFileId = uploadLinkRes.data.file.id;
 
     await uploadPointCloudFile(presignedUrl, file, onProgress);
 
-    const convertRes = await convertPointCloud(stageId, pointCloudId);
-    const taskId = convertRes.data.split(": ")[1]; // "started: {task_id}"
+    // IMPORTANT: confirm upload to trigger server-side task creation
+    const confirmRes = await confirmBimUpload(pointCloudFileId, {
+      filename: file.name,
+      size: file.size,
+      content_type: file.type || "application/octet-stream",
+    });
+
+    const taskId = confirmRes?.data?.task?.id ?? null;
 
     return {
-      pointCloudId,
+      pointCloudId: pointCloudFileId,
       taskId,
       success: true,
     };

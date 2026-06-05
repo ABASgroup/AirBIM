@@ -30,11 +30,7 @@ async def get_workspace_projects(workspace_id: uuid.UUID, session: AsyncSession)
 
 async def create_project(project_data: ProjectModel, session: AsyncSession) -> Project:
     """Create a new project for the workspace."""
-<<<<<<< HEAD
-    project = await ProjectRepository.create(project_data, session=session)
-=======
     project = await ProjectRepository.create(project_data.model_dump(exclude_unset=True), session=session)
->>>>>>> backend
     return project
 
 

@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 from uuid import UUID
->>>>>>> backend
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -19,8 +16,6 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
     _model = RecordingResult
 
     @classmethod
-<<<<<<< HEAD
-=======
     async def get_by_project_id(cls, project_id: UUID, session: AsyncSession) -> Sequence[RecordingResult]:
         """Get all recording results for a given project."""
         result = await session.execute(
@@ -30,7 +25,6 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
         return recording_results
 
     @classmethod
->>>>>>> backend
     async def add_photos(
         cls,
         recording_result: RecordingResult,
@@ -52,8 +46,6 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
         await session.flush()
 
     @classmethod
-<<<<<<< HEAD
-=======
     async def add_excel_report(
         cls,
         recording_result: RecordingResult,
@@ -90,7 +82,6 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
         await session.flush()
 
     @classmethod
->>>>>>> backend
     async def get_photos(
         cls,
         recording_result: RecordingResult,
