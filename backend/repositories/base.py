@@ -6,7 +6,7 @@ from sqlalchemy import select
 from pydantic import BaseModel as BaseScheme
 from models.base import BaseModel
 
-# type parameter for BaseModel children
+# Type parameter bound to your SQLAlchemy models
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
@@ -19,22 +19,30 @@ class BaseRepository(Generic[ModelT]):
     _model: type[ModelT]
 
     @classmethod
-    async def create(cls, data: BaseScheme, session: AsyncSession) -> ModelT:
+    async def create(cls, data: dict, session: AsyncSession) -> ModelT:
         """Create an entry in the database.
 
         Args:
-            data (`pydantic.BaseScheme`): pydantic scheme instance with required data
+            data (`dict`): a dictionary with required data
             session (`AsyncSession`): an asynchronous database session
         """
-        data_dict = data.model_dump(exclude_unset=True)
-        entry = cls._model(**data_dict)
+        entry = cls._model(**data)
         session.add(instance=entry)
         await session.flush()
+<<<<<<< HEAD
+=======
+        # this makes a request to the DB when you create something
+        # can we get rid of that safely?
+>>>>>>> backend
         await session.refresh(entry)
         return entry
 
     @classmethod
+<<<<<<< HEAD
     async def get_all(cls, session: AsyncSession) -> Sequence[ModelT] | None:
+=======
+    async def get_all(cls, session: AsyncSession) -> Sequence[ModelT]:
+>>>>>>> backend
         """Get all model's entries in the database.
 
         Args:
@@ -59,20 +67,19 @@ class BaseRepository(Generic[ModelT]):
     async def update_by_id(
         cls,
         entry_id: uuid.UUID,
-        update_data: BaseScheme,
+        update_data: dict,
         session: AsyncSession
     ):
         """Update an entry with new data by its ID/primary key.
 
         Args:
             entry_id (`uuid.UUID`): entry's ID OR primary key
-            update_data (`pydantic.BaseScheme`): a pydantic scheme instance with new data
+            update_data (`dict`): a dictionary with new data
             session (`AsyncSession`): an asynchronous database session
         """
-        update_data_dict = update_data.model_dump(exclude_unset=True)
         entry = await session.get(cls._model, entry_id)
 
-        for key, value in update_data_dict.items():
+        for key, value in update_data.items():
             setattr(entry, key, value)
 
         await session.flush()
@@ -83,19 +90,17 @@ class BaseRepository(Generic[ModelT]):
     async def update(
         cls,
         entry: ModelT,
-        update_data: BaseScheme,
+        update_data: dict,
         session: AsyncSession
     ):
         """Update an entry with new data by its ID/primary key.
 
         Args:
             entry_id (`uuid.UUID`): entry's ID OR primary key
-            update_data (`pydantic.BaseScheme`): a pydantic scheme instance with new data
+            update_data (`dict`): a dictionary with new data
             session (`AsyncSession`): an asynchronous database session
         """
-        update_data_dict = update_data.model_dump(exclude_unset=True)
-
-        for key, value in update_data_dict.items():
+        for key, value in update_data.items():
             setattr(entry, key, value)
 
         await session.flush()

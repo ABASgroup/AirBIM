@@ -12,7 +12,7 @@ from schemas.file import (
     PointCloudConvertedModel,
 )
 
-from core.exceptions import NotFoundError, InvalidFileMetaDataError
+from core.exceptions import NotFoundError, InvalidFileMetaDataError, AlreadyExistsError
 
 from models.file import FileStatus, File, PointCloud, BIM, PointCloudType
 
@@ -119,7 +119,11 @@ class FileService:
     @classmethod
     def collect_file_data(
         cls,
+<<<<<<< HEAD
         abs_path: Path
+=======
+        path: Path
+>>>>>>> backend
     ) -> dict:
         """
         Collects file data of a local file.
@@ -127,6 +131,7 @@ class FileService:
         Returns dict with filename, key, size and content type.
         """
         key = cls.create_file_key(
+<<<<<<< HEAD
             filename=abs_path.name
         )
         size = get_file_size(str(abs_path.absolute()))
@@ -137,6 +142,19 @@ class FileService:
             "key": key,
             "size": size,
             "content_type": content_type
+=======
+            filename=path.name
+        )
+        size = get_file_size(str(path.absolute()))
+        content_type = get_file_mime_type(str(path.absolute()))
+
+        return {
+            "filename": path.name,
+            "key": key,
+            "size": size,
+            "content_type": content_type,
+            "path": path
+>>>>>>> backend
         }
 
     @classmethod
@@ -191,6 +209,10 @@ class FileService:
             raise NotFoundError(
                 "File not found: not uploaded to the storage")
 
+        # you can't confirm files that are not pending
+        if file.status != FileStatus.PENDING:
+            raise AlreadyExistsError("file")
+
         # everything seems clear, set new status
         await FileRepository.update_status(
             file,
@@ -208,7 +230,7 @@ class FileService:
         Creates file entry in the database.
         """
         # make pending file
-        file = await FileRepository.create(file_data, session=session)
+        file = await FileRepository.create(file_data.model_dump(exclude_unset=True), session=session)
         return file
 
     @classmethod
@@ -241,6 +263,15 @@ class FileService:
         cloud = await PointCloudRepository.refresh(cloud, session=session, relations=["file"])
 
         return cloud
+
+    @classmethod
+    async def get_point_cloud_by_file_id(
+        cls,
+        file_id: uuid.UUID,
+        session: AsyncSession
+    ) -> PointCloud | None:
+        """Get point cloud by the underlying file ID, if it exists."""
+        return await PointCloudRepository.get_by_file_id(file_id, session=session)
 
     @classmethod
     async def get_bim(
@@ -296,7 +327,11 @@ class FileService:
         )
 
         bim = BIMModel(project_id=project_id, file_id=file.id)
+<<<<<<< HEAD
         await BIMRepository.create(bim, session=session)
+=======
+        await BIMRepository.create(bim.model_dump(exclude_unset=True), session=session)
+>>>>>>> backend
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
@@ -323,7 +358,7 @@ class FileService:
         )
 
         cloud = PointCloudModel(stage_id=stage_id, file_id=file.id)
-        await PointCloudRepository.create(cloud, session=session)
+        await PointCloudRepository.create(cloud.model_dump(exclude_unset=True), session=session)
 
         # generate temporary upload link
         link = storage.get_upload_link(file.key)
@@ -346,12 +381,21 @@ class FileService:
             file_id=file.id,
             type=PointCloudType.PLAN
         )
+<<<<<<< HEAD
         point_cloud = await PointCloudRepository.create(data, session=session)
+=======
+        point_cloud = await PointCloudRepository.create(data.model_dump(exclude_unset=True), session=session)
+>>>>>>> backend
 
         # set a connection
         bim = await cls.get_bim(bim_id, session=session)
         await BIMRepository.set_point_cloud(bim=bim, point_cloud_id=point_cloud.id, session=session)
 
+<<<<<<< HEAD
+=======
+        return point_cloud.id
+
+>>>>>>> backend
     @classmethod
     async def save_converted_point_cloud_file(
         cls,
@@ -368,7 +412,7 @@ class FileService:
             point_cloud_id=point_cloud_id,
             file_id=file.id
         )
-        await PointCloudConvertedRepository.create(data, session=session)
+        await PointCloudConvertedRepository.create(data.model_dump(exclude_unset=True), session=session)
 
     @classmethod
     async def get_converted_point_cloud_files(
@@ -412,7 +456,11 @@ class FileService:
             cloud_data.stage_id = None
 
         cloud_data.file_id = file.id
+<<<<<<< HEAD
         cloud = await PointCloudRepository.create(cloud_data, session=session)
+=======
+        cloud = await PointCloudRepository.create(cloud_data.model_dump(exclude_unset=True), session=session)
+>>>>>>> backend
         return cloud, file
 
     @classmethod
@@ -425,5 +473,9 @@ class FileService:
         """Creates BIM entry in the database and its file."""
         file = await cls.create_file(file_data, session=session)
         bim_data.file_id = file.id
+<<<<<<< HEAD
         bim = await BIMRepository.create(bim_data, session=session)
+=======
+        bim = await BIMRepository.create(bim_data.model_dump(exclude_unset=True), session=session)
+>>>>>>> backend
         return bim, file

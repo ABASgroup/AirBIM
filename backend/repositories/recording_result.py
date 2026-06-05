@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+from uuid import UUID
+>>>>>>> backend
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,6 +19,18 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
     _model = RecordingResult
 
     @classmethod
+<<<<<<< HEAD
+=======
+    async def get_by_project_id(cls, project_id: UUID, session: AsyncSession) -> Sequence[RecordingResult]:
+        """Get all recording results for a given project."""
+        result = await session.execute(
+            select(cls._model).where(cls._model.project_id == project_id)
+        )
+        recording_results = result.scalars().all()
+        return recording_results
+
+    @classmethod
+>>>>>>> backend
     async def add_photos(
         cls,
         recording_result: RecordingResult,
@@ -36,6 +52,45 @@ class RecordingResultRepository(BaseRepository[RecordingResult]):
         await session.flush()
 
     @classmethod
+<<<<<<< HEAD
+=======
+    async def add_excel_report(
+        cls,
+        recording_result: RecordingResult,
+        report: File,
+        session: AsyncSession
+    ):
+        """Add excel report to the result.
+
+        Args:
+            recording_result (`RecordingResult`): the result you need to pass a list of photos
+            report (`File`): an .xlsx file of the report
+            session (`AsyncSession`): an asynchronous database session
+        """
+        recording_result.xlsx_report_id = report.id
+
+        await session.flush()
+
+    @classmethod
+    async def add_pdf_report(
+        cls,
+        recording_result: RecordingResult,
+        report: File,
+        session: AsyncSession
+    ):
+        """Add excel report to the result.
+
+        Args:
+            recording_result (`RecordingResult`): the result you need to pass a list of photos
+            report (`File`): an .xlsx file of the report
+            session (`AsyncSession`): an asynchronous database session
+        """
+        recording_result.pdf_report_id = report.id
+
+        await session.flush()
+
+    @classmethod
+>>>>>>> backend
     async def get_photos(
         cls,
         recording_result: RecordingResult,

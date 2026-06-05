@@ -47,7 +47,7 @@ async def generate_invite_link(
                                                creator_id=creator_id,
                                                role=Role(role))
 
-            link = await InviteLinkRepository.create(invite_link_data, session=session)
+            link = await InviteLinkRepository.create(invite_link_data.model_dump(exclude_unset=True), session=session)
 
             link = await InviteLinkRepository.refresh(link, session=session, relations=["created_by", "workspace"])
 

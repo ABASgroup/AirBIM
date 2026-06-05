@@ -10,10 +10,12 @@ class FileStatus(StrEnum):
     """
     Statuses of files in the system.
 
-    - Pending files are not confirmed or not uploaded yet
+    - Pending files are not uploaded yet
+    - In progress files are being processed (e.g. converting, recording processing, etc.)
     - Uploaded files are ready to be used
     """
     UPLOADED = "uploaded"
+    IN_PROGRESS = "in_progress"
     PENDING = "pending"
 
 
@@ -48,7 +50,8 @@ class File(BaseModel):
     )
 
     workspace_id: Mapped["UUID"] = mapped_column(
-        ForeignKey("workspaces.id"))
+        ForeignKey("workspaces.id", ondelete="CASCADE")
+    )
 
 
 class PointCloud(BaseModel):
