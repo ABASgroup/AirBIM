@@ -95,7 +95,8 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = clean_path(os.path.join(
                 tmp_dir, bim_file.filename))
-            output_path = clean_path(tmp_dir) / f"{file_path.stem}.laz"
+            output_path = clean_path(tmp_dir) / \
+                f"converted_bim_{file_path.stem}.laz"
 
             # download bim file
             storage.download_file_locally(
