@@ -165,9 +165,6 @@ class Storage:
         Args:
             prefix (str): key prefix of the files you want to delete
         """
-        if not prefix.endswith("/"):
-            prefix += "/"
-
         bucket = self._resource.Bucket(self._bucket_name)
 
         keys_to_delete = [{'Key': obj.key}

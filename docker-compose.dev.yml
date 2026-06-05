@@ -7,17 +7,17 @@ services:
   worker:
     volumes:
       - ./backend:/app
-    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=2 --pool=solo' /app"]
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=2 --pool=solo' /app"]
 
   worker-converter:
     volumes:
       - ./backend:/app
-    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=2 --pool=prefork' /app"]
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=2 --pool=prefork' /app"]
 
   worker-processing:
     volumes:
       - ./backend:/app
-    command: ["sh", "-c", "micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=2 --pool=prefork' /app"]
+    command: ["sh", "-c", "exec micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=2 --pool=prefork' /app"]
 
   beat:
     volumes:

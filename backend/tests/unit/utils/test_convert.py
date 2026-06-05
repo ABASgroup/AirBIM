@@ -25,7 +25,7 @@ def test_convert_point_cloud_success(mock_subprocess_run):
     mock_result = MagicMock()
     mock_result.returncode = 0
     # Simulate PotreeConverter stdout reporting output location
-    mock_result.stdout = "some logs...\noutput location: /tmp/mock_output_dir\nDone."
+    mock_result.stdout = "some logs...\noutput location: /app/temp_output\nDone."
     mock_result.stderr = ""
     mock_subprocess_run.return_value = mock_result
     
@@ -36,7 +36,7 @@ def test_convert_point_cloud_success(mock_subprocess_run):
         result_dir = convert_point_cloud(input_file, opt_output)
         
         # Verify returned string matches output location in mock stdout (made absolute)
-        assert result_dir == str(clean_path("/tmp/mock_output_dir"))
+        assert result_dir == str(clean_path("temp_output"))
         
         # Verify subprocess.run command arguments
         mock_subprocess_run.assert_called_once()

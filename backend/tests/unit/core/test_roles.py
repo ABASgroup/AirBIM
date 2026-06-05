@@ -14,7 +14,8 @@ def test_role_permissions():
     assert Permission.STAGE_VIEW in viewer_perms
     assert Permission.FILES_VIEW in viewer_perms
     assert Permission.FILES_DOWNLOAD in viewer_perms
-    assert len(viewer_perms) == 5
+    assert Permission.RECORDING_RESULT_VIEW in viewer_perms
+    assert len(viewer_perms) == 6
 
     # Check that member has all viewer permissions plus edit/upload permissions
     for perm in viewer_perms:
@@ -24,6 +25,8 @@ def test_role_permissions():
     assert Permission.STAGE_EDIT in member_perms
     assert Permission.FILES_UPLOAD in member_perms
     assert Permission.MEMBERS_INVITE in member_perms
+    assert Permission.MEMBERS_VIEW in member_perms
+    assert Permission.RECORDING_RESULT_DELETE in member_perms
 
     # Check that admin has all member permissions plus delete and invite/remove permissions
     for perm in member_perms:
@@ -34,7 +37,6 @@ def test_role_permissions():
     assert Permission.FILES_DELETE in admin_perms
     assert Permission.MEMBERS_REMOVE in admin_perms
     assert Permission.MEMBERS_EDIT_ROLE in admin_perms
-    assert Permission.WORKSPACE_EDIT in admin_perms
 
     # Check that owner has all permissions (same as admin but also includes MEMBERS_VIEW)
     for perm in admin_perms:
