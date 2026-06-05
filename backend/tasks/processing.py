@@ -29,7 +29,14 @@ class ProcessingTask(celery_app.Task):
     queue = 'processing'
 
 
-@celery_app.task(base=ProcessingTask, bind=True)
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
     # lazy imports so your main app would work
     import ifcopenshell  # type: ignore
@@ -161,7 +168,14 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
         raise
 
 
-@celery_app.task(base=ProcessingTask, bind=True)
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float = 0.05):
     from airbim_processing import compute_deviations    # type: ignore
 
@@ -257,6 +271,130 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
 
             await TaskService.update_task_progress(
                 task_id,
+                progress=60,
+                session=uow.session
+            )
+
+            return recording_result.id
+    result_id = run_async(run_task())
+    return result_id
+
+
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
+def check_progress(
+    self,
+    old_stage_id: UUID,
+    new_stage_id: UUID,
+    task_id: UUID,
+    tolerance: float = 0.05
+):
+    from airbim_processing import compute_progress    # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            # task that is being executed
+            await TaskService.start_task(task_id, self.request.id, uow.session)
+
+            # get stage and its point cloud
+            stage = await stage_service.get_stage(stage_id, session=uow.session)
+            stage_point_cloud = await FileService.get_point_cloud(
+                stage.point_cloud.id, session=uow.session)
+            # get bim (POINT CLOUD MUST ALREADY EXIST)
+            bim = await FileService.get_bim_by_project_id(stage.project_id, session=uow.session)
+            bim_point_cloud = await FileService.get_point_cloud(bim.point_cloud_id, session=uow.session)
+
+            # get point cloud files
+            # bim point cloud is the ideal point cloud
+            # stage point cloud is the real point cloud (scan)
+            stage_point_cloud_file = stage_point_cloud.file
+            bim_point_cloud_file = bim_point_cloud.file
+
+            await TaskService.update_task_progress(
+                task_id,
+                progress=10,
+                session=uow.session
+            )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bim_point_cloud_path = clean_path(
+                os.path.join(tmp_dir, stage_point_cloud_file.filename))
+            stage_point_cloud_path = clean_path(os.path.join(
+                tmp_dir, bim_point_cloud_file.filename))
+            output_path = clean_path(tmp_dir) / f"result.laz"
+
+            # download files
+            storage.download_file_locally(
+                bim_point_cloud_file.key,
+                save_path=str(bim_point_cloud_path)
+            )
+            storage.download_file_locally(
+                stage_point_cloud_file.key,
+                save_path=str(stage_point_cloud_path)
+            )
+
+            # run comparison
+            # takes time
+            results = compute_deviations(
+                real_laz_path=stage_point_cloud_path,
+                ideal_laz_path=bim_point_cloud_path,
+                output_laz_path=output_path,
+                tolerance=tolerance
+            )
+            results = asdict(results)
+
+            # collect file info
+            file_info = FileService.collect_file_data(output_path)
+            # upload result laz to the storage
+            storage.upload_file_locally(file_info["key"], str(output_path))
+
+        # save everything in the database
+        async with get_database_uow() as uow:
+            await TaskService.update_task_progress(
+                task_id,
+                progress=50,
+                session=uow.session
+            )
+            # result point cloud
+            file_data = FileModel(
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=bim_point_cloud_file.workspace_id
+            )
+            result_point_cloud, _ = await FileService.create_point_cloud(
+                point_cloud_type=PointCloudType.RECORDING,
+                file_data=file_data,
+                session=uow.session
+            )
+
+            # append extra data you need
+            results['tolerance'] = tolerance
+            results['project_id'] = stage.project_id
+            results['stage_id'] = stage.id
+
+            # recording result
+            result_data = RecordingResultModel(
+                project_id=stage.project_id,
+                data=results,
+                type=RecordingResultType.PLAN_FACT,
+                point_cloud_id=result_point_cloud.id)
+
+            recording_result = await RecordingResultService.create_recording_result(
+                result_data,
+                session=uow.session
+            )
+
+            await TaskService.update_task_progress(
+                task_id,
                 progress=70,
                 session=uow.session
             )
@@ -266,14 +404,24 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
     return result_id
 
 
-@celery_app.task(base=ProcessingTask)
-def create_recording_result_pdf_report(recording_result_id: UUID, task_id: UUID):
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
+def create_recording_result_pdf_report(self, recording_result_id: UUID, task_id: UUID) -> UUID:
     """
     Generates a .pdf report for the recording result and stores it.
 
     The following report will contain:
         - data from the recording result
         - photos from the resulting point cloud
+
+    Returns:
+        UUID: ID of the resulting point cloud you might need later
     """
     from airbim_processing import laz_to_images    # type: ignore
 
@@ -382,12 +530,8 @@ def create_recording_result_pdf_report(recording_result_id: UUID, task_id: UUID)
 
             await TaskService.update_task_progress(
                 task_id,
-                progress=100,
+                progress=90,
                 session=uow.session
             )
-            await TaskService.update_task_status(
-                task_id,
-                status=TaskStatus.SUCCEEDED,
-                session=uow.session
-            )
-    run_async(run_task())
+        return recording_result.point_cloud_id
+    return run_async(run_task())

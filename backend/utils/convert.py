@@ -22,7 +22,8 @@ def convert_point_cloud(
     They will be saved in the path you provide 
     (if it doesn't exist, it will be created automatically).
 
-    Returns output location directory.
+    Returns:
+        str: output location directory
     """
     # resolve converter path using env var
     tool_path = os.getenv("POTREE_CONVERTER_PATH")
@@ -71,7 +72,8 @@ def convert_point_cloud(
         return str(clean_output_path)
 
     # fallback: parse the converter output for the generated directory
-    out = re.search(r"(?:output location|target directory):\s+'?([^\n']+)'?", result.stdout)
+    out = re.search(
+        r"(?:output location|target directory):\s+'?([^\n']+)'?", result.stdout)
     if out is None:
         raise RuntimeError(
             "PotreeConverter finished successfully, but output directory was not reported in stdout"

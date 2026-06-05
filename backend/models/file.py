@@ -50,7 +50,8 @@ class File(BaseModel):
     )
 
     workspace_id: Mapped["UUID"] = mapped_column(
-        ForeignKey("workspaces.id"))
+        ForeignKey("workspaces.id", ondelete="CASCADE")
+    )
 
 
 class PointCloud(BaseModel):

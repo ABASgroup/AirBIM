@@ -2,7 +2,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.exceptions import (
     InvalidLoginInfoError,
-    NotFoundError,
     AlreadyExistsError)
 from core.security import get_password_hash, verify_password
 from repositories.user import UserRepository
@@ -13,8 +12,6 @@ from schemas.user import UserModel, UserRegisterRequest
 async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
     """
     Create a new user in the database.
-
-
     """
     # check if user exists
     user = await UserRepository.get_by_email(user_data.email, session)

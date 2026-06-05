@@ -40,7 +40,6 @@ class TaskUpdateModel(BaseModel):
 
 class TaskResponse(Response):
     """API Response schema."""
-    celery_task_id: str | None = None
     workspace_id: UUID
     progress: int
     type: TaskType
@@ -48,4 +47,5 @@ class TaskResponse(Response):
     entity_id: UUID
     entity_type: str
     started_at: datetime
-    finished_at: datetime | None
+    finished_at: datetime | None = None
+    meta: str | None = None

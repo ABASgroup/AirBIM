@@ -1,8 +1,8 @@
 import uuid
 from fastapi import APIRouter, Depends
-from services import project as project_service
 from services.recording_result import RecordingResultService
-from schemas.project import ProjectResponse
+from schemas.file import FileResponse
+from schemas.recording_result import RecordingResultResponse
 from core.roles import Permission
 from core.dependencies import (
     get_database_uow,
@@ -19,24 +19,71 @@ router = APIRouter(
 
 
 @router.get(
+    "",
+    response_model=RecordingResultResponse,
+    dependencies=[
+        Depends(require_recording_result_permission(
+            Permission.RECORDING_RESULT_VIEW))],
+)
+async def get_recording_result(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    """
+    Get the recording result you need.
+
+    Requires permission.
+    """
+    async with uow:
+        result = await RecordingResultService.get_recording_result(recording_result_id, uow.session)
+    return result
+
+
+@router.get(
     "/excel",
-    response_model=ProjectResponse,
+    response_model=FileResponse,
+    dependencies=[
+        Depends(require_recording_result_permission(
+            Permission.RECORDING_RESULT_VIEW))],
 )
 async def get_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
-    pass
+    """
+    Get **Excel** report on the recording result you need.
+
+    Provides report file data.
+
+    You can use it to download file on request.
+
+    Requires permission.
+    """
+    async with uow:
+        report = await RecordingResultService.get_excel_report(recording_result_id, uow.session)
+    return report
 
 
 @router.get(
     "/pdf",
-    response_model=ProjectResponse,
+    response_model=FileResponse,
+    dependencies=[
+        Depends(require_recording_result_permission(
+            Permission.RECORDING_RESULT_VIEW))],
 )
 async def get_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
-    pass
+    """
+    Get **PDF** report on the recording result you need.
+
+    Provides report file data and URL to download the report.
+
+    Requires permission.
+    """
+    async with uow:
+        report = await RecordingResultService.get_pdf_report(recording_result_id, uow.session)
+    return report
 
 
 @router.delete(
     "",
-    response_model=ProjectResponse,
+    response_model=RecordingResultResponse,
+    dependencies=[
+        Depends(require_recording_result_permission(
+            Permission.RECORDING_RESULT_VIEW))],
 )
 async def delete_recording_result(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     """
@@ -46,12 +93,13 @@ async def delete_recording_result(recording_result_id: uuid.UUID, uow: DatabaseS
 
     Requires permission.
     """
-    pass
+    async with uow:
+        result = await RecordingResultService.delete_recording_result(recording_result_id, uow.session)
+    return result
 
 
 @router.post(
     "/excel",
-    response_model=ProjectResponse,
 )
 async def generate_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     """
@@ -64,7 +112,6 @@ async def generate_excel_report(recording_result_id: uuid.UUID, uow: DatabaseSes
 
 @router.post(
     "/pdf",
-    response_model=ProjectResponse,
 )
 async def generate_pdf_report(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     """

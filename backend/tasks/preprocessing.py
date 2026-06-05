@@ -24,13 +24,25 @@ class ConverterTask(celery_app.Task):
     queue = 'converter'
 
 
-@celery_app.task(base=ConverterTask, bind=True)
+@celery_app.task(
+    base=ConverterTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def convert_point_cloud_task(
     self,
     point_cloud_id: uuid.UUID,
     task_id: uuid.UUID,
 ):
-    """Converts point cloud into Potree format."""
+    """
+    Converts point cloud into Potree format.
+
+    Make sure that the worker has PotreeConverter 2.0 installed, otherwise
+    expect errors.
+    """
     storage = get_storage()
 
     async def run_task():
@@ -53,14 +65,13 @@ def convert_point_cloud_task(
             if len(converted_files):
                 # false start up, no actions required
                 # don't waste the resources
+                # there will be no changes if you rerun it
                 print("ALREADY CONVERTED")
                 return
             point_cloud_file = await FileService.get_file(point_cloud.file_id, session=uow.session)
 
             if current_progress == 0:
                 current_progress = 50
-            else:
-                current_progress = 75
 
             await TaskService.update_task_progress(
                 task_id,

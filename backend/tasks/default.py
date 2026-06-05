@@ -2,7 +2,6 @@ import os
 from uuid import UUID
 import tempfile
 from models.file import FileStatus
-from models.task import TaskStatus
 from schemas.file import FileModel
 from services.recording_result import RecordingResultService
 from services.task import TaskService
@@ -19,8 +18,15 @@ class DefaultTask(celery_app.Task):
 
 
 @celery_app.task(base=DefaultTask, ignore_result=True)
-def clean_up_files():
-    """Cleans up files from the storage and the database periodically."""
+def clean_up_files() -> str:
+    """
+    Cleans up files from the storage and the database periodically.
+
+    Define the period in scheduler.
+
+    Returns:
+        str: message with the amount of deleted files
+    """
     async def run_task():
         uow = get_database_uow()
         async with uow:
@@ -34,12 +40,21 @@ def clean_up_files():
     return message
 
 
-@celery_app.task(base=DefaultTask)
-def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUID):
+@celery_app.task(
+    base=DefaultTask,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
+def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUID) -> UUID:
     """
     Generates .xlxs report for the recording result and stores it.
 
     The following report will contain data from the recording result.
+
+    Returns:
+        UUID: recording result ID
     """
     storage = get_storage()
 

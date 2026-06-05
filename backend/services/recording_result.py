@@ -8,6 +8,7 @@ from schemas.recording_result import (
 )
 from schemas.file import FileModel
 from models.recording_result import RecordingResult
+from models.file import File
 from services.file import FileService
 
 
@@ -46,6 +47,17 @@ class RecordingResultService:
         return recording_result
 
     @classmethod
+    async def delete_recording_result(cls, recording_result_id: UUID, session: AsyncSession) -> RecordingResult:
+        """
+        Delete the recording result.
+
+        Be careful, all related data will be lost.
+        """
+        recording_result = await cls.get_recording_result(recording_result_id, session)
+        await RecordingResultRepository.delete(recording_result, session)
+        return recording_result
+
+    @classmethod
     async def create_excel_report(
         cls,
         recording_result_id: UUID,
@@ -58,6 +70,18 @@ class RecordingResultService:
         file = await FileService.create_file(report_file_data, session)
 
         await RecordingResultRepository.add_excel_report(result, file, session)
+
+    @classmethod
+    async def get_excel_report(cls, recording_result_id: UUID, session: AsyncSession) -> File:
+        """Get `.xlsx` report for the recording result."""
+
+        result = await cls.get_recording_result(recording_result_id, session)
+        report = result.xlsx_report
+
+        if report is None:
+            raise NotFoundError("No excel report found.")
+
+        return report
 
     @classmethod
     async def create_pdf_report(
@@ -86,3 +110,15 @@ class RecordingResultService:
             photos = None
 
         await RecordingResultRepository.add_pdf_report(result, file, session)
+
+    @classmethod
+    async def get_pdf_report(cls, recording_result_id: UUID, session: AsyncSession) -> File:
+        """Get `.pdf` report for the recording result."""
+
+        result = await cls.get_recording_result(recording_result_id, session)
+        report = result.pdf_report
+
+        if report is None:
+            raise NotFoundError("No pdf report found.")
+
+        return report
