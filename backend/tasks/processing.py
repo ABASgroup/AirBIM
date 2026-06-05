@@ -344,7 +344,6 @@ def check_progress(
 
             # run comparison
             # takes time
-            # compute_progress("before.laz", "after.laz", "output.laz", tolerance=0.05)
             results = compute_progress(
                 before_laz_path=old_point_cloud_path,
                 after_laz_path=new_point_cloud_path,
@@ -381,16 +380,17 @@ def check_progress(
             )
 
             # append extra data you need
+            # all in str, otherwise expect errors
             results['tolerance'] = tolerance
-            results['project_id'] = old_stage.project_id
-            results['old_stage_id'] = old_stage.id
-            results['new_stage_id'] = new_stage.id
+            results['project_id'] = str(old_stage.project_id)
+            results['old_stage_id'] = str(old_stage.id)
+            results['new_stage_id'] = str(new_stage.id)
 
             # recording result
             result_data = RecordingResultModel(
                 project_id=new_stage.project_id,
                 data=results,
-                type=RecordingResultType.PLAN_FACT,
+                type=RecordingResultType.PROGRESS,
                 point_cloud_id=result_point_cloud.id)
 
             recording_result = await RecordingResultService.create_recording_result(
@@ -465,7 +465,8 @@ def create_recording_result_pdf_report(self, recording_result_id: UUID, task_id:
             result_point_cloud_file_path = clean_path(
                 os.path.join(tmp_dir, result_point_cloud_file.filename)
             )
-            report_path = clean_path(os.path.join(tmp_dir, "report.pdf"))
+            report_path = clean_path(os.path.join(
+                tmp_dir, f"{recording_result.type}_report.pdf"))
 
             # download file
             storage.download_file_locally(
