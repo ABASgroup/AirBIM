@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, AwareDatetime
 from models.task import TaskType, TaskStatus
 from .base import Response
 
@@ -28,7 +28,7 @@ class TaskUpdateModel(BaseModel):
     progress: int | None = None
     celery_task_id: str | None = None
     status: TaskStatus | None = None
-    finished_at: datetime | None = None
+    finished_at: AwareDatetime | None = None
 
     @field_validator("progress")
     @classmethod
@@ -46,6 +46,6 @@ class TaskResponse(Response):
     status: TaskStatus
     entity_id: UUID
     entity_type: str
-    started_at: datetime
-    finished_at: datetime | None = None
+    started_at: AwareDatetime
+    finished_at: AwareDatetime | None = None
     meta: str | None = None

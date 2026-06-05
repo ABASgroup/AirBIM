@@ -106,13 +106,12 @@ async def get_point_cloud_upload_link(
 
 
 @router.post(
-    "/clouds/{point_cloud_id}/converted",
+    "/clouds/converted",
     dependencies=[
         Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
 )
 async def get_converted_point_cloud_download_links(
     stage_id: uuid.UUID,
-    point_cloud_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ) -> list[str]:
@@ -126,7 +125,13 @@ async def get_converted_point_cloud_download_links(
     Requires permission.
     """
     async with uow:
-        files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
+        stage = await stage_service.get_stage(stage_id, session=uow.session)
+        point_cloud = stage.point_cloud
+
+        if point_cloud is None:
+            raise NotFoundError("The stage has no point cloud.")
+
+        files = await FileService.get_converted_point_cloud_files(point_cloud.id, session=uow.session)
 
     if len(files) == 0:
         raise NotFoundError(
