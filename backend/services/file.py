@@ -35,7 +35,7 @@ class FileService:
 
         **Never** create file keys on your own for consistency.
         """
-        key = f"{uuid.uuid4()}/{filename}"
+        key = f"{filename}_{uuid.uuid4()}/{filename}"
         return key
 
     @staticmethod

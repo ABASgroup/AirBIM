@@ -194,29 +194,3 @@ async def compare_stage_scan_and_project_plan(
     task_result = pipeline.apply_async()
 
     return created_task
-
-
-@router.post(
-    "/progress",
-    response_model=TaskResponse
-)
-async def check_stage_progress(
-    stage_id: uuid.UUID,
-    tolerance: float = 0.05,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-):
-    return "empty"
-
-
-@router.post(
-    "/clouds/{point_cloud_id}/convert",
-    dependencies=[
-        Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
-)
-async def convert_point_cloud(
-    stage_id: uuid.UUID,
-    point_cloud_id: uuid.UUID,
-):
-    """TEST ONLY."""
-    task = convert_point_cloud_task.delay(point_cloud_id)  # type: ignore
-    return f"started: {task.id}"

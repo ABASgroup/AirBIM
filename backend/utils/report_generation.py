@@ -1,3 +1,5 @@
+from uuid import UUID
+import json
 from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -6,6 +8,22 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+
+
+def _value_cleaner(value):
+    """
+    Cleans data before you need to pass it into a report.
+
+    Returns:
+        Unknown | str: your value if no changes were applied or your value in str format
+    """
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(map(str, value))
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, UUID):
+        return str(value)
+    return value
 
 
 def generate_excel_report(title: str, data: dict, file_path: Path | str):
@@ -32,6 +50,9 @@ def generate_excel_report(title: str, data: dict, file_path: Path | str):
     headers = list(data.items())
 
     for row, (header, value) in enumerate(headers, start=1):
+        # transform data we can't process
+        value = _value_cleaner(value)
+
         sheet.cell(row=1, column=row, value=header)
         sheet.cell(row=2, column=row, value=value)
 
@@ -96,7 +117,7 @@ def generate_pdf_report(
 
     # start table
     headers = ["Parameter", "Value"]
-    table_data = [headers] + list(data.items())
+    table_data = [headers] + [[k, _value_cleaner(v)] for k, v in data.items()]
 
     # construct table
     table = Table(table_data)
