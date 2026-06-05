@@ -29,6 +29,12 @@ async def get_stage(stage_id: UUID, session: AsyncSession) -> Stage:
     if stage is None:
         raise NotFoundError("No stage with this ID.")
 
+    stage = await StageRepository.refresh(
+        stage,
+        relations=["point_cloud"],
+        session=session
+    )
+
     return stage
 
 
@@ -46,9 +52,6 @@ async def get_project_stages(project_id: UUID, session: AsyncSession) -> list[St
     """Get all stages related to the project."""
     stages = await StageRepository.get_by_project_id(project_id, session=session)
     stages = list(stages)
-
-    if len(stages) == 0:
-        raise NotFoundError("Project doesn't have any stages")
 
     return stages
 
