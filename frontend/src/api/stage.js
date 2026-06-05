@@ -1,12 +1,14 @@
 import api from "./index";
 import { uploadFileWithPresignedLink, confirmBimUpload } from "./file";
 
-export const createStage = (projectId) => api.post(`/projects/${projectId}/stages`);
+export const createStage = (projectId) => api.post(`/projects/${projectId}/stages`, {
+  start_date: new Date().toISOString()
+});
 export const getProjectStages = (projectId) => api.get(`/projects/${projectId}/stages`);
 export const getStage = (stageId) => api.get(`/stages/${stageId}`);
 export const getPointCloudUploadLink = (stageId, data) => api.post(`/stages/${stageId}/clouds/upload`, data);
 export const convertPointCloud = (stageId, pointCloudId) => api.post(`/stages/${stageId}/clouds/${pointCloudId}/convert`);
-export const getConvertedPointCloudLinks = (stageId, pointCloudId) => api.post(`/stages/${stageId}/clouds/${pointCloudId}/converted`);
+export const getConvertedPointCloudLinks = (stageId) => api.post(`/stages/${stageId}/clouds/converted`);
 export const deleteStage = (stageId) => api.delete(`/stages/${stageId}`);
 
 export const uploadPointCloudFile = async (presignedUrl, file, onProgress) => {
