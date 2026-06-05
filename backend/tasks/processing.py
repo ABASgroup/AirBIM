@@ -210,7 +210,7 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
                 os.path.join(tmp_dir, stage_point_cloud_file.filename))
             stage_point_cloud_path = clean_path(os.path.join(
                 tmp_dir, bim_point_cloud_file.filename))
-            output_path = clean_path(tmp_dir) / f"result.laz"
+            output_path = clean_path(tmp_dir) / "plan_fact_result.laz"
 
             # download files
             storage.download_file_locally(
@@ -301,21 +301,20 @@ def check_progress(
     async def run_task():
         async with get_database_uow() as uow:
             # task that is being executed
-            await TaskService.start_task(task_id, self.request.id, uow.session)
+            task = await TaskService.start_task(task_id, self.request.id, uow.session)
 
-            # get stage and its point cloud
-            stage = await stage_service.get_stage(stage_id, session=uow.session)
-            stage_point_cloud = await FileService.get_point_cloud(
-                stage.point_cloud.id, session=uow.session)
-            # get bim (POINT CLOUD MUST ALREADY EXIST)
-            bim = await FileService.get_bim_by_project_id(stage.project_id, session=uow.session)
-            bim_point_cloud = await FileService.get_point_cloud(bim.point_cloud_id, session=uow.session)
+            # get stages and their point clouds
+            old_stage = await stage_service.get_stage(old_stage_id, session=uow.session)
+            new_stage = await stage_service.get_stage(new_stage_id, session=uow.session)
+
+            old_stage_point_cloud = await FileService.get_point_cloud(
+                old_stage.point_cloud.id, session=uow.session)
+            new_stage_point_cloud = await FileService.get_point_cloud(
+                new_stage.point_cloud.id, session=uow.session)
 
             # get point cloud files
-            # bim point cloud is the ideal point cloud
-            # stage point cloud is the real point cloud (scan)
-            stage_point_cloud_file = stage_point_cloud.file
-            bim_point_cloud_file = bim_point_cloud.file
+            old_point_cloud_file = old_stage_point_cloud.file
+            new_point_cloud_file = new_stage_point_cloud.file
 
             await TaskService.update_task_progress(
                 task_id,
@@ -324,27 +323,31 @@ def check_progress(
             )
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            bim_point_cloud_path = clean_path(
-                os.path.join(tmp_dir, stage_point_cloud_file.filename))
-            stage_point_cloud_path = clean_path(os.path.join(
-                tmp_dir, bim_point_cloud_file.filename))
-            output_path = clean_path(tmp_dir) / f"result.laz"
+            # paths to existing point clouds
+            old_point_cloud_path = clean_path(
+                os.path.join(tmp_dir, old_point_cloud_file.filename))
+            new_point_cloud_path = clean_path(
+                os.path.join(tmp_dir, new_point_cloud_file.filename))
+
+            # path to resulting point cloud
+            output_path = clean_path(tmp_dir) / "progress_result.laz"
 
             # download files
             storage.download_file_locally(
-                bim_point_cloud_file.key,
-                save_path=str(bim_point_cloud_path)
+                old_point_cloud_file.key,
+                save_path=str(old_point_cloud_path)
             )
             storage.download_file_locally(
-                stage_point_cloud_file.key,
-                save_path=str(stage_point_cloud_path)
+                new_point_cloud_file.key,
+                save_path=str(new_point_cloud_path)
             )
 
             # run comparison
             # takes time
-            results = compute_deviations(
-                real_laz_path=stage_point_cloud_path,
-                ideal_laz_path=bim_point_cloud_path,
+            # compute_progress("before.laz", "after.laz", "output.laz", tolerance=0.05)
+            results = compute_progress(
+                before_laz_path=old_point_cloud_path,
+                after_laz_path=new_point_cloud_path,
                 output_laz_path=output_path,
                 tolerance=tolerance
             )
@@ -369,7 +372,7 @@ def check_progress(
                 size=file_info["size"],
                 content_type=file_info["content_type"],
                 status=FileStatus.UPLOADED,
-                workspace_id=bim_point_cloud_file.workspace_id
+                workspace_id=task.workspace_id
             )
             result_point_cloud, _ = await FileService.create_point_cloud(
                 point_cloud_type=PointCloudType.RECORDING,
@@ -379,12 +382,13 @@ def check_progress(
 
             # append extra data you need
             results['tolerance'] = tolerance
-            results['project_id'] = stage.project_id
-            results['stage_id'] = stage.id
+            results['project_id'] = old_stage.project_id
+            results['old_stage_id'] = old_stage.id
+            results['new_stage_id'] = new_stage.id
 
             # recording result
             result_data = RecordingResultModel(
-                project_id=stage.project_id,
+                project_id=new_stage.project_id,
                 data=results,
                 type=RecordingResultType.PLAN_FACT,
                 point_cloud_id=result_point_cloud.id)

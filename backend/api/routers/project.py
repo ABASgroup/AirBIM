@@ -166,7 +166,7 @@ async def check_stage_progress(
     async with uow:
         # get stages
         project = await project_service.get_project(project_id, session=uow.session)
-        old_stage, new_stage = await stage_service.get_stages_chronologically(
+        old_stage, new_stage = await stage_service.get_project_stages_chronologically(
             stage_1_id,
             stage_2_id,
             session=uow.session
@@ -181,6 +181,7 @@ async def check_stage_progress(
         created_task = await TaskService.create_task(task_data, session=uow.session)
 
     created_task_id = created_task.id
+    
 
     return created_task
 

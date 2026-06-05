@@ -8,7 +8,7 @@ from models.stage import Stage
 from schemas.stage import StageModel
 
 
-async def get_stages_chronologically(stage_1_id: UUID, stage_2_id: UUID, session: AsyncSession) -> list[Stage, Stage]:
+async def get_project_stages_chronologically(stage_1_id: UUID, stage_2_id: UUID, session: AsyncSession) -> list[Stage, Stage]:
     """
     Gets two stages by their IDs chronologically.
 
@@ -18,6 +18,10 @@ async def get_stages_chronologically(stage_1_id: UUID, stage_2_id: UUID, session
     # get both stages
     stage_1 = await get_stage(stage_1_id, session)
     stage_2 = await get_stage(stage_2_id, session)
+    
+    # check their projects
+    if stage_1.project_id == stage_2.project_id:
+        raise ValueError("Stages don't belong to the same project.")
 
     return sorted((stage_1, stage_2), key=lambda stage: stage.start_date)
 
