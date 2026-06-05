@@ -134,6 +134,19 @@ class PointCloudRepository(BaseRepository[PointCloud]):
     """Repository class for CRUD operations with PointCloud model."""
     _model = PointCloud
 
+    @classmethod
+    async def get_by_file_id(
+        cls,
+        file_id: UUID,
+        session: AsyncSession
+    ):
+        """Get PointCloud by file ID."""
+        result = await session.execute(
+            select(cls._model)
+            .where(cls._model.file_id == file_id)
+        )
+        return result.scalar_one_or_none()
+
 
 class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
     """Repository class for CRUD operations with PointCloudConverted model."""
@@ -151,4 +164,3 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
             .where(cls._model.point_cloud_id == point_cloud_id)
         )
         return result.scalars().all()
-

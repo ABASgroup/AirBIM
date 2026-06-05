@@ -43,14 +43,11 @@ async def create_stage(stage_data: StageModel, session: AsyncSession) -> Stage:
     """
     Create a new stage for the project.
     """
-    stage = await StageRepository.create(stage_data, session=session)
+    stage = await StageRepository.create(stage_data.model_dump(exclude_unset=True), session=session)
     return stage
 
 
 async def delete_stage(stage_id: uuid.UUID, session: AsyncSession, storage: Storage) -> Stage:
-    """
-    Delete stage using its ID.
-    """
     try:
         stage = await StageRepository.get_by_id_with_project(stage_id, session=session)
 

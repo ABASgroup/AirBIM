@@ -34,7 +34,7 @@ async def create_workspace(workspace_data: WorkspaceModel, session: AsyncSession
     """
     Create a new workspace
     """
-    workspace = await WorkspaceRepository.create(workspace_data, session=session)
+    workspace = await WorkspaceRepository.create(workspace_data.model_dump(exclude_unset=True), session=session)
     return workspace
 
 

@@ -4,6 +4,7 @@ from infrastructure.storage import Storage
 from services import project as project_service
 from services import stage as stage_service
 from services.file import FileService
+from services.recording_result import RecordingResultService
 from schemas.project import ProjectResponse, ProjectUpdate
 from schemas.stage import StageModel, StageResponse
 from schemas.file import (
@@ -13,6 +14,7 @@ from schemas.file import (
     FileModel,
     FileResponse
 )
+from schemas.recording_result import RecordingResultResponse
 from core.roles import Permission
 from core.dependencies import (
     get_database_uow,
@@ -23,11 +25,13 @@ from core.exceptions import NotFoundError
 from tasks.processing import convert_bim_to_point_cloud
 from api.dependencies import require_project_permission
 
-router = APIRouter(prefix="/projects", tags=["workspace projects"])
+
+router = APIRouter(
+    prefix="/projects/{project_id}", tags=["workspace projects"])
 
 
 @router.get(
-    "/{project_id}",
+    "",
     response_model=ProjectResponse,
     dependencies=[
         Depends(require_project_permission(Permission.PROJECT_VIEW))],
@@ -44,7 +48,7 @@ async def get_project(project_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(g
 
 
 @router.patch(
-    "/{project_id}",
+    "",
     response_model=ProjectResponse,
     dependencies=[
         Depends(require_project_permission(Permission.PROJECT_EDIT))],
@@ -67,7 +71,7 @@ async def update_project(
 
 
 @router.delete(
-    "/{project_id}",
+    "",
     response_model=ProjectResponse,
     dependencies=[
         Depends(require_project_permission(Permission.PROJECT_DELETE))],
@@ -92,7 +96,7 @@ async def delete_project(
 
 
 @router.get(
-    "/{project_id}/stages",
+    "/stages",
     response_model=list[StageResponse],
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_VIEW))],
@@ -113,7 +117,7 @@ async def get_project_stages(
 
 
 @router.post(
-    "/{project_id}/stages",
+    "/stages",
     response_model=StageResponse,
     dependencies=[
         Depends(require_project_permission(Permission.STAGE_CREATE))],
@@ -134,7 +138,7 @@ async def create_stage(
 
 
 @router.post(
-    "/{project_id}/bim/upload",
+    "/bim/upload",
     response_model=FileLinkResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_UPLOAD))],
@@ -175,7 +179,7 @@ async def get_bim_upload_link(
 
 
 @router.get(
-    "/{project_id}/bim",
+    "/bim",
     response_model=BIMResponse,
     dependencies=[
         Depends(require_project_permission(Permission.FILES_VIEW))],
@@ -204,16 +208,16 @@ async def get_project_bim(
 
 
 @router.post(
-    "/{project_id}/bim/convert"
+    "/bim/convert"
 )
 async def convert_project_bim(
     project_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
+    **ONLY FOR TESTS**
+
     Convert project BIM into a point cloud for comparing.
-    
-    ONLY FOR TESTS
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)
@@ -223,3 +227,20 @@ async def convert_project_bim(
             raise NotFoundError("Project has no BIM.")
     task = convert_bim_to_point_cloud.delay(bim_id)  # type: ignore
     return f"started: {task.id}"
+
+
+@router.get(
+    "/results",
+    response_model=list[RecordingResultResponse],
+    dependencies=[
+        Depends(require_project_permission(Permission.PROJECT_VIEW))],
+)
+async def get_project_results(project_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    """
+    Get project information.
+
+    Requires permission.
+    """
+    async with uow:
+        results = await RecordingResultService.get_recording_results_for_project(project_id, session=uow.session)
+    return results
