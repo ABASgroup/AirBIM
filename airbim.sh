@@ -8,6 +8,7 @@ PROJECT_NAME="airbim"
 COMPOSE_BASE="docker-compose.yml"
 COMPOSE_PROD="docker-compose.prod.yml"
 COMPOSE_DEV="docker-compose.dev.yml"
+COMPOSE_GPU="docker-compose.gpu.yml"
 MODE_FILE=".airbim_deploy_mode"
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
@@ -75,22 +76,43 @@ check_docker() {
 
 compose_cmd() {
     local mode="$1"
+    local gpu="$2"
+    local cmd="docker compose -p ${PROJECT_NAME} -f ${COMPOSE_BASE}"
+
     if [ "$mode" = "dev" ]; then
-        echo "docker compose -p ${PROJECT_NAME} -f ${COMPOSE_BASE} -f ${COMPOSE_DEV}"
+        cmd="${cmd} -f ${COMPOSE_DEV}"
     else
-        echo "docker compose -p ${PROJECT_NAME} -f ${COMPOSE_BASE} -f ${COMPOSE_PROD}"
+        cmd="${cmd} -f ${COMPOSE_PROD}"
     fi
+
+    if [ "$gpu" = "true" ]; then
+        cmd="${cmd} -f ${COMPOSE_GPU}"
+    fi
+
+    echo "$cmd"
 }
 
 # ─── Mode persistence ───────────────────────────────────────────────────────
 
-save_mode() { echo "$1" > "${MODE_FILE}"; }
+save_mode() {
+    local mode="$1"
+    local gpu="$2"
+    echo "${mode}|${gpu}" > "${MODE_FILE}"
+}
 
 load_mode() {
     if [ -f "${MODE_FILE}" ]; then
-        cat "${MODE_FILE}"
+        local raw
+        raw=$(cat "${MODE_FILE}")
+        loaded_mode="${raw%%|*}"
+        loaded_gpu="${raw#*|}"
+
+        if [ "${loaded_gpu}" = "${raw}" ]; then
+            loaded_gpu="false"
+        fi
     else
-        echo "prod"
+        loaded_mode="prod"
+        loaded_gpu="false"
     fi
 }
 
@@ -99,11 +121,13 @@ load_mode() {
 cmd_start() {
     local mode="prod"
     local detached=false
+    local gpu=false
 
     # Parse flags in any order
     while [ $# -gt 0 ]; do
         case "$1" in
             --dev) mode="dev" ;;
+            --gpu) gpu=true ;;
             -d)    detached=true ;;
             "")    ;; # skip empty args
             *)     error "Unknown option: $1"; usage; exit 1 ;;
@@ -113,10 +137,10 @@ cmd_start() {
 
     check_docker
     check_env
-    save_mode "$mode"
+    save_mode "$mode" "$gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     local vite_port api_port nginx_port frontend_url
     vite_port=$(get_env_value "VITE_PORT" "5173")
@@ -175,11 +199,12 @@ cmd_up() {
     check_docker
     check_env
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     info "Starting containers without rebuilding (mode: ${mode})..."
     $cmd up -d
@@ -190,11 +215,12 @@ cmd_up() {
 cmd_stop() {
     check_docker
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     info "Stopping containers..."
     $cmd stop
@@ -205,11 +231,12 @@ cmd_stop() {
 cmd_down() {
     check_docker
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     info "Stopping and removing containers..."
     $cmd down
@@ -221,11 +248,12 @@ cmd_rebuild() {
     check_docker
     check_env
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     local no_cache=""
     for arg in "$@"; do
@@ -243,11 +271,12 @@ cmd_rebuild() {
 cmd_logs() {
     check_docker
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     $cmd logs -f "$@"
 }
@@ -266,7 +295,7 @@ cmd_clean() {
     fi
     echo ""
 
-    local containers=("airbim-frontend-dev" "airbim-frontend" "airbim-backend" "airbim-database" "airbim-cache" "airbim-broker" "airbim-storage" "airbim-worker" "airbim-beat" "airbim-flower" "airbim-worker-heavy" "airbim-worker-converter")
+    local containers=("airbim-frontend-dev" "airbim-frontend" "airbim-backend" "airbim-database" "airbim-cache" "airbim-broker" "airbim-storage" "airbim-worker" "airbim-beat" "airbim-flower" "airbim-worker-processing" "airbim-worker-converter")
     local volumes=("airbim_database_data" "airbim_frontend_node_modules" "airbim_cache_data" "airbim_storage_data" "airbim_broker_data")
     local networks=("airbim_default")
 
@@ -303,11 +332,12 @@ cmd_clean() {
 cmd_status() {
     check_docker
 
-    local mode
-    mode=$(load_mode)
+    load_mode
+    local mode="$loaded_mode"
+    local gpu="$loaded_gpu"
 
     local cmd
-    cmd=$(compose_cmd "$mode")
+    cmd=$(compose_cmd "$mode" "$gpu")
 
     info "Current mode: ${BOLD}${mode}${NC}"
     echo ""
@@ -325,6 +355,7 @@ usage() {
     echo "Commands:"
     echo "  start [flags]    Start all containers (builds images only if missing)"
     echo "      --dev        Start in development mode (Vite HMR + hot reload)"
+    echo "      --gpu        Start with GPU support (only for processing worker, requires compatible hardware and drivers)"
     echo "      -d           Run in detached mode (background, no log output)"
     echo "  up               Start existing containers without rebuilding (start analog, but uses last saved deployment mode - dev or prod)"
     echo "  stop             Stop all running containers"

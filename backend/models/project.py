@@ -30,6 +30,6 @@ class Project(BaseModel):
         back_populates="project", cascade="all, delete-orphan"
     )
 
-    bim: Mapped["Bim"] = relationship(
+    bim: Mapped["BIM"] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )

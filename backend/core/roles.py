@@ -20,7 +20,7 @@ class Permission(enum.StrEnum):
     Permissions stated in the app.
 
     Registry of all permissions.
-    
+
     For granular control check in code.
     """
     # workspace management
@@ -43,7 +43,10 @@ class Permission(enum.StrEnum):
     STAGE_CREATE = "stage:create"
     STAGE_EDIT = "stage:edit"
     STAGE_DELETE = "stage:delete"
-    # files (hierarchical structure)
+    # recording results
+    RECORDING_RESULT_VIEW = "recording_result:view"
+    RECORDING_RESULT_DELETE = "recording_result:delete"
+    # files
     FILES_VIEW = "files:view"
     FILES_DOWNLOAD = "files:download"
     FILES_UPLOAD = "files:upload"
@@ -51,46 +54,42 @@ class Permission(enum.StrEnum):
 
 
 # assign permissions here
+__viewer_permissions = [
+    Permission.WORKSPACE_VIEW,
+    Permission.PROJECT_VIEW,
+    Permission.STAGE_VIEW,
+    Permission.FILES_VIEW,
+    Permission.FILES_DOWNLOAD,
+    Permission.RECORDING_RESULT_VIEW
+]
+
+__member_permissions = [
+    Permission.PROJECT_EDIT,
+    Permission.STAGE_CREATE,
+    Permission.STAGE_EDIT,
+    Permission.FILES_UPLOAD,
+    Permission.FILES_DOWNLOAD,
+    Permission.MEMBERS_INVITE,
+    Permission.MEMBERS_VIEW,
+    Permission.RECORDING_RESULT_DELETE
+]
+__member_permissions.extend(__viewer_permissions)
+
+__admin_permissions = [
+    Permission.PROJECT_CREATE,
+    Permission.PROJECT_DELETE,
+    Permission.STAGE_DELETE,
+    Permission.FILES_DELETE,
+    Permission.MEMBERS_REMOVE,
+    Permission.MEMBERS_EDIT_ROLE,
+    Permission.MEMBERS_VIEW,
+]
+__admin_permissions.extend(__member_permissions)
+
 ROLE_PERMISSIONS = {
-    Role.VIEWER: [
-        Permission.WORKSPACE_VIEW,
-        Permission.PROJECT_VIEW,
-        Permission.STAGE_VIEW,
-        Permission.FILES_VIEW,
-        Permission.FILES_DOWNLOAD,
-    ],
-    Role.MEMBER: [
-        Permission.WORKSPACE_VIEW,
-        Permission.PROJECT_VIEW,
-        Permission.PROJECT_EDIT,
-        Permission.STAGE_VIEW,
-        Permission.STAGE_CREATE,
-        Permission.STAGE_EDIT,
-        Permission.FILES_VIEW,
-        Permission.FILES_UPLOAD,
-        Permission.FILES_DOWNLOAD,
-        Permission.MEMBERS_INVITE,
-    ],
-    Role.ADMIN: [
-        Permission.WORKSPACE_VIEW,
-        Permission.PROJECT_VIEW,
-        Permission.PROJECT_CREATE,
-        Permission.PROJECT_EDIT,
-        Permission.PROJECT_DELETE,
-        Permission.STAGE_VIEW,
-        Permission.STAGE_CREATE,
-        Permission.STAGE_EDIT,
-        Permission.STAGE_DELETE,
-        Permission.FILES_VIEW,
-        Permission.FILES_UPLOAD,
-        Permission.FILES_DELETE,
-        Permission.FILES_DOWNLOAD,
-        Permission.MEMBERS_INVITE,
-        Permission.MEMBERS_REMOVE,
-        Permission.MEMBERS_EDIT_ROLE,
-        Permission.WORKSPACE_EDIT,
-        Permission.MEMBERS_VIEW,
-    ],
+    Role.VIEWER: __viewer_permissions,
+    Role.MEMBER: __member_permissions,
+    Role.ADMIN: __admin_permissions,
     # all rights to the owner, no matter what
     Role.OWNER: [member.value for member in Permission],
 }

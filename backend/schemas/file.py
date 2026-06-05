@@ -1,7 +1,8 @@
 from uuid import UUID
 from pydantic import BaseModel
-from models.file import FileStatus
+from models.file import FileStatus, PointCloudType
 from .base import Response
+from .task import TaskResponse
 
 
 class FileDataRequest(BaseModel):
@@ -23,8 +24,6 @@ class FileModel(BaseModel):
 class FileResponse(Response):
     """
     API response schema. 
-
-    Use as a mixin for other file responses.
     """
     workspace_id: UUID
     filename: str
@@ -44,6 +43,12 @@ class FileLinkResponse(BaseModel):
     file: FileResponse
 
 
+class FileTaskResponse(BaseModel):
+    """API response schema."""
+    file: FileResponse
+    task: TaskResponse
+
+
 class FileUpdate(BaseModel):
     """Update schema. Use to update in DB."""
     filename: str | None = None
@@ -55,8 +60,9 @@ class FileUpdate(BaseModel):
 
 class PointCloudModel(BaseModel):
     """Schema in DB. Use to create in DB."""
-    stage_id: UUID
+    stage_id: UUID | None = None
     file_id: UUID
+    type: PointCloudType = PointCloudType.SCAN
 
 
 class PointCloudResponse(Response):
@@ -81,3 +87,4 @@ class BIMResponse(Response):
     """API response schema."""
     project_id: UUID
     file: FileResponse
+    point_cloud_id: UUID | None = None

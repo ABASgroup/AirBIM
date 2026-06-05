@@ -143,6 +143,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.github_token
 
 # Spyder project settings
 .spyderproject
@@ -208,3 +209,4 @@ __marimo__/
 
 # AirBIM specific ignores
 .airbim_deploy_mode
+micromamba
