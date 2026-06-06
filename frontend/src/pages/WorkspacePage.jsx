@@ -1,6 +1,6 @@
 // Страница управления воркспейсом
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { getWorkspace } from "@/api/workspace";
 import { WorkspaceTabPanel } from "@app/components/WorkspaceTabPanel";
 import { useWorkspace } from "@/context/WorkspaceContext";
@@ -33,7 +33,20 @@ function WorkspacePage() {
 
   return (
     <>
-      <h1>Управление {workspace.name}</h1>
+      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-text-color/70">
+        {workspace && (
+          <Link
+            to="/app/dashboard"
+            className="hover:underline"
+            onClick={() => workspace && switchWorkspace(workspace.id)}
+          >
+            <h1>{workspace.name}</h1>
+          </Link>
+        )}
+        <h1>/</h1>
+        <h1 className="text-primary-color">Управление</h1>
+      </nav>
+
       <WorkspaceTabPanel workspace={workspace} />
     </>
   );

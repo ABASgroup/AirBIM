@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { ActionMenu, Accordion, LoadingSpinner } from "@ui";
-import { getProjectStages, deleteStage } from "@/api/stage";
+import { ActionMenu, Accordion, LoadingSpinner, FilledButton, UnfilledButton } from "@ui";
+import { getProjectStages, deleteStage, compareStage } from "@/api/stage";
 import { useToast } from "@/context";
 
 const formatDate = (value) => new Date(value).toLocaleString();
@@ -41,12 +41,32 @@ export const StagesAccordion = ({ projectId }) => {
     }
   };
 
+  const handleCompare = async (stageId) => {
+    try {
+      const res = await compareStage(stageId);
+      const taskId = res?.data?.id ?? null;
+      showToast({
+        type: "success",
+        title: "Сравнение план/факт",
+        message: taskId ? `Задача сравнения запущена: ${taskId}` : "Задача сравнения запущена",
+      });
+    } catch (error) {
+      showToast({
+        type: "warning",
+        title: "Ошибка",
+        message: "Не удалось запустить сравнение",
+      });
+    }
+  };
+
+  
+
   if (isLoading) {
     return <LoadingSpinner variant="inline" message="Загрузка этапов..." />;
   }
 
   if (!stages.length) {
-    return <div className="text-text-color">Этапы ещё не добавлены</div>;
+    return <div className="text-text-color/50">Этапы ещё не добавлены</div>;
   }
 
   return (
@@ -58,7 +78,7 @@ export const StagesAccordion = ({ projectId }) => {
           <div className="flex items-center justify-between gap-3 w-full">
             <div>
               <div className="font-semibold text-text-color">
-                Этап {stage.id}
+                {stage.name ? stage.name : `Этап ${stage.id}`}
               </div>
               <div className="text-xs text-text-color/60">
                 Создан: {formatDate(stage.created_at)}
@@ -93,12 +113,27 @@ export const StagesAccordion = ({ projectId }) => {
           </div>
         )}
         renderContent={(stage) => (
-          <div className="text-sm text-text-color">
-            <div>ID: {stage.id}</div>
-            <div>Обновлён: {formatDate(stage.updated_at)}</div>
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                {stage.description ? (
+                  <span className="text-text-color">{stage.description}</span>
+                ) : (
+                  <span className="text-mute-text-color">Описание отсутствует</span>
+                )}
+                <div className="mt-2 text-xs text-text-color/50">Обновлён: {formatDate(stage.updated_at)}</div>
+              </div>
+
+              <div>
+                <FilledButton onClick={() => handleCompare(stage.id)}>
+                  Сравнить план/факт
+                </FilledButton>
+              </div>
+            </div>
           </div>
         )}
       />
+      
     </>
   );
 };

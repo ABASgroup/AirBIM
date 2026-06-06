@@ -2,16 +2,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Modal, FilledButton, UnfilledButton, Input } from "@ui";
+import { Modal, FilledButton, UnfilledButton, Input, Toast } from "@ui";
 import { acceptInviteLink } from "@/api/invites";
+import { useToast } from "@/context";
 import api from "@/api/index";
 
 function LoginPage() {
   const { register, handleSubmit } = useForm();
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { showToast } = useToast();
+
   const onSubmit = async (data) => {
-    setError("");
     try {
       const formData = new FormData();
       formData.append("username", data.login);
@@ -26,9 +27,17 @@ function LoginPage() {
       navigate("/app/dashboard");
     } catch (err) {
       if (err.response?.status === 401) {
-        setError("Неверная почта или пароль");
+        showToast({
+          type: "warning",
+          title: "Ошибка",
+          message: "Неверная почта или пароль",
+        });
       } else {
-        setError("Ошибка соединения");
+        showToast({
+          type: "warning",
+          title: "Ошибка",
+          message: "Ошибка соединения",
+        });
       }
     }
   };
@@ -52,7 +61,6 @@ function LoginPage() {
               placeholder="Пароль"
             />
           </div>
-          {error && <p className="text-warning">{error}</p>}
           <div className="flex justify-between mt-5">
             <UnfilledButton type="button">
               Забыл пароль

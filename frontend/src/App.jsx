@@ -4,7 +4,7 @@ import { AppLayout, ExternalLayout } from "@app/layout"
 import { WorkspaceProvider } from "@/context";
 import {
   LandingPage, LoginPage, RegistrationPage, DashboardPage, SettingsPage,
-  WorkspacePage, ProjectPage, InvitePage, PotreeScenePage
+  WorkspacePage, ProjectPage, InvitePage, PotreeScenePage, ResultPage
 } from "@/pages"
 
 const ProtectedRoute = ({ children }) => {
@@ -79,6 +79,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="workspace/:workspaceId" element={<WorkspacePage />} />
           <Route path="projects/:projectId" element={<ProjectPage />} />
+          <Route path="projects/:projectId/results" element={<ResultPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

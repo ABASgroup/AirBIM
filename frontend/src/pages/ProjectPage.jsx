@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getProject } from "@/api/project";
 import { getWorkspace } from "@/api/workspace";
 import { useState, useEffect } from "react";
-import { FilledButton, LoadingSpinner } from "@ui";
+import { FilledButton, UnfilledButton, LoadingSpinner } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { StageUploadModal, StagesAccordion } from "@app/components";
 
@@ -49,15 +49,25 @@ function ProjectPage() {
       </nav>
 
       <p>{project?.description}</p>
-      <Link to={`/app/projects/${projectId}/scene`}>
-        <FilledButton>
-          Перейти к сцене
-        </FilledButton>
-      </Link>
 
-      <FilledButton onClick={() => setShowStageModal(true)}>
-        Загрузить этап
-      </FilledButton>
+      <div className="flex gap-3 mt-5">
+        <Link to={`/app/projects/${projectId}/scene`}>
+          <FilledButton>
+            Перейти к сцене
+          </FilledButton>
+        </Link>
+
+        <UnfilledButton onClick={() => setShowStageModal(true)}>
+          Загрузить этап
+        </UnfilledButton>
+
+        <Link to={`/app/projects/${projectId}/results`}>
+          <FilledButton>
+            Перейти к результатам
+          </FilledButton>
+        </Link>
+      </div>
+
 
       <div className="mt-6">
         <StagesAccordion projectId={projectId} />

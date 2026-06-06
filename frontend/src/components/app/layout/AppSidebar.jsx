@@ -5,7 +5,6 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
-import { Can } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -14,6 +13,7 @@ export const AppSidebar = () => {
   const { workspaces, currentWorkspace, switchWorkspace, setWorkspaces } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
+  const { hasPermission } = useWorkspace();
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -76,14 +76,12 @@ export const AppSidebar = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[ws.id] }}
                 >
-                  <Can permission="workspace:delete">
-                    {ws.type !== "personal" && (
-                      <button onClick={() => handleDeleteWorkspace(ws.id)}>
-                        <i className="fa-solid fa-trash"></i>
-                        Удалить
-                      </button>
-                    )}
-                  </Can>
+                  {hasPermission("workspace:delete") && ws.type !== "personal" && (
+                    <button onClick={() => handleDeleteWorkspace(ws.id)}>
+                      <i className="fa-solid fa-trash"></i>
+                      Удалить
+                    </button>
+                  )}
                   <button onClick={() => {
                     setIsOpen(null);
                     setActiveMenuId(null);
