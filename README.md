@@ -4,7 +4,7 @@
 
 <div align="center">
   <img src="https://img.shields.io/badge/статус-в%20разработке-blue?style=for-the-badge" alt="Статус">
-    <img src="https://img.shields.io/badge/статус-Python | React-green?style=for-the-badge" alt="Стек">
+    <img src="https://img.shields.io/badge/стек-Python | React-green?style=for-the-badge" alt="Стек">
 </div>
 
 <p align="center">Веб-приложение для совместной и одиночной работы с <b>облаками точек</b> и <b>BIM</b>, которое позволяет автоматически находить и анализировать отклонения, фиксировать прогресс и получать готовую документацию на месте</p>
