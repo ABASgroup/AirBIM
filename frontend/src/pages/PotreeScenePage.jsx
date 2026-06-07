@@ -1,7 +1,11 @@
+// Сцена потри для визуализации облаков точек
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { getProjectStages, getConvertedPointCloudLinks } from "@/api/stage";
 import { getProjectBim } from "@/api/file";
+import { LoadingSpinner } from "@ui";
+import { useToast } from "@/context";
 
 function PotreeScenePage({ projectId }) {
   const params = useParams();
@@ -10,8 +14,9 @@ function PotreeScenePage({ projectId }) {
   const viewerRef = useRef(null);
   const [items, setItems] = useState([]);
   const [selectedKey, setSelectedKey] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [sidebarContainer, setSidebarContainer] = useState(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const initViewer = () => {
@@ -22,7 +27,29 @@ function PotreeScenePage({ projectId }) {
       viewer.setEDLEnabled(false);
       viewer.setFOV(60);
       viewer.setPointBudget(1_000_000);
-      viewer.loadGUI(() => viewer.setLanguage("en"));
+
+      viewer.loadGUI(() => {
+        viewer.setLanguage("en");
+
+        const $ = window.$;
+        if (!$) return;
+
+        let header = $('<h3 class="accordion-header ui-widget"><span>Облака точек</span></h3>');
+        let content = $('<div class="accordion-content ui-widget"><div id="potree-react-layers"></div></div>');
+
+        header.click(() => content.slideToggle());
+
+        const menuAbout = $("#menu_appearance");
+        if (menuAbout.length) {
+          header.insertBefore(menuAbout);
+          content.insertBefore(menuAbout);
+        } else {
+          $("#menu_appearance").append(header).append(content);
+        }
+
+        setSidebarContainer(document.getElementById("potree-react-layers"));
+      });
+
       window.Potree.workerPool = new window.Potree.WorkerPool("/potree/workers", 4);
       viewerRef.current = viewer;
     };
@@ -33,7 +60,7 @@ function PotreeScenePage({ projectId }) {
   useEffect(() => {
     const fetchList = async () => {
       if (!actualProjectId) return;
-      setLoading(true);
+      setIsLoading(true);
       try {
         const stagesRes = await getProjectStages(actualProjectId);
         const bimRes = await getProjectBim(actualProjectId).catch(() => null);
@@ -68,7 +95,7 @@ function PotreeScenePage({ projectId }) {
         setItems(all);
         if (all.length) setSelectedKey(all[0].key);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -95,19 +122,27 @@ function PotreeScenePage({ projectId }) {
       if (!metadataUrl) {
         if (item.type === "stage") {
           try {
-            setLoading(true);
+            setIsLoading(true);
             const linksRes = await getConvertedPointCloudLinks(item.stageId);
             const links = linksRes?.data || [];
             metadataUrl = links.find((l) => l.endsWith("metadata.json")) || links[0] || null;
           } catch (err) {
-            setStatusMsg("Конвертированные файлы для этапа не найдены.");
+            showToast({
+              type: "warning",
+              title: "Ошибка",
+              message: "Конвертированные файлы для этапа не найдены",
+            });
             return;
           } finally {
-            setLoading(false);
+            setIsLoading(false);
           }
 
           if (!metadataUrl) {
-            setStatusMsg("Конвертированные файлы для этапа не найдены.");
+            showToast({
+              type: "warning",
+              title: "Ошибка",
+              message: "Конвертированные файлы для этапа не найдены",
+            });
             return;
           }
 
@@ -127,14 +162,14 @@ function PotreeScenePage({ projectId }) {
           }
 
           try {
-            setLoading(true);
+            setIsLoading(true);
             const linksRes = await getConvertedPointCloudLinks(firstStage.stageId);
             const links = linksRes?.data || [];
             metadataUrl = links.find((l) => l.endsWith("metadata.json")) || links[0] || null;
           } catch (err) {
             metadataUrl = null;
           } finally {
-            setLoading(false);
+            setIsLoading(false);
           }
 
           if (!metadataUrl) {
@@ -142,7 +177,6 @@ function PotreeScenePage({ projectId }) {
             return;
           }
 
-          // persist resolved metadataUrl into items
           setItems((prev) => prev.map((i) => (i.key === item.key ? { ...i, metadataUrl } : i)));
           loadItem = { ...item, metadataUrl };
         }
@@ -150,7 +184,7 @@ function PotreeScenePage({ projectId }) {
 
       if (metadataUrl) {
         setStatusMsg("Загрузка сцены...");
-        setLoading(true);
+        setIsLoading(true);
         const toLoad = loadItem?.metadataUrl ?? metadataUrl;
         window.Potree.loadPointCloud(toLoad, loadItem.label, (e) => {
           const pointcloud = e.pointcloud;
@@ -159,7 +193,7 @@ function PotreeScenePage({ projectId }) {
           material.pointSizeType = window.Potree.PointSizeType.FIXED;
           viewer.scene.addPointCloud(pointcloud);
           viewer.fitToScreen();
-          setLoading(false);
+          setIsLoading(false);
           setStatusMsg("");
         });
       }
@@ -169,36 +203,36 @@ function PotreeScenePage({ projectId }) {
   }, [selectedKey, items]);
 
   return (
-    <div className="potree_container">
-      <div className="flex items-start gap-4 mb-2">
-        <div>
-          <label className="block text-sm text-gray-600">Сцены</label>
-          <div className="border px-2 py-1 max-h-48 overflow-auto" style={{ minWidth: 220 }}>
-            {items.length === 0 && <div className="text-sm text-gray-500">Этапов нет</div>}
-            {items.map((it) => (
-              <div
-                key={it.key}
-                onClick={() => setSelectedKey(it.key)}
-                className={`p-2 cursor-pointer ${selectedKey === it.key ? "bg-blue-100" : "hover:bg-gray-100"}`}
-              >
-                <div className="text-sm font-medium">{it.label}</div>
-                <div className="text-xs text-gray-500">
-                  {it.type === "stage" ? "Этап" : "BIM"}
-                  {it.metadataUrl ? " · Готово" : " · Конвертация: нет"}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="potree_container relative w-full h-screen">
+      {isLoading && (
+          <LoadingSpinner variant="overlay" message="Загрузка данных..." />
+      )}
 
-        <div className="flex-1">
-          {loading && <div className="text-sm text-gray-500 mb-2">Загрузка...</div>}
-          {statusMsg && <div className="text-sm text-red-600 mb-2">{statusMsg}</div>}
-        </div>
-      </div>
-
-      <div id="potree_render_area" ref={renderAreaRef} style={{ width: "100%", height: "80vh" }} />
+      <div id="potree_render_area" ref={renderAreaRef} style={{ width: "100%", height: "100vh" }} />
       <div id="potree_sidebar_container" />
+
+      {sidebarContainer && createPortal(
+        <div className="flex flex-col gap-1 p-1 max-h-[350px] overflow-y-auto custom-scrollbar">
+          {items.length === 0 && <div className="text-text-color/50">Этапов нет</div>}
+          {items.map((it) => (
+            <div
+              key={it.key}
+              onClick={() => setSelectedKey(it.key)}
+              className={`p-2 rounded cursor-pointer transition-colors ${selectedKey === it.key
+                ? "bg-primary-color/50 text-white"
+                : "text-text-color hover:text-text-color/50"
+                }`}
+            >
+              <div className="font-semibold truncate hover:text-text-color/50">{it.label}</div>
+              <div className={"text-text-color/50"}>
+                {it.type === "stage" ? "Этап" : "BIM"}
+                {it.metadataUrl ? " · Загружено" : " · Ожидает"}
+              </div>
+            </div>
+          ))}
+        </div>,
+        sidebarContainer
+      )}
     </div>
   );
 }

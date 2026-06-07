@@ -56,7 +56,7 @@ export const StagesAccordion = ({ projectId }) => {
       showToast({
         type: "warning",
         title: "Ошибка",
-        message: "Не удалось запустить сравнение",
+        message: "Не удалось запустить задачу сравнения план/факт",
       });
     }
   };
@@ -74,9 +74,9 @@ export const StagesAccordion = ({ projectId }) => {
       const res = await checkStagesProgress(projectId, stage1, stage2);
       const taskId = res?.data?.id ?? null;
       setShowProgressModal(false);
-      showToast({ type: "success", title: "Зафиксировать прогресс", message: taskId ? `Задача запущена: ${taskId}` : "Задача запущена" });
+      showToast({ type: "success", title: "Задача фиксации прогресса запущена", message: taskId ? `Задача запущена: ${taskId}` : "Задача запущена" });
     } catch (error) {
-      showToast({ type: "warning", title: "Ошибка", message: "Не удалось запустить фиксация прогресса" });
+      showToast({ type: "warning", title: "Ошибка", message: "Не удалось запустить задачу фиксации прогресса" });
     }
   };
 
