@@ -76,7 +76,8 @@ def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUI
         title = f"{recording_result.type} report".capitalize().replace("_", " ")
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            file_path = clean_path(os.path.join(tmp_dir, f"report.xlsx"))
+            file_path = clean_path(os.path.join(
+                tmp_dir, f"{recording_result.type}_report.xlsx"))
 
             # generate report
             generate_excel_report(title, data, file_path)
