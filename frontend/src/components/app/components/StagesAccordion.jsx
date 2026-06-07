@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { ActionMenu, Accordion, LoadingSpinner, FilledButton, UnfilledButton } from "@ui";
 import { getProjectStages, deleteStage, compareStage } from "@/api/stage";
+import { checkStagesProgress } from "@/api/project";
+import { ProgressModal } from "@app/components";
 import { useToast } from "@/context";
 
 const formatDate = (value) => new Date(value).toLocaleString();
@@ -56,6 +58,25 @@ export const StagesAccordion = ({ projectId }) => {
         title: "Ошибка",
         message: "Не удалось запустить сравнение",
       });
+    }
+  };
+
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedStageForProgress, setSelectedStageForProgress] = useState(null);
+
+  const openProgressModal = (stageId) => {
+    setSelectedStageForProgress(stageId);
+    setShowProgressModal(true);
+  };
+
+  const handleStartProgress = async (stage1, stage2) => {
+    try {
+      const res = await checkStagesProgress(projectId, stage1, stage2);
+      const taskId = res?.data?.id ?? null;
+      setShowProgressModal(false);
+      showToast({ type: "success", title: "Зафиксировать прогресс", message: taskId ? `Задача запущена: ${taskId}` : "Задача запущена" });
+    } catch (error) {
+      showToast({ type: "warning", title: "Ошибка", message: "Не удалось запустить фиксация прогресса" });
     }
   };
 
@@ -124,15 +145,27 @@ export const StagesAccordion = ({ projectId }) => {
                 <div className="mt-2 text-xs text-text-color/50">Обновлён: {formatDate(stage.updated_at)}</div>
               </div>
 
-              <div>
+              <div className="flex gap-2">
                 <FilledButton onClick={() => handleCompare(stage.id)}>
                   Сравнить план/факт
                 </FilledButton>
+                <UnfilledButton onClick={() => openProgressModal(stage.id)}>
+                  Зафиксировать прогресс
+                </UnfilledButton>
               </div>
             </div>
           </div>
         )}
       />
+      {showProgressModal && (
+        <ProgressModal
+          isOpen={showProgressModal}
+          onClose={() => setShowProgressModal(false)}
+          stages={stages}
+          initialStageId={selectedStageForProgress}
+          onStart={handleStartProgress}
+        />
+      )}
       
     </>
   );
