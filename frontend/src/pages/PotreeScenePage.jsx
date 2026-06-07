@@ -1,22 +1,51 @@
 // Сцена потри для визуализации облаков точек
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { createPortal } from "react-dom";
-import { getProjectStages, getConvertedPointCloudLinks } from "@/api/stage";
+import { getProjectStages } from "@/api/stage";
 import { getProjectBim } from "@/api/file";
 import { LoadingSpinner } from "@ui";
-import { useToast } from "@/context";
+
+function createLayerItem({ key, type, label, pointCloudId, stageId, bimId }) {
+  return {
+    key,
+    type,
+    label,
+    stageId,
+    bimId,
+    pointCloudId,
+    visible: false,
+    loading: false,
+    loaded: false,
+    error: null,
+  };
+}
+
+function loadPointCloudAsync(metadataUrl, label) {
+  return new Promise((resolve, reject) => {
+    window.Potree.loadPointCloud(metadataUrl, label, (e) => {
+      if (!e?.pointcloud) {
+        reject(new Error("Не удалось загрузить облако точек"));
+        return;
+      }
+      resolve(e.pointcloud);
+    });
+  });
+}
 
 function PotreeScenePage({ projectId }) {
   const params = useParams();
   const actualProjectId = projectId ?? params.projectId;
   const renderAreaRef = useRef(null);
   const viewerRef = useRef(null);
+  const loadedCloudsRef = useRef(new Map());
   const [items, setItems] = useState([]);
-  const [selectedKey, setSelectedKey] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isListLoading, setIsListLoading] = useState(false);
   const [sidebarContainer, setSidebarContainer] = useState(null);
-  const { showToast } = useToast();
+
+  const updateItem = useCallback((key, patch) => {
+    setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...patch } : i)));
+  }, []);
 
   useEffect(() => {
     const initViewer = () => {
@@ -26,7 +55,7 @@ function PotreeScenePage({ projectId }) {
       const viewer = new window.Potree.Viewer(renderArea);
       viewer.setEDLEnabled(false);
       viewer.setFOV(60);
-      viewer.setPointBudget(1_000_000);
+      viewer.setPointBudget(2_000_000);
 
       viewer.loadGUI(() => {
         viewer.setLanguage("en");
@@ -60,7 +89,8 @@ function PotreeScenePage({ projectId }) {
   useEffect(() => {
     const fetchList = async () => {
       if (!actualProjectId) return;
-      setIsLoading(true);
+      setIsListLoading(true);
+      loadedCloudsRef.current.clear();
       try {
         const stagesRes = await getProjectStages(actualProjectId);
         const bimRes = await getProjectBim(actualProjectId).catch(() => null);
@@ -68,144 +98,117 @@ function PotreeScenePage({ projectId }) {
         const stageItems = [];
         if (stagesRes?.data) {
           for (const st of stagesRes.data) {
-            stageItems.push({
-              key: `stage-${st.id}`,
-              type: "stage",
-              label: `Stage ${new Date(st.created_at).toLocaleString()}`,
-              stageId: st.id,
-              metadataUrl: null,
-            });
+            stageItems.push(
+              createLayerItem({
+                key: `stage-${st.id}`,
+                type: "stage",
+                label: `Stage ${new Date(st.created_at).toLocaleString()}`,
+                stageId: st.id,
+                pointCloudId: st.point_cloud_id ?? null,
+              })
+            );
           }
         }
 
         const bimItems = [];
         if (bimRes?.data) {
           const bim = bimRes.data;
-          bimItems.push({
-            key: `bim-${bim.id}`,
-            type: "bim",
-            label: "BIM",
-            bimId: bim.id,
-            pointCloudId: bim.point_cloud_id ?? null,
-            metadataUrl: null,
-          });
+          bimItems.push(
+            createLayerItem({
+              key: `bim-${bim.id}`,
+              type: "bim",
+              label: "BIM",
+              bimId: bim.id,
+              pointCloudId: bim.point_cloud_id ?? null,
+            })
+          );
         }
 
-        const all = [...bimItems, ...stageItems];
-        setItems(all);
-        if (all.length) setSelectedKey(all[0].key);
+        setItems([...bimItems, ...stageItems]);
       } finally {
-        setIsLoading(false);
+        setIsListLoading(false);
       }
     };
 
     fetchList();
   }, [actualProjectId]);
 
-  useEffect(() => {
-    const loadSelected = async () => {
-      const viewer = viewerRef.current;
-      if (!viewer || !selectedKey) return;
+  const focusCloud = useCallback((key) => {
+    const viewer = viewerRef.current;
+    const pointcloud = loadedCloudsRef.current.get(key);
+    if (!viewer || !pointcloud) return;
 
-      const item = items.find((i) => i.key === selectedKey);
-      if (!item) return;
+    const node = new window.THREE.Object3D();
+    node.boundingBox = viewer.getBoundingBox([pointcloud]);
+    viewer.zoomTo(node, 1, 300);
+    viewer.controls.stop();
+  }, []);
 
-      let loadItem = item;
+  const toggleVisibility = useCallback(async (key) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
 
-      setStatusMsg("");
-      try {
-        viewer.scene.pointclouds.slice().forEach((pc) => viewer.scene.removePointCloud(pc));
-      } catch (e) { }
+    let targetItem = null;
+    setItems((prev) => {
+      targetItem = prev.find((i) => i.key === key) ?? null;
+      return prev;
+    });
+    if (!targetItem) return;
 
-      let metadataUrl = item.metadataUrl ?? null;
+    if (!targetItem.pointCloudId) return;
+    if (targetItem.loading) return;
 
-      if (!metadataUrl) {
-        if (item.type === "stage") {
-          try {
-            setIsLoading(true);
-            const linksRes = await getConvertedPointCloudLinks(item.stageId);
-            const links = linksRes?.data || [];
-            metadataUrl = links.find((l) => l.endsWith("metadata.json")) || links[0] || null;
-          } catch (err) {
-            showToast({
-              type: "warning",
-              title: "Ошибка",
-              message: "Конвертированные файлы для этапа не найдены",
-            });
-            return;
-          } finally {
-            setIsLoading(false);
-          }
+    if (targetItem.visible) {
+      const pointcloud = loadedCloudsRef.current.get(key);
+      if (pointcloud) pointcloud.visible = false;
+      updateItem(key, { visible: false });
+      return;
+    }
 
-          if (!metadataUrl) {
-            showToast({
-              type: "warning",
-              title: "Ошибка",
-              message: "Конвертированные файлы для этапа не найдены",
-            });
-            return;
-          }
+    const existing = loadedCloudsRef.current.get(key);
+    if (existing) {
+      existing.visible = true;
+      updateItem(key, { visible: true });
+      return;
+    }
 
-          setItems((prev) => prev.map((i) => (i.key === item.key ? { ...i, metadataUrl } : i)));
-          loadItem = { ...item, metadataUrl };
-        } else if (item.type === "bim") {
-          const pcId = item.pointCloudId;
-          if (!pcId) {
-            setStatusMsg("Для BIM конвертация ещё не завершена.");
-            return;
-          }
+    updateItem(key, { loading: true, error: null });
 
-          const firstStage = items.find((i) => i.type === "stage");
-          if (!firstStage) {
-            setStatusMsg("Нет доступных этапов для загрузки BIM.");
-            return;
-          }
+    try {
+      const metadataUrl = `/api/files/point_clouds/${targetItem.pointCloudId}/metadata.json`;
+      const pointcloud = await loadPointCloudAsync(metadataUrl, targetItem.label);
 
-          try {
-            setIsLoading(true);
-            const linksRes = await getConvertedPointCloudLinks(firstStage.stageId);
-            const links = linksRes?.data || [];
-            metadataUrl = links.find((l) => l.endsWith("metadata.json")) || links[0] || null;
-          } catch (err) {
-            metadataUrl = null;
-          } finally {
-            setIsLoading(false);
-          }
+      const material = pointcloud.material;
+      material.size = 1.0;
+      material.pointSizeType = window.Potree.PointSizeType.FIXED;
+      pointcloud.visible = true;
 
-          if (!metadataUrl) {
-            setStatusMsg("Конвертированные файлы для BIM не найдены.");
-            return;
-          }
+      viewer.scene.addPointCloud(pointcloud);
+      loadedCloudsRef.current.set(key, pointcloud);
 
-          setItems((prev) => prev.map((i) => (i.key === item.key ? { ...i, metadataUrl } : i)));
-          loadItem = { ...item, metadataUrl };
-        }
-      }
+      updateItem(key, { loading: false, loaded: true, visible: true });
+    } catch {
+      updateItem(key, {
+        loading: false,
+        visible: false,
+        error: "Ошибка загрузки",
+      });
+    }
+  }, [updateItem]);
 
-      if (metadataUrl) {
-        setStatusMsg("Загрузка сцены...");
-        setIsLoading(true);
-        const toLoad = loadItem?.metadataUrl ?? metadataUrl;
-        window.Potree.loadPointCloud(toLoad, loadItem.label, (e) => {
-          const pointcloud = e.pointcloud;
-          const material = pointcloud.material;
-          material.size = 1.0;
-          material.pointSizeType = window.Potree.PointSizeType.FIXED;
-          viewer.scene.addPointCloud(pointcloud);
-          viewer.fitToScreen();
-          setIsLoading(false);
-          setStatusMsg("");
-        });
-      }
-    };
-
-    loadSelected();
-  }, [selectedKey, items]);
+  const getItemStatus = (item) => {
+    if (!item.pointCloudId) return "Конвертация не завершена";
+    if (item.loading) return <LoadingSpinner variant="overlay" message="Загрузка данных..." />;
+    if (item.error) return item.error;
+    if (item.loaded && item.visible) return "На сцене";
+    if (item.loaded) return "Скрыто";
+    return "Выключено";
+  };
 
   return (
     <div className="potree_container relative w-full h-screen">
-      {isLoading && (
-          <LoadingSpinner variant="overlay" message="Загрузка данных..." />
+      {isListLoading && (
+        <LoadingSpinner variant="overlay" message="Загрузка данных..." />
       )}
 
       <div id="potree_render_area" ref={renderAreaRef} style={{ width: "100%", height: "100vh" }} />
@@ -214,22 +217,47 @@ function PotreeScenePage({ projectId }) {
       {sidebarContainer && createPortal(
         <div className="flex flex-col gap-1 p-1 max-h-[350px] overflow-y-auto custom-scrollbar">
           {items.length === 0 && <div className="text-text-color/50">Этапов нет</div>}
-          {items.map((it) => (
-            <div
-              key={it.key}
-              onClick={() => setSelectedKey(it.key)}
-              className={`p-2 rounded cursor-pointer transition-colors ${selectedKey === it.key
-                ? "bg-primary-color/50 text-white"
-                : "text-text-color hover:text-text-color/50"
+          {items.map((it) => {
+            const canToggle = Boolean(it.pointCloudId) && !it.loading;
+            const canFocus = it.loaded && !it.loading;
+
+            return (
+              <div
+                key={it.key}
+                className={`p-2 rounded transition-colors ${
+                  it.visible ? "bg-primary-color/20" : "text-text-color"
                 }`}
-            >
-              <div className="font-semibold truncate hover:text-text-color/50">{it.label}</div>
-              <div className={"text-text-color/50"}>
-                {it.type === "stage" ? "Этап" : "BIM"}
-                {it.metadataUrl ? " · Загружено" : " · Ожидает"}
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={it.visible}
+                    disabled={!canToggle}
+                    onChange={() => toggleVisibility(it.key)}
+                    className="shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                    title={it.pointCloudId ? "Показать / скрыть" : "Облако ещё не готово"}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{it.label}</div>
+                    <div className="text-text-color/50 text-sm">
+                      {it.type === "stage" ? "Этап" : "BIM"} · {getItemStatus(it)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!canFocus}
+                    onClick={() => focusCloud(it.key)}
+                    title="Приблизить камеру"
+                    className="shrink-0 w-7 h-7 rounded flex items-center justify-center text-sm
+                      disabled:opacity-30 disabled:cursor-not-allowed
+                      hover:bg-primary-color/30 cursor-pointer transition-colors"
+                  >
+                    ⊙
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>,
         sidebarContainer
       )}
