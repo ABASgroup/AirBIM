@@ -41,7 +41,17 @@ router = APIRouter(prefix="/stages/{stage_id}", tags=["project stages"])
 async def get_stage(stage_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     async with uow:
         stage = await stage_service.get_stage(stage_id, session=uow.session)
-    return stage
+    response = StageResponse(
+        id=stage.id,
+        created_at=stage.created_at,
+        updated_at=stage.updated_at,
+        project_id=stage.project_id,
+        name=stage.name,
+        description=stage.description,
+        start_date=stage.start_date,
+        point_cloud_id=stage.point_cloud.id if stage.point_cloud else None,
+    )
+    return response
 
 
 @router.delete(
@@ -103,46 +113,6 @@ async def get_point_cloud_upload_link(
     )
 
     return response_data
-
-
-@router.post(
-    "/clouds/converted",
-    dependencies=[
-        Depends(require_stage_permission(Permission.FILES_DOWNLOAD))],
-)
-async def get_converted_point_cloud_download_links(
-    stage_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
-) -> list[str]:
-    """
-    Get a temporary links to download a converted point cloud file.
-
-    You get multiple links to download for each file.
-
-    Converted clouds are required for efficient visualization via Potree.
-
-    Requires permission.
-    """
-    async with uow:
-        stage = await stage_service.get_stage(stage_id, session=uow.session)
-        point_cloud = stage.point_cloud
-
-        if point_cloud is None:
-            raise NotFoundError("The stage has no point cloud.")
-
-        files = await FileService.get_converted_point_cloud_files(point_cloud.id, session=uow.session)
-
-    if len(files) == 0:
-        raise NotFoundError(
-            "No converted files found: point cloud is not yet converted?")
-
-    links = []
-
-    for file in files:
-        links.append(storage.get_download_link(file.key))
-
-    return links
 
 
 @router.post(

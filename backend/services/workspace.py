@@ -12,6 +12,10 @@ from schemas.workspace import WorkspaceModel
 async def get_workspace(workspace_id: uuid.UUID, session: AsyncSession):
     """Get workspace using its ID"""
     workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
+
+    if workspace is None:
+        raise NotFoundError("Workspace was not found")
+
     return workspace
 
 
