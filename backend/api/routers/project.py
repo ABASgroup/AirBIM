@@ -1,4 +1,5 @@
 import uuid
+from celery import chain
 from fastapi import APIRouter, Depends
 from services.task import TaskService
 from models.task import TaskType
@@ -26,7 +27,15 @@ from core.dependencies import (
 )
 from core.exceptions import NotFoundError
 from api.dependencies import require_project_permission
-from tasks.processing import convert_bim_to_point_cloud
+from tasks.processing import (
+    convert_bim_to_point_cloud,
+    check_progress,
+    create_recording_result_pdf_report
+)
+from tasks.default import create_recording_result_excel_report
+from tasks.preprocessing import (
+    convert_point_cloud_task
+)
 
 router = APIRouter(
     prefix="/projects/{project_id}", tags=["workspace projects"])
@@ -148,6 +157,7 @@ async def check_stage_progress(
     project_id: uuid.UUID,
     stage_1_id: uuid.UUID,
     stage_2_id: uuid.UUID,
+    tolerance: float = 0.05,
     uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
@@ -166,7 +176,7 @@ async def check_stage_progress(
     async with uow:
         # get stages
         project = await project_service.get_project(project_id, session=uow.session)
-        old_stage, new_stage = await stage_service.get_stages_chronologically(
+        old_stage, new_stage = await stage_service.get_project_stages_chronologically(
             stage_1_id,
             stage_2_id,
             session=uow.session
@@ -181,6 +191,22 @@ async def check_stage_progress(
         created_task = await TaskService.create_task(task_data, session=uow.session)
 
     created_task_id = created_task.id
+    # the process is about both checking progress and making reports
+    # plus converting the cloud we need to
+    pipeline = chain(
+        check_progress.s(
+            task_id=created_task_id,
+            old_stage_id=old_stage.id,
+            new_stage_id=new_stage.id,
+            tolerance=tolerance
+        ),
+        create_recording_result_excel_report.s(
+            task_id=created_task_id),
+        create_recording_result_pdf_report.s(
+            task_id=created_task_id),
+        convert_point_cloud_task.s(task_id=created_task_id)
+    )
+    task_result = pipeline.apply_async()
 
     return created_task
 
@@ -253,28 +279,6 @@ async def get_project_bim(
         bim = await FileService.get_bim(bim_id, session=uow.session)
 
     return bim
-
-
-@router.post(
-    "/bim/convert"
-)
-async def convert_project_bim(
-    project_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow)
-):
-    """
-    **ONLY FOR TESTS**
-
-    Convert project BIM into a point cloud for comparing.
-    """
-    async with uow:
-        project = await project_service.get_project(project_id, session=uow.session)
-        bim_id = project.bim.id
-
-        if bim_id is None:
-            raise NotFoundError("Project has no BIM.")
-    task = convert_bim_to_point_cloud.delay(bim_id)  # type: ignore
-    return f"started: {task.id}"
 
 
 @router.get(
