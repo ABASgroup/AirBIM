@@ -66,6 +66,16 @@ class TaskService:
         return task
 
     @classmethod
+    async def get_tasks_by_workspace_id(
+        cls,
+        workspace_id: UUID,
+        statuses: list[TaskStatus] | None,
+        session: AsyncSession
+    ) -> list[Task]:
+        tasks = list(await TaskRepository.get_by_workspace_id(workspace_id, statuses=statuses, session=session))
+        return tasks
+
+    @classmethod
     async def update_task_progress(
         cls,
         task_id: UUID,

@@ -6,10 +6,11 @@ from core.dependencies import (
     get_storage,
     DatabaseSessionUOW
 )
-from api.dependencies import require_workspace_permission, get_current_user_id
 from core.roles import Role, get_role_permissions, Permission
+from api.dependencies import require_workspace_permission, get_current_user_id
 from models.membership import Membership
 from models.workspace import WorkspaceType
+from models.task import TaskStatus
 from schemas.invite_link import InviteLinkRequest, NewInviteLinkResponse
 from schemas.project import ProjectModel, ProjectCreateRequest, ProjectResponse
 from schemas.user import UserResponse
@@ -20,10 +21,12 @@ from schemas.membership import (
     MembershipResponse,
     MembershipUserResponse
 )
+from schemas.task import TaskResponse
 from services import project as project_service
 from services import membership as membership_service
 from services import workspace as workspace_service
 from services import invite_link as invite_link_service
+from services.task import TaskService
 
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -301,7 +304,32 @@ async def create_project(
 ):
     async with uow:
         project_data_db = ProjectModel(workspace_id=workspace_id,
-                                    name=project_data.name,
-                                    description=project_data.description)
+                                       name=project_data.name,
+                                       description=project_data.description)
         project = await project_service.create_project(project_data_db, session=uow.session)
     return project
+
+
+@router.post(
+    "/{workspace_id}/tasks",
+    response_model=list[TaskResponse],
+    dependencies=[
+        Depends(require_workspace_permission(Permission.WORKSPACE_VIEW))],
+)
+async def get_workspace_tasks(
+    workspace_id: uuid.UUID,
+    statuses: list[TaskStatus] | None = None,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
+):
+    """
+    Get all tasks related to this workspace.
+
+    You can choose which statuses are to be filtered.
+
+    Requires permission.
+    """
+    async with uow:
+        workspace = await workspace_service.get_workspace(workspace_id, uow.session)
+        tasks = await TaskService.get_tasks_by_workspace_id(workspace_id, statuses, uow.session)
+
+    return tasks

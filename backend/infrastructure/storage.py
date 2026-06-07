@@ -238,4 +238,3 @@ class Storage:
             else:
                 # something's wrong
                 raise
-            
