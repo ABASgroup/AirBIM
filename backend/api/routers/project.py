@@ -124,7 +124,21 @@ async def get_project_stages(
         stages = await stage_service.get_project_stages(
             project_id, session=uow.session
         )
-    return stages
+    response = []
+    for stage in stages:
+        response.append(
+            StageResponse(
+                id=stage.id,
+                created_at=stage.created_at,
+                updated_at=stage.updated_at,
+                project_id=stage.project_id,
+                name=stage.name,
+                description=stage.description,
+                start_date=stage.start_date,
+                point_cloud_id=stage.point_cloud.id if stage.point_cloud else None,
+            )
+        )
+    return response
 
 
 @router.post(

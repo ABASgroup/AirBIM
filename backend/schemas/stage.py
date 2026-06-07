@@ -20,6 +20,7 @@ class StageModel(BaseModel):
 class StageResponse(Response):
     """API Response schema."""
     project_id: uuid.UUID
+    point_cloud_id: uuid.UUID | None = None
     name: str | None = None
     description: str | None = None
     start_date: AwareDatetime
