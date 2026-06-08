@@ -4,8 +4,14 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  optimizeDeps: {
-    exclude: ['web-ifc']
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@ui': path.resolve(__dirname, './src/components/ui'),
+      '@landing': path.resolve(__dirname, './src/components/landing'),
+      '@app': path.resolve(__dirname, './src/components/app'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+    },
   },
   plugins: [react(), tailwindcss()],
   server: {
@@ -21,15 +27,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@ui': path.resolve(__dirname, './src/components/ui'),
-      '@landing': path.resolve(__dirname, './src/components/landing'),
-      '@app': path.resolve(__dirname, './src/components/app'),
-      '@utils': path.resolve(__dirname, './src/utils'),
     },
   },
 })

@@ -1,6 +1,8 @@
 import uuid
 from celery import chain
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
+from core.exceptions import NotFoundError
 from schemas.task import TaskModel
 from infrastructure.storage import Storage
 from models.task import TaskType
@@ -11,9 +13,9 @@ from tasks.preprocessing import convert_point_cloud_task
 from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
-    BIMResponse,
     FileResponse,
-    FileTaskResponse
+    FileTaskResponse,
+    PointCloudResponse
 )
 from schemas.task import TaskResponse
 from core.roles import Permission
@@ -124,7 +126,7 @@ async def confirm_upload(
 
 @router.delete(
     "/{file_id}",
-    response_model=BIMResponse,
+    response_model=FileResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_DELETE))],
 )
@@ -186,3 +188,65 @@ async def get_download_link(
         url=url
     )
     return response_data
+
+
+@router.post(
+    "/point_clouds/{point_cloud_id}",
+    response_model=PointCloudResponse,
+    dependencies=[
+        Depends(require_file_permission(Permission.FILES_VIEW))],
+)
+async def get_point_cloud(
+    point_cloud_id: uuid.UUID,
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
+):
+    """
+    Get point cloud information.
+
+    Requires permission.
+    """
+    async with uow:
+        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+
+    return point_cloud
+
+
+@router.get("/point_clouds/{point_cloud_id}/{filename}")
+async def get_pointcloud_file(
+    point_cloud_id: uuid.UUID,
+    filename: str,
+    request: Request,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
+    storage: Storage = Depends(get_storage)
+):
+    async with uow:
+        await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+        files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
+
+    target_file = next((file for file in files if file.filename == filename), None)
+    if target_file is None:
+        raise NotFoundError(f"File '{filename}' not found for this point cloud")
+
+    range_header = request.headers.get("range")
+    s3_response = storage.get_object(target_file.key, range_header=range_header)
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": target_file.content_type or "application/octet-stream",
+    }
+
+    content_length = s3_response.get("ContentLength")
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+
+    content_range = s3_response.get("ContentRange")
+    if content_range:
+        headers["Content-Range"] = content_range
+
+    status_code = 206 if range_header else 200
+
+    return StreamingResponse(
+        s3_response["Body"].iter_chunks(chunk_size=64 * 1024),
+        status_code=status_code,
+        headers=headers,
+    )

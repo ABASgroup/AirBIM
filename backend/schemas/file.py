@@ -69,6 +69,7 @@ class PointCloudResponse(Response):
     """API response schema."""
     stage_id: UUID
     file: FileResponse
+    type: PointCloudType
 
 
 class PointCloudConvertedModel(BaseModel):

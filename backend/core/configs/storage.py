@@ -19,7 +19,7 @@ class StorageConfig(BaseSettings):
     STORAGE_EXTERNAL_ENDPOINT: str
 
     # for presigned urls
-    STORAGE_URL_EXP_TIME: int = 3600
+    STORAGE_URL_EXP_TIME: int = 60
 
     model_config = SettingsConfigDict(env_file=ENV_PATH,
                                       env_file_encoding='utf-8',
