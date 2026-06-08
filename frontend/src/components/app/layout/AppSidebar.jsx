@@ -5,7 +5,6 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
-import { Can } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -14,6 +13,7 @@ export const AppSidebar = () => {
   const { workspaces, currentWorkspace, switchWorkspace, setWorkspaces } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
+  const { hasPermission } = useWorkspace();
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -35,12 +35,12 @@ export const AppSidebar = () => {
 
   return (
     <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
-      <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
+      <div className="bg-surface/70 h-14 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
           isOpen={isOpen}
           onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}
-          className="h-15 px-4"
+          className="h-14 px-4"
         >
           {workspaces.map((ws) => (
             <div
@@ -76,14 +76,12 @@ export const AppSidebar = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[ws.id] }}
                 >
-                  <Can permission="workspace:delete">
-                    {ws.type !== "personal" && (
-                      <button onClick={() => handleDeleteWorkspace(ws.id)}>
-                        <i className="fa-solid fa-trash"></i>
-                        Удалить
-                      </button>
-                    )}
-                  </Can>
+                  {hasPermission("workspace:delete") && ws.type !== "personal" && (
+                    <button onClick={() => handleDeleteWorkspace(ws.id)}>
+                      <i className="fa-solid fa-trash"></i>
+                      Удалить
+                    </button>
+                  )}
                   <button onClick={() => {
                     setIsOpen(null);
                     setActiveMenuId(null);

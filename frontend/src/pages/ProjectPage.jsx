@@ -2,24 +2,18 @@
 import { Link, useParams } from "react-router-dom";
 import { getProject } from "@/api/project";
 import { getWorkspace } from "@/api/workspace";
-import { getBimDownloadLink, getProjectBim } from "@/api/file";
 import { useState, useEffect } from "react";
-import { FilledButton, LoadingSpinner } from "@ui";
-import { IfcViewerDrawer } from "@app/components/IfcViewerDrawer";
-import { useToast } from "@/context/ToastContext";
+import { FilledButton, UnfilledButton, LoadingSpinner } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { StageUploadModal, StagesAccordion } from "@app/components";
 
 function ProjectPage() {
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
   const [workspace, setWorkspace] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [bimUrl, setBimUrl] = useState(null);
-  const [bimLoading, setBimLoading] = useState(false);
-  const [bimError, setBimError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { switchWorkspace } = useWorkspace();
-  const { showToast } = useToast();
+  const [showStageModal, setShowStageModal] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -33,42 +27,6 @@ function ProjectPage() {
       .catch(() => setWorkspace(null))
       .finally(() => setIsLoading(false));
   }, [projectId]);
-
-  const handleShowBim = async () => {
-    setBimLoading(true);
-    try {
-      const bimRes = await getProjectBim(projectId);
-      const fileId = bimRes.data.file?.id;
-      if (!fileId) {
-        showToast({
-          type: "warning",
-          title: "Файл не найден",
-          message: "BIM файл не загружен для этого проекта"
-        });
-        return;
-      }
-
-      const dlRes = await getBimDownloadLink(fileId);
-      setBimUrl(dlRes.data.url);
-      setIsModalOpen(true);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        showToast({
-          type: "warning",
-          title: "Файл не найден",
-          message: "BIM файл не загружен для этого проекта"
-        });
-      } else {
-        showToast({
-          type: "warning",
-          title: "Ошибка",
-          message: "Не удалось загрузить BIM файл"
-        });
-      }
-    } finally {
-      setBimLoading(false);
-    }
-  };
 
   if (isLoading) {
     return <LoadingSpinner variant="inline" message="Загрузка проекта..." />;
@@ -91,13 +49,36 @@ function ProjectPage() {
       </nav>
 
       <p>{project?.description}</p>
-      <FilledButton onClick={handleShowBim} disabled={bimLoading}>Показать BIM</FilledButton>
-      {bimError && <p style={{ color: "red" }}>{bimError}</p>}
-      <IfcViewerDrawer
-        url={bimUrl}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+
+      <div className="flex gap-3 mt-5">
+        <Link to={`/app/projects/${projectId}/scene`}>
+          <FilledButton>
+            Перейти к сцене
+          </FilledButton>
+        </Link>
+
+        <UnfilledButton onClick={() => setShowStageModal(true)}>
+          Загрузить этап
+        </UnfilledButton>
+
+        <Link to={`/app/projects/${projectId}/results`}>
+          <FilledButton>
+            Перейти к результатам
+          </FilledButton>
+        </Link>
+      </div>
+
+
+      <div className="mt-6">
+        <StagesAccordion projectId={projectId} />
+      </div>
+
+      {showStageModal && (
+        <StageUploadModal
+          projectId={projectId}
+          onClose={() => setShowStageModal(false)}
+        />
+      )}
     </>
   )
 }

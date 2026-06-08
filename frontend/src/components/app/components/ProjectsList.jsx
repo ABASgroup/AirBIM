@@ -46,7 +46,7 @@ export const ProjectsList = () => {
         size: uploadLink.data.file.size,
         content_type: uploadLink.data.file.content_type
       };
-      
+
       await uploadFileWithPresignedLink(presignedUrl, file);
       await confirmBimUpload(uploadLink.data.file.id, confirmData);
 
@@ -95,7 +95,6 @@ export const ProjectsList = () => {
     setEditModalOpen(true);
     setActiveMenuId(null);
   };
-  const isEmpty = !projects || projects.length === 0;
 
   if (isLoading) {
     return <LoadingSpinner variant="inline" message="Загрузка проектов..." />;
@@ -103,7 +102,7 @@ export const ProjectsList = () => {
 
   return (
     <div>
-      {isEmpty ? (
+      {(!projects || projects.length === 0) ? (
         <div className="flex flex-col items-center justify-center py-20 gap-5">
           <p>Проекты отсутствуют</p>
           <Can permission="projects:create">

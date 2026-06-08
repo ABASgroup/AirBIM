@@ -4,18 +4,23 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Modal, FilledButton, Input } from "@ui";
 import { acceptInviteLink } from "@/api/invites";
+import { useToast } from "@/context";
 import api from "../api/index";
 
 function RegistrationPage() {
   const { register, handleSubmit, watch } = useForm();
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const password = watch("password");
 
   const onSubmit = async (data) => {
     if (data.password !== data.confirm_password) {
-      setError("Пароли не совпадают");
+      showToast({
+        type: "warning",
+        title: "Ошибка",
+        message: "Пароли не совпадают",
+      });
       return;
     }
 
@@ -35,9 +40,17 @@ function RegistrationPage() {
       navigate("/app/dashboard");
     } catch (err) {
       if (err.response?.status === 409) {
-        setError("Данная почта уже зарегистрирована");
+        showToast({
+          type: "warning",
+          title: "Ошибка",
+          message: "Данная почта уже зарегистрирована",
+        });
       } else {
-        setError("Ошибка регистрации");
+        showToast({
+          type: "warning",
+          title: "Ошибка",
+          message: "Ошибка регистрации",
+        });
       }
     }
   };
@@ -45,7 +58,7 @@ function RegistrationPage() {
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Modal title="Регистрация" className="z-10">
+        <Modal title="Регистрация">
           <div>
             <label>Логин</label>
             <Input
@@ -74,7 +87,6 @@ function RegistrationPage() {
               placeholder="Повторите пароль"
             />
           </div>
-          {error && <p className="text-warning">{error}</p>}
           <div className="flex justify-end mt-5">
             <FilledButton type="submit">
               Подтвердить
