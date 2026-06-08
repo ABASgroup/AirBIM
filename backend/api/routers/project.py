@@ -285,6 +285,9 @@ async def get_project_bim(
     """
     async with uow:
         project = await project_service.get_project(project_id, session=uow.session)
+
+        # FIXME : Если в проект ещё не загружен BIM, то данная сточка выдаст ошибку
+        # AttributeError: 'NoneType' object has no attribute 'id'
         bim_id = project.bim.id
 
         if bim_id is None:

@@ -42,7 +42,7 @@ async def create_workspace(workspace_data: WorkspaceModel, session: AsyncSession
     return workspace
 
 
-async def delete_team_workspace(workspace_id: uuid.UUID, session: AsyncSession, storage: Storage):
+async def delete_team_workspace(workspace_id: uuid.UUID, session: AsyncSession):
     """
     Delete team workspace using its id.
 
