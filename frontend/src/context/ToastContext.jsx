@@ -1,5 +1,5 @@
 // Контекст уведомлений
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import { Toast } from "@ui";
 
 const ToastContext = createContext();
@@ -15,22 +15,22 @@ export const useToast = () => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const showToast = ({ type, title, message, duration = 5000 }) => {
+  const showToast = useCallback(({ type, title, message, duration = 5000 }) => {
     const id = Date.now() + Math.random();
     const newToast = { id, type, title, message, duration };
 
     setToasts(prev => [newToast, ...prev]);
-  };
+  }, []);
 
-  const hideToast = (id) => {
+  const hideToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast, hideToast }}>
       {children}
       <div className="fixed top-20 right-4 z-50 flex flex-col gap-3">
-        {toasts.map((toast, index) => (
+        {toasts.map((toast) => (
           <Toast
             key={toast.id}
             type={toast.type}

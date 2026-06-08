@@ -5,6 +5,8 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
+import { useTaskProgress } from "@/context/TaskProgressContext";
+import { ProgressBar } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -14,6 +16,7 @@ export const AppSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
   const { hasPermission } = useWorkspace();
+  const { activeTasks } = useTaskProgress();
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -105,6 +108,25 @@ export const AppSidebar = () => {
         onClose={() => setIsCreateWorkspaceModalOpen(false)}
         onCreate={handleCreateWorkspace}
       />
+
+      {activeTasks.length > 0 && (
+        <div className="p-2 bg-surface">
+          <div className="max-h-[200px] overflow-y-auto">
+            <span className="mb-5">Текущие задачи</span>
+            <>
+              {activeTasks.map(task => (
+                <ProgressBar
+                  key={task.id}
+                  taskType={task.type}
+                  entityType={task.entity_type}
+                  entityId={task.entity_id}
+                  percentage={task.progress}
+                />
+              ))}
+            </>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
