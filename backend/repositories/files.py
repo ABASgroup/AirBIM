@@ -164,3 +164,4 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
             .where(cls._model.point_cloud_id == point_cloud_id)
         )
         return result.scalars().all()
+
