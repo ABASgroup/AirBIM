@@ -7,10 +7,11 @@ from jose import jwt, JWTError
 
 from core.configs.api import api_config
 from core.roles import ROLE_PERMISSIONS, Permission
-from core.exceptions import NoRequiredPermissionError, NotFoundError, NotMemberError
+from core.exceptions import NoRequiredPermissionError, NotMemberError
 from core.dependencies import get_session_maker
 
 from services.membership import get_membership
+from services.recording_result import RecordingResultService
 from services.stage import get_stage_with_project
 from services.project import get_project
 from services.file import FileService
@@ -106,6 +107,40 @@ def require_project_permission(permission: Permission):
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
         project = await get_project(project_id, session=session)
+
+        membership = await get_membership(
+            user_id,
+            project.workspace_id,
+            session)
+
+        if membership is None:
+            raise NotMemberError()
+
+        if permission not in ROLE_PERMISSIONS[membership.role]:
+            raise NoRequiredPermissionError(permission.value)
+        return membership
+    return checker
+
+
+def require_recording_result_permission(permission: Permission):
+    """
+    Require certain membership permission from user to access an endpoint.
+
+    Uses recording result to validate permission.
+
+    Requires membership in the workspace.
+    """
+    async def checker(
+        recording_result_id: uuid.UUID,
+        user_id: uuid.UUID = Depends(get_current_user_id),
+        session: AsyncSession = Depends(get_db_session_dependency)
+    ):
+        recording_result = await RecordingResultService.get_recording_result(
+            recording_result_id,
+            session=session,
+        )
+
+        project = await get_project(recording_result.project_id, session=session)
 
         membership = await get_membership(
             user_id,

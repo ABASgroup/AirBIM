@@ -1,7 +1,6 @@
 from uuid import UUID
 from pydantic import BaseModel
 from models.recording_result import RecordingResultType
-from .file import FileResponse
 from .base import Response
 
 
@@ -19,8 +18,7 @@ class RecordingResultResponse(Response):
     """API response schema."""
     project_id: UUID
     data: dict
-    pdf_report: FileResponse | None = None
-    xlsx_report: FileResponse | None = None
-    photos: list[FileResponse] | None = None
+    pdf_report_id: UUID | None = None
+    xlsx_report_id: UUID | None = None
     point_cloud_id: UUID | None = None
-    type: FileResponse
+    type: RecordingResultType

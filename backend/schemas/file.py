@@ -2,6 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from models.file import FileStatus, PointCloudType
 from .base import Response
+from .task import TaskResponse
 
 
 class FileDataRequest(BaseModel):
@@ -23,8 +24,6 @@ class FileModel(BaseModel):
 class FileResponse(Response):
     """
     API response schema. 
-
-    Use as a mixin for other file responses.
     """
     workspace_id: UUID
     filename: str
@@ -42,6 +41,12 @@ class FileLinkResponse(BaseModel):
     """
     url: str
     file: FileResponse
+
+
+class FileTaskResponse(BaseModel):
+    """API response schema."""
+    file: FileResponse
+    task: TaskResponse
 
 
 class FileUpdate(BaseModel):
@@ -64,6 +69,7 @@ class PointCloudResponse(Response):
     """API response schema."""
     stage_id: UUID
     file: FileResponse
+    type: PointCloudType
 
 
 class PointCloudConvertedModel(BaseModel):

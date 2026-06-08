@@ -44,7 +44,7 @@ async def create_membership(membership_data: MembershipModel, session: AsyncSess
     """
     Create a new membership for the workspace.
     """
-    workspace = await MembershipRepository.create(membership_data, session=session)
+    workspace = await MembershipRepository.create(membership_data.model_dump(exclude_unset=True), session=session)
     return workspace
 
 
@@ -118,7 +118,8 @@ async def change_user_role(
 
     user_membership = await MembershipRepository.update(
         user_membership,
-        update_data=MembershipUpdate(role=new_role),
+        update_data=MembershipUpdate(
+            role=new_role).model_dump(exclude_unset=True),
         session=session
     )
 

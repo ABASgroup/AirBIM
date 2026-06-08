@@ -12,6 +12,10 @@ from schemas.workspace import WorkspaceModel
 async def get_workspace(workspace_id: uuid.UUID, session: AsyncSession):
     """Get workspace using its ID"""
     workspace = await WorkspaceRepository.get_by_id(workspace_id, session=session)
+
+    if workspace is None:
+        raise NotFoundError("Workspace was not found")
+
     return workspace
 
 
@@ -34,7 +38,7 @@ async def create_workspace(workspace_data: WorkspaceModel, session: AsyncSession
     """
     Create a new workspace
     """
-    workspace = await WorkspaceRepository.create(workspace_data, session=session)
+    workspace = await WorkspaceRepository.create(workspace_data.model_dump(exclude_unset=True), session=session)
     return workspace
 
 

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # handlers
 # don't forget to put HTTP codes
 async def handle_unhandled_exception(request: Request, exc: Exception):
-    logger.exception("Unhandled exception")
+    logger.exception(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
         content={"message": "Internal server error"}
@@ -92,6 +92,14 @@ async def membership_violation_handler(request: Request, exc: MembershipViolatio
     )
 
 
+async def value_error_handler(request: Request, exc: ValueError):
+    logger.exception("App exception: %s", exc)
+    return JSONResponse(
+        status_code=400,
+        content={"message": exc}
+    )
+
+
 def add_exception_handlers(app: FastAPI):
     """Registers exceptions handlers"""
     app.add_exception_handler(Exception, handle_unhandled_exception)
@@ -110,3 +118,5 @@ def add_exception_handlers(app: FastAPI):
         ProhibitedWorkspaceActionError, prohibited_workspace_action_handler)
     app.add_exception_handler(MembershipViolationError,
                               membership_violation_handler)
+    app.add_exception_handler(ValueError,
+                              value_error_handler)

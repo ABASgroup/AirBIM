@@ -1,9 +1,9 @@
 """Base model of the API database."""
 from datetime import datetime
+import uuid
 from sqlalchemy import func, UUID, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs
-import uuid
 
 
 class BaseModel(AsyncAttrs, DeclarativeBase):
@@ -14,6 +14,11 @@ class BaseModel(AsyncAttrs, DeclarativeBase):
     """
     __abstract__ = True
     
+    # to correctly load default values
+    __mapper_args__ = {
+        "eager_defaults": True
+    }
+
     # to correctly load default values
     __mapper_args__ = {
         "eager_defaults": True

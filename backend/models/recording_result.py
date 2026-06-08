@@ -30,18 +30,19 @@ class RecordingResult(BaseModel):
     data = Column(JSONB)
 
     pdf_report_id: Mapped["UUID"] = mapped_column(
-        ForeignKey("files.id", ondelete="CASCADE"),
+        ForeignKey("files.id"),
         nullable=True,
         unique=True
     )
     pdf_report: Mapped["File"] = relationship(
         foreign_keys=[pdf_report_id],
         cascade="all, delete",
-        passive_deletes=True
+        passive_deletes=True,
+        lazy="selectin"
     )
 
     xlsx_report_id: Mapped["UUID"] = mapped_column(
-        ForeignKey("files.id", ondelete="CASCADE"),
+        ForeignKey("files.id"),
         nullable=True,
         unique=True
     )
@@ -49,17 +50,20 @@ class RecordingResult(BaseModel):
         foreign_keys=[xlsx_report_id],
         cascade="all, delete",
         passive_deletes=True,
+        lazy="selectin"
     )
 
     point_cloud_id: Mapped["UUID"] = mapped_column(
         ForeignKey("point_clouds.id", ondelete="SET NULL"),
-        nullable=True,
         unique=True
     )
-    point_cloud: Mapped[Optional["PointCloud"]] = relationship()
+    point_cloud: Mapped["PointCloud"] = relationship(
+        cascade="all, delete"
+    )
 
     photos: Mapped[list["ResultPhoto"]] = relationship(
         back_populates="result",
+        cascade="all, delete"
     )
 
     type: Mapped["RecordingResultType"] = mapped_column(
