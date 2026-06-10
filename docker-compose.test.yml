@@ -66,7 +66,7 @@ services:
 
   worker:
     container_name: airbim-test-worker
-    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4' /app"]
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4' /app"]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -84,7 +84,7 @@ services:
 
   worker-converter:
     container_name: airbim-test-worker-converter
-    command: ["sh", "-c", "python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=4' /app"]
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=4' /app"]
     build:
       context: ./backend
       dockerfile: Dockerfile.converter
@@ -102,7 +102,7 @@ services:
 
   worker-processing:
     container_name: airbim-test-worker-processing
-    command: ["sh", "-c", "micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=4' /app"]
+    command: ["sh", "-c", "exec micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=4' /app"]
     build:
       context: ./backend
       dockerfile: Dockerfile.processing

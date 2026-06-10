@@ -162,6 +162,21 @@ async def create_test_task(
     )
 
 
+async def create_test_image(
+    db_session: AsyncSession, workspace_id: UUID, entity_id: UUID, task_type: TaskType
+):
+    """Create a celery task for testing."""
+    return await TaskRepository.create(
+        TaskModel(
+            entity_id=entity_id,
+            entity_type="test",
+            workspace_id=workspace_id,
+            type=task_type,
+        ).model_dump(exclude_unset=True),
+        db_session,
+    )
+
+
 async def wait_until(
     assertion: Callable[..., Coroutine[Any, Any, Any]],
     timeout: float = 30.0,

@@ -18,6 +18,7 @@ from schemas.recording_result import RecordingResultType
 from schemas.task import TaskType
 
 from tasks.default import clean_up_files, create_recording_result_excel_report
+
 from tests.helpers import (
     create_test_file,
     create_test_point_cloud,
