@@ -37,7 +37,7 @@ export const AppSidebar = () => {
   };
 
   return (
-    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
+    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50 flex flex-col justify-between">
       <div className="bg-surface/70 h-14 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
@@ -110,10 +110,12 @@ export const AppSidebar = () => {
       />
 
       {activeTasks.length > 0 && (
-        <div className="p-2 bg-surface">
-          <div className="max-h-[200px] overflow-y-auto">
-            <span className="mb-5">Текущие задачи</span>
-            <>
+        <div className="bg-surface mt-auto shrink-0 rounded-t-[10px]">
+          <div className="max-h-[200px]">
+            <div className="my-3 text-center">
+              <span>Текущие задачи</span>
+            </div>
+            <div className="max-h-[160px] overflow-y-auto p-3 bg-background-color rounded-t-[10px]">
               {activeTasks.map(task => (
                 <ProgressBar
                   key={task.id}
@@ -123,7 +125,7 @@ export const AppSidebar = () => {
                   percentage={task.progress}
                 />
               ))}
-            </>
+            </div>
           </div>
         </div>
       )}

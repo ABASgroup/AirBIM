@@ -1,24 +1,44 @@
 // Сцена потри для визуализации облаков точек
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { getProjectStages } from "@/api/stage";
 import { getProjectBim } from "@/api/file";
+import { getProjectResults } from "@/api/recordingResult";
 import { LoadingSpinner } from "@ui";
+import { getProject } from "@/api/project";
+import { getWorkspace } from "@/api/workspace";
+import { useWorkspace } from "@/context/WorkspaceContext";
 
-function createLayerItem({ key, type, label, pointCloudId, stageId, bimId }) {
+function createLayerItem({ key, type, label, pointCloudId, stageId, bimId, resultId }) {
   return {
     key,
     type,
     label,
     stageId,
     bimId,
+    resultId,
     pointCloudId,
     visible: false,
     loading: false,
     loaded: false,
     error: null,
   };
+}
+
+function getLayerTypeLabel(type) {
+  switch (type) {
+    case "stage":
+      return "Этап";
+    case "bim":
+      return "BIM";
+    case "plan_fact":
+      return "План/факт";
+    case "progress":
+      return "Фиксация";
+    default:
+      return type;
+  }
 }
 
 function loadPointCloudAsync(metadataUrl, label) {
@@ -40,12 +60,31 @@ function PotreeScenePage({ projectId }) {
   const viewerRef = useRef(null);
   const loadedCloudsRef = useRef(new Map());
   const [items, setItems] = useState([]);
+  const itemsRef = useRef(items);
   const [isListLoading, setIsListLoading] = useState(false);
   const [sidebarContainer, setSidebarContainer] = useState(null);
+  const [quickButtonsContainer, setQuickButtonsContainer] = useState(null);
+  const [project, setProject] = useState(null);
+  const [workspace, setWorkspace] = useState(null);
+  const { switchWorkspace } = useWorkspace();
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const updateItem = useCallback((key, patch) => {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...patch } : i)));
   }, []);
+
+  useEffect(() => {
+    getProject(actualProjectId)
+      .then(res => {
+        setProject(res.data);
+        return getWorkspace(res.data.workspace_id);
+      })
+      .then(wsRes => setWorkspace(wsRes.data))
+      .catch(() => setWorkspace(null));
+  }, [actualProjectId]);
 
   useEffect(() => {
     const initViewer = () => {
@@ -76,6 +115,25 @@ function PotreeScenePage({ projectId }) {
           $("#menu_appearance").append(header).append(content);
         }
 
+        const quickButtons = document.getElementById("potree_quick_buttons");
+        if (quickButtons) {
+          quickButtons.style.display = "flex";
+          quickButtons.style.alignItems = "center";
+          quickButtons.style.width = "auto";
+          quickButtons.style.height = "auto";
+          quickButtons.style.gap = "8px";
+          quickButtons.style.zIndex = "10000";
+
+          let breadcrumbsHost = document.getElementById("potree-react-breadcrumbs");
+          if (!breadcrumbsHost) {
+            breadcrumbsHost = document.createElement("div");
+            breadcrumbsHost.id = "potree-react-breadcrumbs";
+            breadcrumbsHost.className = "flex-1 min-w-0 overflow-hidden";
+            quickButtons.appendChild(breadcrumbsHost);
+          }
+          setQuickButtonsContainer(breadcrumbsHost);
+        }
+
         setSidebarContainer(document.getElementById("potree-react-layers"));
       });
 
@@ -92,8 +150,11 @@ function PotreeScenePage({ projectId }) {
       setIsListLoading(true);
       loadedCloudsRef.current.clear();
       try {
-        const stagesRes = await getProjectStages(actualProjectId);
-        const bimRes = await getProjectBim(actualProjectId).catch(() => null);
+        const [stagesRes, bimRes, resultsRes] = await Promise.all([
+          getProjectStages(actualProjectId),
+          getProjectBim(actualProjectId).catch(() => null),
+          getProjectResults(actualProjectId).catch(() => ({ data: [] })),
+        ]);
 
         const stageItems = [];
         if (stagesRes?.data) {
@@ -102,7 +163,7 @@ function PotreeScenePage({ projectId }) {
               createLayerItem({
                 key: `stage-${st.id}`,
                 type: "stage",
-                label: `Stage ${new Date(st.created_at).toLocaleString()}`,
+                label: `${st.name}`,
                 stageId: st.id,
                 pointCloudId: st.point_cloud_id ?? null,
               })
@@ -124,7 +185,21 @@ function PotreeScenePage({ projectId }) {
           );
         }
 
-        setItems([...bimItems, ...stageItems]);
+        const resultItems = [];
+        for (const result of resultsRes?.data ?? []) {
+          if (result.type !== "plan_fact" && result.type !== "progress") continue;
+          resultItems.push(
+            createLayerItem({
+              key: `result-${result.id}`,
+              type: result.type,
+              label: result.type === "plan_fact" ? `${result.id}` : `${result.id}`,
+              resultId: result.id,
+              pointCloudId: result.point_cloud_id ?? null,
+            })
+          );
+        }
+
+        setItems([...bimItems, ...stageItems, ...resultItems]);
       } finally {
         setIsListLoading(false);
       }
@@ -148,11 +223,7 @@ function PotreeScenePage({ projectId }) {
     const viewer = viewerRef.current;
     if (!viewer) return;
 
-    let targetItem = null;
-    setItems((prev) => {
-      targetItem = prev.find((i) => i.key === key) ?? null;
-      return prev;
-    });
+    const targetItem = itemsRef.current.find((i) => i.key === key) ?? null;
     if (!targetItem) return;
 
     if (!targetItem.pointCloudId) return;
@@ -172,7 +243,7 @@ function PotreeScenePage({ projectId }) {
       return;
     }
 
-    updateItem(key, { loading: true, error: null });
+    updateItem(key, { loading: true, visible: true, error: null });
 
     try {
       const metadataUrl = `/api/files/point_clouds/${targetItem.pointCloudId}/metadata.json`;
@@ -198,12 +269,38 @@ function PotreeScenePage({ projectId }) {
 
   const getItemStatus = (item) => {
     if (!item.pointCloudId) return "Конвертация не завершена";
-    if (item.loading) return <LoadingSpinner variant="overlay" message="Загрузка данных..." />;
+    if (item.loading) return "Загружается...";
     if (item.error) return item.error;
     if (item.loaded && item.visible) return "На сцене";
     if (item.loaded) return "Скрыто";
-    return "Выключено";
+    return "Не загружено";
   };
+
+  const breadcrumbs = (
+    <nav className="flex flex-wrap items-center gap-1 text-sm potree_info_text whitespace-nowrap">
+      {workspace && (
+        <>
+          <Link
+            to="/app/dashboard"
+            className="text-text-color hover:underline"
+            onClick={() => switchWorkspace(workspace.id)}
+          >
+            {workspace.name}
+          </Link>
+          <span>/</span>
+        </>
+      )}
+      <Link
+        to={`/app/projects/${actualProjectId}`}
+        className="text-text-color hover:underline"
+        onClick={() => workspace && switchWorkspace(workspace.id)}
+      >
+        {project?.name ?? "Проект"}
+      </Link>
+      <span>/</span>
+      <span className="text-primary-color">Сцена</span>
+    </nav>
+  );
 
   return (
     <div className="potree_container relative w-full h-screen">
@@ -214,9 +311,11 @@ function PotreeScenePage({ projectId }) {
       <div id="potree_render_area" ref={renderAreaRef} style={{ width: "100%", height: "100vh" }} />
       <div id="potree_sidebar_container" />
 
+      {quickButtonsContainer && createPortal(breadcrumbs, quickButtonsContainer)}
+
       {sidebarContainer && createPortal(
         <div className="flex flex-col gap-1 p-1 max-h-[350px] overflow-y-auto custom-scrollbar">
-          {items.length === 0 && <div className="text-text-color/50">Этапов нет</div>}
+          {items.length === 0 && <div className="text-text-color/50">Облаков нет</div>}
           {items.map((it) => {
             const canToggle = Boolean(it.pointCloudId) && !it.loading;
             const canFocus = it.loaded && !it.loading;
@@ -224,35 +323,44 @@ function PotreeScenePage({ projectId }) {
             return (
               <div
                 key={it.key}
-                className={`p-2 rounded transition-colors ${
-                  it.visible ? "bg-primary-color/20" : "text-text-color"
-                }`}
+                role="button"
+                tabIndex={canToggle ? 0 : -1}
+                title={it.pointCloudId ? "Показать / скрыть" : "Облако ещё не готово"}
+                className={`p-2 rounded transition-colors select-none
+                  ${it.visible || it.loading ? "bg-primary-color/20" : "text-text-color"}
+                  ${canToggle ? "cursor-pointer hover:bg-background-color/50" : "cursor-default"}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canToggle) toggleVisibility(it.key);
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" || e.key === " ") && canToggle) {
+                    e.preventDefault();
+                    toggleVisibility(it.key);
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={it.visible}
-                    disabled={!canToggle}
-                    onChange={() => toggleVisibility(it.key)}
-                    className="shrink-0 cursor-pointer disabled:cursor-not-allowed"
-                    title={it.pointCloudId ? "Показать / скрыть" : "Облако ещё не готово"}
-                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate">{it.label}</div>
                     <div className="text-text-color/50 text-sm">
-                      {it.type === "stage" ? "Этап" : "BIM"} · {getItemStatus(it)}
+                      {getLayerTypeLabel(it.type)} · {getItemStatus(it)}
                     </div>
                   </div>
                   <button
                     type="button"
                     disabled={!canFocus}
-                    onClick={() => focusCloud(it.key)}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      focusCloud(it.key);
+                    }}
                     title="Приблизить камеру"
                     className="shrink-0 w-7 h-7 rounded flex items-center justify-center text-sm
-                      disabled:opacity-30 disabled:cursor-not-allowed
-                      hover:bg-primary-color/30 cursor-pointer transition-colors"
+                      disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    ⊙
+                    <i className="fa fa-video-camera text-text-color cursor-pointer hover:brightness-70 active:scale-95" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
