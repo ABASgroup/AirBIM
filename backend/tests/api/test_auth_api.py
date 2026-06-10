@@ -1,4 +1,5 @@
 """Sample API integration tests for auth endpoints."""
+
 import pytest
 
 
@@ -46,6 +47,4 @@ async def test_login_with_wrong_password_returns_401(api_client):
     )
 
     assert response.status_code == 401
-    assert response.json() == {
-        "message": "Email or password is incorrect"
-    }
+    assert response.json() == {"message": "Email or password is incorrect"}

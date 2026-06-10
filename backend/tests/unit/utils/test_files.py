@@ -1,4 +1,5 @@
 """Unit tests for utils.files, covering path cleaning, directory/file operations, and MIME type detection."""
+
 import pathlib
 from unittest.mock import patch, MagicMock
 
@@ -117,5 +118,4 @@ def test_get_file_mime_type_magika_fallback(MockMagika, tmp_path):
     mime_type = get_file_mime_type(str(png_file))
 
     assert mime_type == "image/png"
-    mock_instance.identify_path.assert_called_once_with(
-        clean_path(str(png_file)))
+    mock_instance.identify_path.assert_called_once_with(clean_path(str(png_file)))

@@ -1,7 +1,11 @@
+"""Tests for Project Repository."""
+
 import pytest
 
 from repositories.project import ProjectRepository
+
 from schemas.project import ProjectModel
+
 from tests.helpers import create_test_workspace
 
 
@@ -15,7 +19,7 @@ async def test_project_repository_create_and_get_by_workspace_id(db_session):
     project_data = ProjectModel(
         workspace_id=workspace.id,
         name="Test Project",
-        description="A project for testing"
+        description="A project for testing",
     ).model_dump(exclude_unset=True)
     created_project = await ProjectRepository.create(project_data, db_session)
 

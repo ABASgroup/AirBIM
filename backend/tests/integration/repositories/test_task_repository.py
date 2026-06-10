@@ -1,8 +1,13 @@
-import pytest
+"""Tests for Task Repository."""
+
 import uuid
 
+import pytest
+
 from repositories.task import TaskRepository
+
 from schemas.task import TaskModel, TaskType
+
 from tests.helpers import create_test_workspace
 
 

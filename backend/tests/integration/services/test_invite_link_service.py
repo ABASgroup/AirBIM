@@ -1,13 +1,25 @@
 """Tests for Invite link Service."""
+
 import uuid
 
 import pytest
 
-from core.exceptions import InvalidInvitationError, NotFoundError, ProhibitedWorkspaceActionError
-from core.roles import Role, InviteableRole
+from core.exceptions import (
+    InvalidInvitationError,
+    NotFoundError,
+    ProhibitedWorkspaceActionError,
+)
+from core.roles import InviteableRole, Role
+
 from schemas.workspace import WorkspaceType
-from services.invite_link import generate_invite_link, revoke_links, validate_invite_link
-from tests.helpers import create_test_workspace, create_test_user
+
+from services.invite_link import (
+    generate_invite_link,
+    revoke_links,
+    validate_invite_link,
+)
+
+from tests.helpers import create_test_user, create_test_workspace
 
 
 @pytest.mark.asyncio
@@ -16,7 +28,9 @@ async def test_generate_invite_link(db_session):
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
 
-    invite_link, token = await generate_invite_link(workspace.id, user.id, InviteableRole.MEMBER, session=db_session)
+    invite_link, token = await generate_invite_link(
+        workspace.id, user.id, InviteableRole.MEMBER, session=db_session
+    )
 
     assert invite_link.id is not None
     assert invite_link.workspace_id == workspace.id
@@ -29,11 +43,15 @@ async def test_generate_invite_link(db_session):
 @pytest.mark.asyncio
 async def test_generate_invite_link_for_personal_workspace(db_session):
     """Service should not generate invite link for personal workspace."""
-    workspace = await create_test_workspace(db_session, workspace_type=WorkspaceType.PERSONAL)
+    workspace = await create_test_workspace(
+        db_session, workspace_type=WorkspaceType.PERSONAL
+    )
     user = await create_test_user(db_session)
 
     with pytest.raises(ProhibitedWorkspaceActionError):
-        await generate_invite_link(workspace.id, user.id, InviteableRole.MEMBER, session=db_session)
+        await generate_invite_link(
+            workspace.id, user.id, InviteableRole.MEMBER, session=db_session
+        )
 
 
 @pytest.mark.asyncio
@@ -42,7 +60,9 @@ async def test_generate_invite_link_for_nonexistent_workspace(db_session):
     user = await create_test_user(db_session)
 
     with pytest.raises(NotFoundError):
-        await generate_invite_link(uuid.uuid4(), user.id, InviteableRole.MEMBER, session=db_session)
+        await generate_invite_link(
+            uuid.uuid4(), user.id, InviteableRole.MEMBER, session=db_session
+        )
 
 
 @pytest.mark.asyncio
@@ -51,7 +71,9 @@ async def test_validate_invite_link(db_session):
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
 
-    invite_link, token = await generate_invite_link(workspace.id, user.id, InviteableRole.MEMBER, session=db_session)
+    invite_link, token = await generate_invite_link(
+        workspace.id, user.id, InviteableRole.MEMBER, session=db_session
+    )
 
     # valid token should return invite link
     validated_link = await validate_invite_link(token, session=db_session)
@@ -72,8 +94,12 @@ async def test_revoke_links(db_session):
     user1 = await create_test_user(db_session)
     user2 = await create_test_user(db_session, email="test2@gmail.com")
 
-    _, token1 = await generate_invite_link(workspace.id, user1.id, InviteableRole.MEMBER, session=db_session)
-    _, token2 = await generate_invite_link(workspace.id, user2.id, InviteableRole.MEMBER, session=db_session)
+    _, token1 = await generate_invite_link(
+        workspace.id, user1.id, InviteableRole.MEMBER, session=db_session
+    )
+    _, token2 = await generate_invite_link(
+        workspace.id, user2.id, InviteableRole.MEMBER, session=db_session
+    )
 
     # validate links before revocation, they should be valid
     assert await validate_invite_link(token1, session=db_session)

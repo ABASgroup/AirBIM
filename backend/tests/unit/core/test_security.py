@@ -1,16 +1,18 @@
 """Unit tests for core security utilities, including JWT token creation, password hashing, and link token generation."""
+
 from datetime import datetime, timezone
-from jose import jwt
 import uuid
 
+from jose import jwt
+
+from core.configs.api import api_config
 from core.security import (
     create_access_token,
-    get_password_hash,
-    verify_password,
     generate_link_token,
-    hash_link_token
+    get_password_hash,
+    hash_link_token,
+    verify_password,
 )
-from core.configs.api import api_config
 
 
 def test_create_access_token():
@@ -23,9 +25,7 @@ def test_create_access_token():
 
     # decode the token to verify its contents
     decoded = jwt.decode(
-        token,
-        key=api_config.JWT_SECRET_KEY,
-        algorithms=[api_config.JWT_ALGORITHM]
+        token, key=api_config.JWT_SECRET_KEY, algorithms=[api_config.JWT_ALGORITHM]
     )
 
     assert decoded["sub"] == str(user_id)

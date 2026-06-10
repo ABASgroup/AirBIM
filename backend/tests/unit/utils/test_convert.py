@@ -1,4 +1,5 @@
 """Unit tests for utils.convert, covering point cloud conversion logic and error handling."""
+
 import os
 import pytest
 from unittest.mock import patch, MagicMock
@@ -30,7 +31,9 @@ def test_convert_point_cloud_success(mock_subprocess_run):
     mock_result.stderr = ""
     mock_subprocess_run.return_value = mock_result
 
-    with patch.dict(os.environ, {"POTREE_CONVERTER_PATH": "/usr/local/bin/PotreeConverter"}):
+    with patch.dict(
+        os.environ, {"POTREE_CONVERTER_PATH": "/usr/local/bin/PotreeConverter"}
+    ):
         input_file = "test_data/input.laz"
         opt_output = "temp_output"
 

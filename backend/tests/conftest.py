@@ -10,10 +10,13 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import get_storage
+
 from infrastructure.database import session_maker
 from infrastructure.storage import Storage
+
 from main import app
-from models.file import BIM, PointCloud, File, PointCloudConverted, ResultPhoto
+
+from models.file import BIM, File, PointCloud, PointCloudConverted, ResultPhoto
 from models.invite_link import InviteLink
 from models.membership import Membership
 from models.project import Project

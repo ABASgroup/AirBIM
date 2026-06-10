@@ -1,4 +1,5 @@
 """Tests for the base repository (on example of a model that uses it)."""
+
 import uuid
 
 import pytest
@@ -42,11 +43,15 @@ async def test_base_repository_get_by_id(db_session):
     """Test the 'get_by_id' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
-    found_workspace = await WorkspaceRepository.get_by_id(workspace.id, session=db_session)
+    found_workspace = await WorkspaceRepository.get_by_id(
+        workspace.id, session=db_session
+    )
     assert found_workspace is not None
     assert found_workspace.id == workspace.id
 
-    not_found_workspace = await WorkspaceRepository.get_by_id(uuid.uuid4(), session=db_session)
+    not_found_workspace = await WorkspaceRepository.get_by_id(
+        uuid.uuid4(), session=db_session
+    )
     assert not_found_workspace is None
 
 
@@ -56,9 +61,7 @@ async def test_base_repository_update_by_id(db_session):
     workspace = await create_test_workspace(db_session)
 
     updated_workspace = await WorkspaceRepository.update_by_id(
-        workspace.id,
-        {"name": "Updated workspace name"},
-        session=db_session
+        workspace.id, {"name": "Updated workspace name"}, session=db_session
     )
 
     assert updated_workspace is not None
@@ -76,7 +79,9 @@ async def test_base_repository_delete(db_session):
     assert deleted_workspace is not None
     assert deleted_workspace.id == workspace.id
 
-    found_workspace = await WorkspaceRepository.get_by_id(workspace.id, session=db_session)
+    found_workspace = await WorkspaceRepository.get_by_id(
+        workspace.id, session=db_session
+    )
     assert found_workspace is None
 
 
@@ -85,11 +90,15 @@ async def test_base_repository_delete_by_id(db_session):
     """Test the 'delete_by_id' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
-    deleted_workspace = await WorkspaceRepository.delete_by_id(workspace.id, session=db_session)
+    deleted_workspace = await WorkspaceRepository.delete_by_id(
+        workspace.id, session=db_session
+    )
     assert deleted_workspace is not None
     assert deleted_workspace.id == workspace.id
 
-    found_workspace = await WorkspaceRepository.get_by_id(workspace.id, session=db_session)
+    found_workspace = await WorkspaceRepository.get_by_id(
+        workspace.id, session=db_session
+    )
     assert found_workspace is None
 
 
@@ -100,7 +109,9 @@ async def test_base_repository_refresh(db_session):
 
     project1 = await create_test_project(db_session, workspace.id)
 
-    _ = await WorkspaceRepository.refresh(workspace, session=db_session, relations=["projects"])
+    _ = await WorkspaceRepository.refresh(
+        workspace, session=db_session, relations=["projects"]
+    )
 
     assert workspace.projects is not None
     assert len(workspace.projects) == 1
@@ -113,7 +124,9 @@ async def test_base_repository_refresh(db_session):
     assert len(workspace.projects) == 1
     assert project2 not in workspace.projects
 
-    _ = await WorkspaceRepository.refresh(workspace, session=db_session, relations=["projects"])
+    _ = await WorkspaceRepository.refresh(
+        workspace, session=db_session, relations=["projects"]
+    )
 
     assert workspace.projects is not None
     assert len(workspace.projects) == 2

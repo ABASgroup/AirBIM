@@ -1,9 +1,12 @@
 """Tests for User Service."""
+
 import pytest
 
+from core.exceptions import AlreadyExistsError, InvalidLoginInfoError
+
 from schemas.user import UserRegisterRequest
-from services.user import register_user, authenticate_user
-from core.exceptions import InvalidLoginInfoError, AlreadyExistsError
+
+from services.user import authenticate_user, register_user
 
 
 @pytest.mark.asyncio
@@ -52,7 +55,7 @@ async def test_authenticate_user_success(db_session):
         username="auth-service-user",
         email="service@example.com",
         password="correct-password",
-        workspace_name="Auth workspace"
+        workspace_name="Auth workspace",
     )
     await register_user(request, session=db_session)
 
@@ -68,12 +71,16 @@ async def test_authenticate_user_invalid_credentials(db_session):
         username="auth-service-user",
         email="service@example.com",
         password="correct-password",
-        workspace_name="Auth workspace"
+        workspace_name="Auth workspace",
     )
     await register_user(request, session=db_session)
 
     with pytest.raises(InvalidLoginInfoError):
-        _ = await authenticate_user(request.email, "incorrect-password", session=db_session)
+        _ = await authenticate_user(
+            request.email, "incorrect-password", session=db_session
+        )
 
     with pytest.raises(InvalidLoginInfoError):
-        _ = await authenticate_user("nonexisten-user", request.password, session=db_session)
+        _ = await authenticate_user(
+            "nonexisten-user", request.password, session=db_session
+        )

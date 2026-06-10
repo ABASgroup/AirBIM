@@ -1,4 +1,5 @@
 """Tests for the Storage class in the infrastructure layer."""
+
 from io import BytesIO
 from pathlib import Path
 
@@ -15,32 +16,37 @@ async def test_storage_bucket_exists(storage: Storage):
 
 
 @pytest.mark.asyncio
-async def test_storage_can_upload_and_download_file(storage: Storage, test_building_ifc_path: Path, tmp_path: Path):
+async def test_storage_can_upload_and_download_file(
+    storage: Storage, test_building_ifc_path: Path, tmp_path: Path
+):
     """Storage should be able to upload and download files."""
     key = "test-storage"
     storage.upload_file_locally(key, str(test_building_ifc_path))
 
-    assert storage.file_exists(
-        key), "File should exist in storage after upload"
+    assert storage.file_exists(key), "File should exist in storage after upload"
 
     download_path = tmp_path / "downloaded_test_building.ifc"
     storage.download_file_locally(key, str(download_path))
 
     assert download_path.is_file(), "Downloaded file does not exist"
     assert download_path.stat().st_size > 0, "Downloaded file is empty"
-    assert download_path.read_bytes() == test_building_ifc_path.read_bytes(
+    assert (
+        download_path.read_bytes() == test_building_ifc_path.read_bytes()
     ), "Downloaded file content does not match original"
 
 
 @pytest.mark.asyncio
-async def test_storage_can_upload_and_download_file_object(storage: Storage, test_building_ifc_path: Path):
+async def test_storage_can_upload_and_download_file_object(
+    storage: Storage, test_building_ifc_path: Path
+):
     """Storage should be able to upload and download file objects."""
     key = "test-storage-object"
     with test_building_ifc_path.open("rb") as file:
         storage.upload_file_object(file, key)
 
     downloaded_content = storage.download_file_object(key).read()
-    assert downloaded_content == test_building_ifc_path.read_bytes(
+    assert (
+        downloaded_content == test_building_ifc_path.read_bytes()
     ), "Downloaded file content does not match original"
 
 
@@ -66,39 +72,48 @@ async def test_storage_can_get_keys(storage: Storage):
 
     retrieved_keys = storage.get_all_keys()
     for key in keys:
-        assert key in retrieved_keys, f"Key {key} should be in the list of retrieved keys"
+        assert (
+            key in retrieved_keys
+        ), f"Key {key} should be in the list of retrieved keys"
 
     extra_retrieved_keys = storage.get_keys_with_prefix("extra-")
     for key in extra_keys:
-        assert key in extra_retrieved_keys, f"Key {key} should be in the list of retrieved keys with prefix 'extra-'"
+        assert (
+            key in extra_retrieved_keys
+        ), f"Key {key} should be in the list of retrieved keys with prefix 'extra-'"
 
 
 @pytest.mark.asyncio
 async def test_storage_can_delete_files(storage: Storage, test_building_ifc_path: Path):
     """Storage should be able to delete files."""
     keys = ["delete-test-key-1", "delete-test-key-2"]
-    extra_keys = ["extra1-delete-key",
-                  "extra2-delete-key-1", "extra2-delete-key-2"]
+    extra_keys = ["extra1-delete-key", "extra2-delete-key-1", "extra2-delete-key-2"]
     for key in keys + extra_keys:
         storage.upload_file_locally(key, str(test_building_ifc_path))
         assert storage.file_exists(
-            key), f"Key {key} should exist in storage after upload"
+            key
+        ), f"Key {key} should exist in storage after upload"
 
     storage.delete_files(keys)
     for key in extra_keys:
         assert storage.file_exists(
-            key), f"Key {key} should still exist in storage after deleting other keys"
+            key
+        ), f"Key {key} should still exist in storage after deleting other keys"
     for key in keys:
-        assert key not in storage.get_all_keys(
+        assert (
+            key not in storage.get_all_keys()
         ), f"Key {key} should have been deleted from storage"
         assert not storage.file_exists(
-            key), f"Key {key} should have been deleted from storage"
+            key
+        ), f"Key {key} should have been deleted from storage"
 
     storage.delete_file(extra_keys[0])
     assert not storage.file_exists(
-        extra_keys[0]), f"Key {extra_keys[0]} should have been deleted from storage"
+        extra_keys[0]
+    ), f"Key {extra_keys[0]} should have been deleted from storage"
 
     storage.delete_files_by_prefix("extra2")
     for key in extra_keys[1:]:
         assert not storage.file_exists(
-            key), f"Key {key} should have been deleted from storage"
+            key
+        ), f"Key {key} should have been deleted from storage"

@@ -1,8 +1,13 @@
+"""Tests for Membership Repository."""
+
 import pytest
 
 from core.roles import Role
+
 from repositories.membership import MembershipRepository
+
 from schemas.membership import MembershipModel
+
 from tests.helpers import create_test_workspace, create_test_user
 
 
@@ -15,17 +20,13 @@ async def test_membership_repository_create_and_get(db_session):
 
     # Create a membership in the workspace
     membership_data = MembershipModel(
-        workspace_id=workspace.id,
-        user_id=user.id,
-        role=Role.MEMBER
+        workspace_id=workspace.id, user_id=user.id, role=Role.MEMBER
     ).model_dump(exclude_unset=True)
     created_membership = await MembershipRepository.create(membership_data, db_session)
 
     # Retrieve the membership by user and workspace ID
     retrieved_membership = await MembershipRepository.get_user_workspace_membership(
-        user_id=user.id,
-        workspace_id=workspace.id,
-        session=db_session
+        user_id=user.id, workspace_id=workspace.id, session=db_session
     )
 
     # Assertions
@@ -45,14 +46,10 @@ async def test_membership_repository_get_all_workspace_users(db_session):
 
     # Create memberships for both users in the workspace
     membership_data1 = MembershipModel(
-        workspace_id=workspace.id,
-        user_id=user1.id,
-        role=Role.MEMBER
+        workspace_id=workspace.id, user_id=user1.id, role=Role.MEMBER
     ).model_dump(exclude_unset=True)
     membership_data2 = MembershipModel(
-        workspace_id=workspace.id,
-        user_id=user2.id,
-        role=Role.OWNER
+        workspace_id=workspace.id, user_id=user2.id, role=Role.OWNER
     ).model_dump(exclude_unset=True)
 
     await MembershipRepository.create(membership_data1, db_session)
@@ -60,16 +57,13 @@ async def test_membership_repository_get_all_workspace_users(db_session):
 
     # Retrieve all memberships in the workspace
     memberships = await MembershipRepository.get_all_workspace_users(
-        workspace_id=workspace.id,
-        session=db_session
+        workspace_id=workspace.id, session=db_session
     )
 
     # Assertions
     assert len(memberships) == 2
-    assert any(m.user_id == user1.id and m.role ==
-               Role.MEMBER for m in memberships)
-    assert any(m.user_id == user2.id and m.role ==
-               Role.OWNER for m in memberships)
+    assert any(m.user_id == user1.id and m.role == Role.MEMBER for m in memberships)
+    assert any(m.user_id == user2.id and m.role == Role.OWNER for m in memberships)
 
 
 @pytest.mark.asyncio
@@ -82,14 +76,10 @@ async def test_membership_repository_get_all_user_memberships(db_session):
 
     # Create memberships for the user in both workspaces
     membership_data1 = MembershipModel(
-        workspace_id=workspace1.id,
-        user_id=user.id,
-        role=Role.MEMBER
+        workspace_id=workspace1.id, user_id=user.id, role=Role.MEMBER
     ).model_dump(exclude_unset=True)
     membership_data2 = MembershipModel(
-        workspace_id=workspace2.id,
-        user_id=user.id,
-        role=Role.OWNER
+        workspace_id=workspace2.id, user_id=user.id, role=Role.OWNER
     ).model_dump(exclude_unset=True)
 
     await MembershipRepository.create(membership_data1, db_session)
@@ -97,16 +87,17 @@ async def test_membership_repository_get_all_user_memberships(db_session):
 
     # Retrieve all memberships for the user
     memberships = await MembershipRepository.get_all_user_memberships(
-        user_id=user.id,
-        session=db_session
+        user_id=user.id, session=db_session
     )
 
     # Assertions
     assert len(memberships) == 2
-    assert any(m.workspace_id == workspace1.id and m.role ==
-               Role.MEMBER for m in memberships)
-    assert any(m.workspace_id == workspace2.id and m.role ==
-               Role.OWNER for m in memberships)
+    assert any(
+        m.workspace_id == workspace1.id and m.role == Role.MEMBER for m in memberships
+    )
+    assert any(
+        m.workspace_id == workspace2.id and m.role == Role.OWNER for m in memberships
+    )
 
 
 @pytest.mark.asyncio
@@ -118,24 +109,18 @@ async def test_membership_repository_delete_user_workspace_membership(db_session
 
     # Create a membership for the user in the workspace
     membership_data = MembershipModel(
-        workspace_id=workspace.id,
-        user_id=user.id,
-        role=Role.MEMBER
+        workspace_id=workspace.id, user_id=user.id, role=Role.MEMBER
     ).model_dump(exclude_unset=True)
     await MembershipRepository.create(membership_data, db_session)
 
     # Delete the user's membership in the workspace
     await MembershipRepository.delete_user_workspace_membership(
-        user_id=user.id,
-        workspace_id=workspace.id,
-        session=db_session
+        user_id=user.id, workspace_id=workspace.id, session=db_session
     )
 
     # Try to retrieve the deleted membership
     deleted_membership = await MembershipRepository.get_user_workspace_membership(
-        user_id=user.id,
-        workspace_id=workspace.id,
-        session=db_session
+        user_id=user.id, workspace_id=workspace.id, session=db_session
     )
 
     # Assertions

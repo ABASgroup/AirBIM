@@ -23,7 +23,7 @@ from repositories.workspace import WorkspaceRepository
 from schemas.file import BIMModel, FileModel, PointCloudModel
 from schemas.membership import MembershipModel
 from schemas.project import ProjectModel
-from schemas.recording_result import RecordingResultType, RecordingResultModel
+from schemas.recording_result import RecordingResultModel, RecordingResultType
 from schemas.stage import StageModel
 from schemas.task import TaskModel, TaskType
 from schemas.user import UserModel
@@ -132,7 +132,7 @@ async def create_test_recording_result(
     db_session: AsyncSession,
     project_id: UUID,
     point_cloud_id: UUID,
-    data: dict = {"key": "value"},
+    data: dict,
     recording_type: RecordingResultType = RecordingResultType.PROGRESS,
 ):
     """Create a recording result for testing."""
@@ -160,6 +160,7 @@ async def create_test_task(
         ).model_dump(exclude_unset=True),
         db_session,
     )
+
 
 async def wait_until(
     assertion: Callable[..., Coroutine[Any, Any, Any]],

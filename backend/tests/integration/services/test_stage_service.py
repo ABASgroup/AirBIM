@@ -1,13 +1,22 @@
 """Tests for Stage Service."""
+
 from datetime import datetime, timezone
 
 import pytest
 
 from core.exceptions import NotFoundError
-from schemas.stage import StageModel
-from services.stage import get_stage, get_stage_with_project, get_project_stages, create_stage, delete_stage
 
-from tests.helpers import create_test_workspace, create_test_project
+from schemas.stage import StageModel
+
+from services.stage import (
+    create_stage,
+    delete_stage,
+    get_project_stages,
+    get_stage,
+    get_stage_with_project,
+)
+
+from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
@@ -16,10 +25,7 @@ async def test_create_stage(db_session):
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
     test_data = datetime(2000, 1, 1, tzinfo=timezone.utc)
-    stage_data = StageModel(
-        project_id=project.id,
-        start_date=test_data
-    )
+    stage_data = StageModel(project_id=project.id, start_date=test_data)
 
     stage = await create_stage(stage_data, session=db_session)
 
@@ -33,10 +39,7 @@ async def test_get_stage(db_session):
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
     test_data = datetime(2000, 1, 1, tzinfo=timezone.utc)
-    stage_data = StageModel(
-        project_id=project.id,
-        start_date=test_data
-    )
+    stage_data = StageModel(project_id=project.id, start_date=test_data)
     stage = await create_stage(stage_data, session=db_session)
 
     retrieved_stage = await get_stage(stage.id, session=db_session)
@@ -52,10 +55,7 @@ async def test_get_stage_with_project(db_session):
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
     test_data = datetime(2000, 1, 1, tzinfo=timezone.utc)
-    stage_data = StageModel(
-        project_id=project.id,
-        start_date=test_data
-    )
+    stage_data = StageModel(project_id=project.id, start_date=test_data)
     stage = await create_stage(stage_data, session=db_session)
 
     retrieved_stage = await get_stage_with_project(stage.id, session=db_session)
@@ -73,10 +73,7 @@ async def test_get_project_stages(db_session):
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
     test_data = datetime(2000, 1, 1, tzinfo=timezone.utc)
-    stage_data = StageModel(
-        project_id=project.id,
-        start_date=test_data
-    )
+    stage_data = StageModel(project_id=project.id, start_date=test_data)
     stage1 = await create_stage(stage_data, session=db_session)
     stage2 = await create_stage(stage_data, session=db_session)
 
@@ -102,10 +99,7 @@ async def test_delete_stage(db_session, storage):
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
     test_data = datetime(2000, 1, 1, tzinfo=timezone.utc)
-    stage_data = StageModel(
-        project_id=project.id,
-        start_date=test_data
-    )
+    stage_data = StageModel(project_id=project.id, start_date=test_data)
     stage = await create_stage(stage_data, session=db_session)
 
     deleted_stage = await delete_stage(stage.id, session=db_session, storage=storage)

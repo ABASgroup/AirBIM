@@ -1,10 +1,13 @@
 """Tests for Task Service."""
+
 import uuid
 
 import pytest
 
 from core.exceptions import NotFoundError
-from schemas.task import TaskModel, TaskType, TaskStatus
+
+from schemas.task import TaskModel, TaskStatus, TaskType
+
 from services.task import TaskService
 
 from tests.helpers import create_test_workspace
@@ -45,7 +48,9 @@ async def test_start_task(db_session):
     assert task.celery_task_id is None
 
     celery_task_id = "celery-task-id"
-    started_task = await TaskService.start_task(task.id, celery_task_id, session=db_session)
+    started_task = await TaskService.start_task(
+        task.id, celery_task_id, session=db_session
+    )
 
     assert started_task.celery_task_id == celery_task_id
     assert started_task.status == TaskStatus.STARTED
@@ -96,7 +101,9 @@ async def test_update_task_progress(db_session):
     task = await TaskService.create_task(task_data, session=db_session)
     assert task.progress == 0
 
-    task = await TaskService.update_task_progress(task.id, progress=50, session=db_session)
+    task = await TaskService.update_task_progress(
+        task.id, progress=50, session=db_session
+    )
     assert task.progress == 50
 
 
@@ -109,11 +116,13 @@ async def test_update_task_status(db_session):
         entity_type="test_entity",
         workspace_id=workspace.id,
         type=TaskType.CHECKING_PROGRESS,
-        status=TaskStatus.PENDING
+        status=TaskStatus.PENDING,
     )
 
     task = await TaskService.create_task(task_data, session=db_session)
     assert task.status == TaskStatus.PENDING
 
-    task = await TaskService.update_task_status(task.id, status=TaskStatus.SUCCEEDED, session=db_session)
+    task = await TaskService.update_task_status(
+        task.id, status=TaskStatus.SUCCEEDED, session=db_session
+    )
     assert task.status == TaskStatus.SUCCEEDED
