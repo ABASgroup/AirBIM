@@ -1,3 +1,4 @@
+"""Tests for Workspace Repository."""
 import pytest
 
 from repositories.workspace import WorkspaceRepository

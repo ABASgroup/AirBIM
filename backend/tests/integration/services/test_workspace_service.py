@@ -54,8 +54,8 @@ async def test_delete_team_workspace(db_session):
 
     await delete_team_workspace(workspace.id, session=db_session)
 
-    deleted_workspace = await get_workspace(workspace.id, session=db_session)
-    assert deleted_workspace is None
+    with pytest.raises(NotFoundError):
+        await get_workspace(workspace.id, session=db_session)
 
     with pytest.raises(NotFoundError):
         await delete_team_workspace(workspace.id, session=db_session)
