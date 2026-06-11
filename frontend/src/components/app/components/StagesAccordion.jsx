@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { ActionMenu, Accordion, LoadingSpinner, FilledButton, UnfilledButton } from "@ui";
 import { getProjectStages, deleteStage, compareStage } from "@/api/stage";
 import { checkStagesProgress } from "@/api/project";
-import { ProgressModal } from "@app/components";
+import { ProgressModal, PlanFactModal } from "@app/components";
 import { useToast } from "@/context";
 
 const formatDate = (value) => new Date(value).toLocaleString();
@@ -43,10 +43,37 @@ export const StagesAccordion = ({ projectId }) => {
     }
   };
 
-  const handleCompare = async (stageId) => {
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedStageForProgress, setSelectedStageForProgress] = useState(null);
+  const [showPlanFactModal, setShowPlanFactModal] = useState(false);
+  const [selectedStageForPlanFact, setSelectedStageForPlanFact] = useState(null);
+
+  const openProgressModal = (stageId) => {
+    setSelectedStageForProgress(stageId);
+    setShowProgressModal(true);
+  };
+
+  const handleCompare = (stage) => {
+    setSelectedStageForPlanFact(stage);
+    setShowPlanFactModal(true);
+  };
+
+  const handleStartProgress = async (stage1, stage2, tolerance) => {
     try {
-      const res = await compareStage(stageId);
+      const res = await checkStagesProgress(projectId, stage1, stage2, tolerance);
       const taskId = res?.data?.id ?? null;
+      setShowProgressModal(false);
+      showToast({ type: "success", title: "Задача фиксации прогресса запущена", message: taskId ? `Задача запущена: ${taskId}` : "Задача запущена" });
+    } catch (error) {
+      showToast({ type: "warning", title: "Ошибка", message: "Не удалось запустить задачу фиксации прогресса" });
+    }
+  };
+
+  const handleStartCompare = async (stageId, tolerance) => {
+    try {
+      const res = await compareStage(stageId, tolerance);
+      const taskId = res?.data?.id ?? null;
+      setShowPlanFactModal(false);
       showToast({
         type: "success",
         title: "Сравнение план/факт",
@@ -60,27 +87,6 @@ export const StagesAccordion = ({ projectId }) => {
       });
     }
   };
-
-  const [showProgressModal, setShowProgressModal] = useState(false);
-  const [selectedStageForProgress, setSelectedStageForProgress] = useState(null);
-
-  const openProgressModal = (stageId) => {
-    setSelectedStageForProgress(stageId);
-    setShowProgressModal(true);
-  };
-
-  const handleStartProgress = async (stage1, stage2) => {
-    try {
-      const res = await checkStagesProgress(projectId, stage1, stage2);
-      const taskId = res?.data?.id ?? null;
-      setShowProgressModal(false);
-      showToast({ type: "success", title: "Задача фиксации прогресса запущена", message: taskId ? `Задача запущена: ${taskId}` : "Задача запущена" });
-    } catch (error) {
-      showToast({ type: "warning", title: "Ошибка", message: "Не удалось запустить задачу фиксации прогресса" });
-    }
-  };
-
-  
 
   if (isLoading) {
     return <LoadingSpinner variant="inline" message="Загрузка этапов..." />;
@@ -146,7 +152,7 @@ export const StagesAccordion = ({ projectId }) => {
               </div>
 
               <div className="flex gap-2">
-                <FilledButton onClick={() => handleCompare(stage.id)}>
+                <FilledButton onClick={() => handleCompare(stage)}>
                   Сравнить план/факт
                 </FilledButton>
                 <UnfilledButton onClick={() => openProgressModal(stage.id)}>
@@ -166,7 +172,16 @@ export const StagesAccordion = ({ projectId }) => {
           onStart={handleStartProgress}
         />
       )}
-      
+
+      {showPlanFactModal && (
+        <PlanFactModal
+          isOpen={showPlanFactModal}
+          onClose={() => setShowPlanFactModal(false)}
+          stageId={selectedStageForPlanFact?.id}
+          stageName={selectedStageForPlanFact?.name}
+          onStart={handleStartCompare}
+        />
+      )}
     </>
   );
 };

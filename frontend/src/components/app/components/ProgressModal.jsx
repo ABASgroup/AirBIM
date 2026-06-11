@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Modal, FilledButton, UnfilledButton, Select } from "@ui";
+import { Modal, FilledButton, UnfilledButton, Select, Input } from "@ui";
 
 export const ProgressModal = ({ isOpen = true, onClose, stages = [], initialStageId = null, onStart }) => {
   const [first, setFirst] = useState(initialStageId);
   const [second, setSecond] = useState(null);
+  const [tolerance, setTolerance] = useState(0.05);
 
   const options = stages.map((s) => ({ value: s.id, label: s.name || `Этап ${s.id}` }));
 
   const handleStart = () => {
     if (!first || !second) return;
-    onStart(first, second);
+    onStart(first, second, tolerance);
   };
 
   return (
@@ -33,6 +34,18 @@ export const ProgressModal = ({ isOpen = true, onClose, stages = [], initialStag
             onChange={setSecond}
             options={options.filter((o) => o.value !== first)}
             placeholder="Выберите этап для сравнения"
+          />
+        </div>
+
+        <div>
+          <label>Допуск, м</label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step={0.001}
+            value={tolerance}
+            onChange={(e) => setTolerance(parseFloat(e.target.value))}
           />
         </div>
 

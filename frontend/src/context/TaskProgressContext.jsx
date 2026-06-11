@@ -58,18 +58,18 @@ export const TaskProgressProvider = ({ children }) => {
             if (!finalTask) continue;
 
             const taskLabel = getTaskTypeLabel(oldTask.type);
-            const taskId = getTaskTypeLabel(taskId.type);
+            const taskEntityId = finalTask.entity_id || oldTask.id;
             if (finalTask.status === "succeeded") {
               showToastRef.current({
                 type: "primary",
                 title: "Задача завершена",
-                message: `«${taskLabel}» успешно выполнена: ${taskId}`,
+                message: `«${taskLabel}» успешно выполнена: ${taskEntityId}`,
               });
             } else if (finalTask.status === "failed") {
               showToastRef.current({
                 type: "warning",
                 title: "Ошибка задачи",
-                message: `«${taskLabel}» завершилась с ошибкой: ${taskId}`,
+                message: `«${taskLabel}» завершилась с ошибкой: ${taskEntityId}`,
               });
             }
 

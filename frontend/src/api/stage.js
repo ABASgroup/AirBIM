@@ -12,11 +12,10 @@ export const getPointCloudUploadLink = (stageId, data) => api.post(`/stages/${st
 export const convertPointCloud = (stageId, pointCloudId) => api.post(`/stages/${stageId}/clouds/${pointCloudId}/convert`);
 export const getConvertedPointCloudLinks = (stageId) => api.post(`/stages/${stageId}/clouds/converted`);
 export const deleteStage = (stageId) => api.delete(`/stages/${stageId}`);
-
 export const updateStage = (stageId, data) => api.patch(`/stages/${stageId}`, data);
 
 export const compareStage = (stageId, tolerance = 0.05) =>
-  api.post(`/stages/${stageId}/compare`, { tolerance });
+  api.post(`/stages/${stageId}/compare`, null, { params: { tolerance } });
 
 export const uploadPointCloudFile = async (presignedUrl, file, onProgress) => {
   await uploadFileWithPresignedLink(presignedUrl, file, onProgress);
@@ -35,7 +34,6 @@ export const uploadAndConvertPointCloud = async (stageId, file, onProgress) => {
 
     await uploadPointCloudFile(presignedUrl, file, onProgress);
 
-    // IMPORTANT: confirm upload to trigger server-side task creation
     const confirmRes = await confirmBimUpload(pointCloudFileId, {
       filename: file.name,
       size: file.size,

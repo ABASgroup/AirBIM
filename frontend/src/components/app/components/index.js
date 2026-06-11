@@ -10,3 +10,4 @@ export { StageUploadModal } from "./StageUploadModal";
 export { StagesAccordion } from "./StagesAccordion";
 export { ProgressModal } from "./ProgressModal";
 export { ProgressBar } from "./ProgressBar";
+export { PlanFactModal } from "./PlanFactModal";
