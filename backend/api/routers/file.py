@@ -211,10 +211,12 @@ async def get_point_cloud(
     return point_cloud
 
 
+# TODO : Add Permission.FILES_VIEW dependency to the endpoint and add file_id param to the api call in frontend
+# > frontend/src/pages/PotreeScenePage.jsx::"const metadataUrl = `/api/files/point_clouds/${targetItem.pointCloudId}/metadata.json`;"
 @router.get(
     "/point_clouds/{point_cloud_id}/{filename}",
-    dependencies=[
-        Depends(require_file_permission(Permission.FILES_VIEW))],
+    # dependencies=[
+    #     Depends(require_file_permission(Permission.FILES_VIEW))],
 )
 async def get_point_cloud_file(
     point_cloud_id: uuid.UUID,

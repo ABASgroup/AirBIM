@@ -53,6 +53,35 @@ function loadPointCloudAsync(metadataUrl, label) {
   });
 }
 
+function configurePointCloudMaterial(pointcloud) {
+  pointcloud.minimumNodePixelSize = 0;
+
+  const material = pointcloud.material;
+  material.size = 1;
+  material.pointSizeType = window.Potree.PointSizeType.FIXED;
+}
+
+function getVisiblePointClouds(viewer) {
+  return viewer.scene.pointclouds.filter((pc) => pc.visible);
+}
+
+function focusViewerOnVisibleClouds(viewer) {
+  const clouds = getVisiblePointClouds(viewer);
+  if (clouds.length === 0) return;
+
+  // World-space bbox: each cloud keeps metadata.offset as position so layers stay aligned.
+  const box = viewer.getBoundingBox(clouds);
+  const size = box.getSize(new window.THREE.Vector3());
+  if (size.length() > 0) {
+    viewer.setMoveSpeed(size.length() / 5);
+  }
+
+  const node = new window.THREE.Object3D();
+  node.boundingBox = box;
+  viewer.zoomTo(node, 1, 300);
+  viewer.controls.stop();
+}
+
 function PotreeScenePage({ projectId }) {
   const params = useParams();
   const actualProjectId = projectId ?? params.projectId;
@@ -213,10 +242,7 @@ function PotreeScenePage({ projectId }) {
     const pointcloud = loadedCloudsRef.current.get(key);
     if (!viewer || !pointcloud) return;
 
-    const node = new window.THREE.Object3D();
-    node.boundingBox = viewer.getBoundingBox([pointcloud]);
-    viewer.zoomTo(node, 1, 300);
-    viewer.controls.stop();
+    focusViewerOnVisibleClouds(viewer);
   }, []);
 
   const toggleVisibility = useCallback(async (key) => {
@@ -239,6 +265,7 @@ function PotreeScenePage({ projectId }) {
     const existing = loadedCloudsRef.current.get(key);
     if (existing) {
       existing.visible = true;
+      focusViewerOnVisibleClouds(viewer);
       updateItem(key, { visible: true });
       return;
     }
@@ -246,16 +273,17 @@ function PotreeScenePage({ projectId }) {
     updateItem(key, { loading: true, visible: true, error: null });
 
     try {
+      // TODO : Add file_id param to the metadataUrl for Permission.FILES_VIEW support
+      // and update the backend endpoint to use require_file_permission(Permission.FILES_VIEW)
+      // > backend/api/routers/file.py:get_point_cloud_file
       const metadataUrl = `/api/files/point_clouds/${targetItem.pointCloudId}/metadata.json`;
       const pointcloud = await loadPointCloudAsync(metadataUrl, targetItem.label);
-
-      const material = pointcloud.material;
-      material.size = 1.0;
-      material.pointSizeType = window.Potree.PointSizeType.FIXED;
+      configurePointCloudMaterial(pointcloud);
       pointcloud.visible = true;
 
       viewer.scene.addPointCloud(pointcloud);
       loadedCloudsRef.current.set(key, pointcloud);
+      focusViewerOnVisibleClouds(viewer);
 
       updateItem(key, { loading: false, loaded: true, visible: true });
     } catch {
