@@ -1,4 +1,29 @@
 services:
+  backend:
+    container_name: airbim-test-runner
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Alembic run migrations and then launch container to wait execution of tests.
+    # You can run tests with:
+    #   'docker exec -it airbim-test-runner python -m pytest tests/'
+    # or just enter to container with:
+    #   'docker exec -it airbim-test-runner bash' 
+    # and run tests with:
+    #   'python -m pytest tests/'
+    command: ["sh", "-c", "alembic upgrade head && pip install -r requirements.test.txt && sleep infinity"]
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      database:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+
   storage:
     container_name: airbim-test-storage
     image: quay.io/minio/minio:latest
@@ -120,25 +145,6 @@ services:
       broker:
         condition: service_healthy
       database:
-        condition: service_healthy
-
-  backend:
-    container_name: airbim-test-runner
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    # alembic run migrations and then launch pytest
-    command: ["sh", "-c", "alembic upgrade head && pip install -r requirements.test.txt && sleep infinity"]
-    env_file:
-      - .env
-    volumes:
-      - ./backend:/app
-    depends_on:
-      database:
-        condition: service_healthy
-      storage:
-        condition: service_healthy
-      broker:
         condition: service_healthy
 
 secrets:
