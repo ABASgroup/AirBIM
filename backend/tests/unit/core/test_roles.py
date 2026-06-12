@@ -1,8 +1,9 @@
 """Unit tests for core.roles, ensuring that each role has the correct permissions assigned."""
-from core.roles import Role, get_role_permissions, Permission
+
+from core.roles import Permission, Role, get_role_permissions
 
 
-def test_role_permissions():
+def test_role_permissions() -> None:
     """Test that each role has the correct permissions assigned."""
     viewer_perms = get_role_permissions(Role.VIEWER)
     member_perms = get_role_permissions(Role.MEMBER)

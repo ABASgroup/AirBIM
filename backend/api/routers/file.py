@@ -211,24 +211,36 @@ async def get_point_cloud(
     return point_cloud
 
 
-@router.get("/point_clouds/{point_cloud_id}/{filename}")
-async def get_pointcloud_file(
+@router.get(
+    "/point_clouds/{point_cloud_id}/{filename}",
+    dependencies=[
+        Depends(require_file_permission(Permission.FILES_VIEW))],
+)
+async def get_point_cloud_file(
     point_cloud_id: uuid.UUID,
     filename: str,
     request: Request,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
+    """
+    For Potree usage.
+
+    Gives access to a file from point cloud conversion.
+    """
     async with uow:
         await FileService.get_point_cloud(point_cloud_id, session=uow.session)
         files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
 
-    target_file = next((file for file in files if file.filename == filename), None)
+    target_file = next(
+        (file for file in files if file.filename == filename), None)
     if target_file is None:
-        raise NotFoundError(f"File '{filename}' not found for this point cloud")
+        raise NotFoundError(
+            f"File '{filename}' not found for this point cloud")
 
     range_header = request.headers.get("range")
-    s3_response = storage.get_object(target_file.key, range_header=range_header)
+    s3_response = storage.get_object(
+        target_file.key, range_header=range_header)
 
     headers = {
         "Accept-Ranges": "bytes",

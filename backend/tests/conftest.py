@@ -1,4 +1,5 @@
-"""Shared pytest fixtures for integration and API tests."""
+"""Shared pytest fixtures for unit, integration and API tests."""
+
 from collections.abc import AsyncIterator
 from pathlib import Path
 
@@ -9,10 +10,21 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import get_storage
+
 from infrastructure.database import session_maker
 from infrastructure.storage import Storage
+
 from main import app
-from models import User, Membership, Workspace, Project, Stage, BIM, PointCloud, File, PointCloudConverted, InviteLink
+
+from models.file import BIM, File, PointCloud, PointCloudConverted, ResultPhoto
+from models.invite_link import InviteLink
+from models.membership import Membership
+from models.project import Project
+from models.recording_result import RecordingResult
+from models.stage import Stage
+from models.task import Task
+from models.user import User
+from models.workspace import Workspace
 
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -80,6 +92,8 @@ def test_report_pdf_path() -> Path:
 def test_report_xlsx_path() -> Path:
     """Provide path to the test XLSX report."""
     return assert_existing_file(TEST_REPORT_XLSX)
+
+
 # ----------------------------------------------------------------------------------------------
 
 
@@ -87,10 +101,13 @@ def test_report_xlsx_path() -> Path:
 async def _clean_database(session: AsyncSession) -> None:
     """Delete test data in child-to-parent order to satisfy foreign keys."""
     await session.rollback()
-    await session.execute(delete(PointCloudConverted))
+    await session.execute(delete(RecordingResult))
     await session.execute(delete(BIM))
+    await session.execute(delete(PointCloudConverted))
     await session.execute(delete(PointCloud))
+    await session.execute(delete(ResultPhoto))
     await session.execute(delete(File))
+    await session.execute(delete(Task))
     await session.execute(delete(Stage))
     await session.execute(delete(Project))
     await session.execute(delete(InviteLink))
@@ -112,14 +129,6 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def api_client() -> AsyncIterator[AsyncClient]:
-    """Provide API client and ensure database cleanup via db_session fixture."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
-
-
-@pytest_asyncio.fixture(scope="function")
 async def storage() -> AsyncIterator[Storage]:
     """Provide storage instance for tests."""
     storage_instance = get_storage()
@@ -127,14 +136,27 @@ async def storage() -> AsyncIterator[Storage]:
         yield storage_instance
     finally:
         # Clean up all files in the storage after each test
-        bucket = storage_instance._resource.Bucket(
-            storage_instance._bucket_name)
+        bucket = storage_instance._resource.Bucket(storage_instance._bucket_name)
         keys_to_delete = [{"Key": obj.key} for obj in bucket.objects.all()]
         if keys_to_delete:
             for i in range(0, len(keys_to_delete), 1000):
-                batch = keys_to_delete[i:i + 1000]
+                batch = keys_to_delete[i : i + 1000]
                 storage_instance._client.delete_objects(
-                    Bucket=storage_instance._bucket_name,
-                    Delete={"Objects": batch}
+                    Bucket=storage_instance._bucket_name, Delete={"Objects": batch}
                 )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def api_client() -> AsyncIterator[AsyncClient]:
+    """Provide API client and ensure database cleanup via db_session fixture."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with session_maker() as session:
+            await _clean_database(session)
+            try:
+                yield client
+            finally:
+                await _clean_database(session)
+
+
 # ----------------------------------------------------------------------------------------------

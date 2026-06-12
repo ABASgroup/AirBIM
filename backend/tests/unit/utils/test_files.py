@@ -1,28 +1,29 @@
 """Unit tests for utils.files, covering path cleaning, directory/file operations, and MIME type detection."""
-import pathlib
-from unittest.mock import patch, MagicMock
+
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from utils.files import (
     clean_path,
-    get_all_dir_files,
     delete_dir,
     delete_file,
-    get_file_size,
+    get_all_dir_files,
     get_file_mime_type,
+    get_file_size,
 )
 
 
-def test_clean_path():
+def test_clean_path() -> None:
     """Test if the clean_path correctly resolves absolute path."""
     raw_path = "some/local/dir"
     cleaned = clean_path(raw_path)
 
-    assert isinstance(cleaned, pathlib.Path)
+    assert isinstance(cleaned, Path)
     assert cleaned.is_absolute()
     assert str(cleaned).endswith("some/local/dir")
 
 
-def test_get_all_dir_files(tmp_path):
+def test_get_all_dir_files(tmp_path: Path) -> None:
     """Test reading files from a directory."""
     # Create temp files
     file1 = tmp_path / "test1.txt"
@@ -43,7 +44,7 @@ def test_get_all_dir_files(tmp_path):
     assert nested_dir.absolute() not in files
 
 
-def test_delete_dir(tmp_path):
+def test_delete_dir(tmp_path: Path) -> None:
     """Test directory recursive deletion."""
     test_dir = tmp_path / "target_dir"
     test_dir.mkdir()
@@ -59,7 +60,7 @@ def test_delete_dir(tmp_path):
     assert not nested_file.exists()
 
 
-def test_delete_file(tmp_path):
+def test_delete_file(tmp_path: Path) -> None:
     """Test single file deletion."""
     test_file = tmp_path / "to_delete.txt"
     test_file.touch()
@@ -72,7 +73,7 @@ def test_delete_file(tmp_path):
     delete_file(str(test_file))
 
 
-def test_get_file_size(tmp_path):
+def test_get_file_size(tmp_path: Path) -> None:
     """Test retrieving file size."""
     test_file = tmp_path / "content.txt"
     test_file.write_text("Hello, World!")  # 13 bytes
@@ -81,7 +82,7 @@ def test_get_file_size(tmp_path):
     assert size == 13
 
 
-def test_get_file_mime_type_ifc(tmp_path):
+def test_get_file_mime_type_ifc(tmp_path: Path) -> None:
     """Test IFC file mime type detection via signature header."""
     ifc_file = tmp_path / "model.ifc"
     # ISO-10303-21 signature
@@ -91,7 +92,7 @@ def test_get_file_mime_type_ifc(tmp_path):
     assert mime_type == "application/x-ifc"
 
 
-def test_get_file_mime_type_las(tmp_path):
+def test_get_file_mime_type_las(tmp_path: Path) -> None:
     """Test LAS/LAZ file mime type detection via signature header."""
     las_file = tmp_path / "scan.laz"
     # LASF signature
@@ -102,7 +103,9 @@ def test_get_file_mime_type_las(tmp_path):
 
 
 @patch("utils.files.Magika")
-def test_get_file_mime_type_magika_fallback(MockMagika, tmp_path):
+def test_get_file_mime_type_magika_fallback(
+    MockMagika: MagicMock, tmp_path: Path
+) -> None:
     """Test Magika fallback for other file formats. Without actual Magika dependency, we mock its behavior."""
     # Configure mock
     mock_instance = MockMagika.return_value
@@ -117,5 +120,4 @@ def test_get_file_mime_type_magika_fallback(MockMagika, tmp_path):
     mime_type = get_file_mime_type(str(png_file))
 
     assert mime_type == "image/png"
-    mock_instance.identify_path.assert_called_once_with(
-        clean_path(str(png_file)))
+    mock_instance.identify_path.assert_called_once_with(clean_path(str(png_file)))

@@ -1,24 +1,34 @@
 """Tests for Project Service."""
+
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import NotFoundError
-from schemas.project import ProjectModel, ProjectUpdate
-from services.project import get_project, get_workspace_projects, create_project, update_project, delete_project
 
-from tests.helpers import create_test_workspace, create_test_project
+from infrastructure.storage import Storage
+
+from schemas.project import ProjectModel, ProjectUpdate
+
+from services.project import (
+    create_project,
+    delete_project,
+    get_project,
+    get_workspace_projects,
+    update_project,
+)
+
+from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_create_project(db_session):
+async def test_create_project(db_session: AsyncSession) -> None:
     """Service should create project."""
     workspace = await create_test_workspace(db_session)
 
     project_data = ProjectModel(
-        name="Test Project",
-        workspace_id=workspace.id,
-        description="Test description"
+        name="Test Project", workspace_id=workspace.id, description="Test description"
     )
     project = await create_project(project_data, session=db_session)
 
@@ -29,7 +39,7 @@ async def test_create_project(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_project(db_session):
+async def test_get_project(db_session: AsyncSession) -> None:
     """Service should return project by ID."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -43,7 +53,7 @@ async def test_get_project(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_project(db_session):
+async def test_get_nonexistent_project(db_session: AsyncSession) -> None:
     """Service should raise NotFoundError for non-existent project."""
     non_existent_id = uuid.uuid4()
 
@@ -52,7 +62,7 @@ async def test_get_nonexistent_project(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_workspace_projects(db_session):
+async def test_get_workspace_projects(db_session: AsyncSession) -> None:
     """Service should return all projects for workspace."""
     workspace = await create_test_workspace(db_session)
     project1 = await create_test_project(db_session, workspace_id=workspace.id)
@@ -66,13 +76,14 @@ async def test_get_workspace_projects(db_session):
 
 
 @pytest.mark.asyncio
-async def test_update_project(db_session):
+async def test_update_project(db_session: AsyncSession) -> None:
     """Service should update project."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
 
     update_data = ProjectUpdate(
-        name="Updated Project", description="Updated description")
+        name="Updated Project", description="Updated description"
+    )
     updated_project = await update_project(project.id, update_data, session=db_session)
 
     assert updated_project.id == project.id
@@ -81,12 +92,14 @@ async def test_update_project(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_project(db_session, storage):
+async def test_delete_project(db_session: AsyncSession, storage: Storage) -> None:
     """Service should delete project."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
 
-    deleted_project = await delete_project(project.id, session=db_session, storage=storage)
+    deleted_project = await delete_project(
+        project.id, session=db_session, storage=storage
+    )
 
     assert deleted_project.id == project.id
 
