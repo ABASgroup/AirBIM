@@ -5,6 +5,8 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
+import { useTaskProgress } from "@/context/TaskProgressContext";
+import { ProgressBar } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -14,6 +16,7 @@ export const AppSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
   const { hasPermission } = useWorkspace();
+  const { activeTasks } = useTaskProgress();
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -34,7 +37,7 @@ export const AppSidebar = () => {
   };
 
   return (
-    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
+    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50 flex flex-col justify-between">
       <div className="bg-surface/70 h-14 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
@@ -105,6 +108,27 @@ export const AppSidebar = () => {
         onClose={() => setIsCreateWorkspaceModalOpen(false)}
         onCreate={handleCreateWorkspace}
       />
+
+      {activeTasks.length > 0 && (
+        <div className="bg-surface mt-auto shrink-0 rounded-t-[10px]">
+          <div className="max-h-[200px]">
+            <div className="my-3 text-center">
+              <span>Текущие задачи</span>
+            </div>
+            <div className="max-h-[160px] overflow-y-auto p-3 bg-background-color rounded-t-[10px]">
+              {activeTasks.map(task => (
+                <ProgressBar
+                  key={task.id}
+                  taskType={task.type}
+                  entityType={task.entity_type}
+                  entityId={task.entity_id}
+                  percentage={task.progress}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

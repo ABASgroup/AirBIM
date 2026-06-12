@@ -14,6 +14,7 @@ function ProjectPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { switchWorkspace } = useWorkspace();
   const [showStageModal, setShowStageModal] = useState(false);
+  const [stageUploadVersion, setStageUploadVersion] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
@@ -70,13 +71,14 @@ function ProjectPage() {
 
 
       <div className="mt-6">
-        <StagesAccordion projectId={projectId} />
+        <StagesAccordion key={stageUploadVersion} projectId={projectId} />
       </div>
 
       {showStageModal && (
         <StageUploadModal
           projectId={projectId}
           onClose={() => setShowStageModal(false)}
+          onSuccess={() => setStageUploadVersion(v => v + 1)}
         />
       )}
     </>
