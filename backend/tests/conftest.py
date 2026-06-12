@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for integration and API tests."""
+"""Shared pytest fixtures for unit, integration and API tests."""
 
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -25,6 +25,7 @@ from models.stage import Stage
 from models.task import Task
 from models.user import User
 from models.workspace import Workspace
+
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 TEST_BUILDING_IFC = FIXTURES_DIR / "TestBuilding.ifc"
@@ -128,14 +129,6 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def api_client() -> AsyncIterator[AsyncClient]:
-    """Provide API client and ensure database cleanup via db_session fixture."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
-
-
-@pytest_asyncio.fixture(scope="function")
 async def storage() -> AsyncIterator[Storage]:
     """Provide storage instance for tests."""
     storage_instance = get_storage()
@@ -151,6 +144,19 @@ async def storage() -> AsyncIterator[Storage]:
                 storage_instance._client.delete_objects(
                     Bucket=storage_instance._bucket_name, Delete={"Objects": batch}
                 )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def api_client() -> AsyncIterator[AsyncClient]:
+    """Provide API client and ensure database cleanup via db_session fixture."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with session_maker() as session:
+            await _clean_database(session)
+            try:
+                yield client
+            finally:
+                await _clean_database(session)
 
 
 # ----------------------------------------------------------------------------------------------
