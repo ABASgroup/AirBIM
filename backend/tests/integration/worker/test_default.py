@@ -1,12 +1,15 @@
 """Integration tests for Celery default worker tasks."""
 
 from datetime import timedelta
+from pathlib import Path
 import uuid
 
 import openpyxl
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.database import session_maker
+from infrastructure.storage import Storage
 
 from models.workspace import WorkspaceType
 
@@ -32,8 +35,8 @@ from tests.helpers import (
 
 @pytest.mark.asyncio
 async def test_clean_up_files_task_removes_stale_db_file_and_orphan_storage_file(
-    db_session, storage, test_building_laz_path
-):
+    db_session: AsyncSession, storage: Storage, test_building_laz_path: Path
+) -> None:
     """Default worker should remove stale pending DB files and orphan objects from storage."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -50,9 +53,9 @@ async def test_clean_up_files_task_removes_stale_db_file_and_orphan_storage_file
 
     assert storage.file_exists(orphan_key)
 
-    clean_up_files.delay()
+    clean_up_files.delay()  # pyright: ignore[reportFunctionMemberAccess]
 
-    async def assert_cleanup_completed():
+    async def assert_cleanup_completed() -> None:
         async with session_maker() as session:
             db_file = await FileRepository.get_by_id(stale_file.id, session=session)
             assert db_file is None
@@ -68,8 +71,11 @@ async def test_clean_up_files_task_removes_stale_db_file_and_orphan_storage_file
 
 @pytest.mark.asyncio
 async def test_create_recording_result_excel_report(
-    db_session, storage, test_building_laz_path, tmp_path
-):
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+    tmp_path: Path,
+) -> None:
     """Default worker should generate and store excel report for recording result."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -103,9 +109,11 @@ async def test_create_recording_result_excel_report(
 
     await db_session.commit()
 
-    create_recording_result_excel_report.delay(recording_result.id, created_task.id)
+    create_recording_result_excel_report.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        recording_result.id, created_task.id
+    )
 
-    async def assert_report_generated():
+    async def assert_report_generated() -> None:
         async with session_maker() as session:
             record = await RecordingResultRepository.get_by_id(
                 recording_result.id, session
@@ -123,7 +131,7 @@ async def test_create_recording_result_excel_report(
             assert storage.file_exists(excel_file.key)
 
             test_excel_path = tmp_path / excel_file.filename
-            storage.download_file_locally(excel_file.key, test_excel_path)
+            storage.download_file_locally(excel_file.key, str(test_excel_path))
 
             workbook = openpyxl.load_workbook(test_excel_path, data_only=True)
             sheet = workbook.active

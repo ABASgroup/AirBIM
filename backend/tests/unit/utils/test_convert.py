@@ -1,14 +1,15 @@
 """Unit tests for utils.convert, covering point cloud conversion logic and error handling."""
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from utils.convert import convert_point_cloud
 from utils.files import clean_path
 
 
-def test_convert_point_cloud_missing_tool():
+def test_convert_point_cloud_missing_tool() -> None:
     """Test exception raising if POTREE_CONVERTER_PATH env var is missing."""
     with patch.dict(os.environ, clear=True):  # Ensure env is empty
         # Drop POTREE_CONVERTER_PATH
@@ -20,7 +21,7 @@ def test_convert_point_cloud_missing_tool():
 
 
 @patch("utils.convert.subprocess.run")
-def test_convert_point_cloud_success(mock_subprocess_run):
+def test_convert_point_cloud_success(mock_subprocess_run: MagicMock) -> None:
     """Test standard execution of convert_point_cloud and checking subprocess arguments."""
 
     # Configure mocked subprocess to simulate success output
@@ -56,7 +57,7 @@ def test_convert_point_cloud_success(mock_subprocess_run):
 
 
 @patch("utils.convert.subprocess.run")
-def test_convert_point_cloud_failure(mock_subprocess_run):
+def test_convert_point_cloud_failure(mock_subprocess_run: MagicMock) -> None:
     """Test handling of PotreeConverter runtime errors."""
 
     # Configure mocked subprocess to simulate failure

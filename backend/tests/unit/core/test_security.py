@@ -1,7 +1,7 @@
 """Unit tests for core security utilities, including JWT token creation, password hashing, and link token generation."""
 
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from jose import jwt
 
@@ -15,7 +15,7 @@ from core.security import (
 )
 
 
-def test_create_access_token():
+def test_create_access_token() -> None:
     """Test JWT token creation logic and claims."""
     user_id = uuid.uuid4()
     additional_data = {"role": "admin"}
@@ -37,7 +37,7 @@ def test_create_access_token():
     assert exp_time > datetime.now(timezone.utc)
 
 
-def test_password_hashing():
+def test_password_hashing() -> None:
     """Test generating a hash and verifying its correctness."""
     password = "super_secure_password"
 
@@ -54,7 +54,7 @@ def test_password_hashing():
     assert is_invalid is False
 
 
-def test_generate_link_token():
+def test_generate_link_token() -> None:
     """Test generation of random URL-friendly tokens."""
     token = generate_link_token(byte_length=32)
     assert isinstance(token, str)
@@ -66,7 +66,7 @@ def test_generate_link_token():
     assert token != token2
 
 
-def test_hash_link_token():
+def test_hash_link_token() -> None:
     """Test SHA-256 base64-encoded hashing for link tokens."""
     token = generate_link_token(byte_length=32)
     hashed = hash_link_token(token)

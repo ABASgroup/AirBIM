@@ -1,27 +1,35 @@
 """Tests for file-related repositories."""
 
+from pathlib import Path
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.file import FileStatus
 
 from repositories.files import (
-    FileRepository,
     BIMRepository,
-    PointCloudRepository,
+    FileRepository,
     PointCloudConvertedRepository,
+    PointCloudRepository,
 )
 
-from schemas.file import FileModel, BIMModel, PointCloudModel, PointCloudConvertedModel
+from schemas.file import (
+    BIMModel,
+    FileModel,
+    PointCloudConvertedModel,
+    PointCloudModel,
+)
 
 from services.file import FileService
 
-from tests.helpers import create_test_workspace, create_test_project
+from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
 async def test_file_repository_create_and_get_by_key(
-    db_session, test_building_ifc_path
-):
+    db_session: AsyncSession, test_building_ifc_path: Path
+) -> None:
     """Repository should persist file entry and fetch it back by key."""
     workspace = await create_test_workspace(db_session)
     file_payload = FileService.collect_file_data(test_building_ifc_path)
@@ -42,7 +50,9 @@ async def test_file_repository_create_and_get_by_key(
 
 
 @pytest.mark.asyncio
-async def test_file_repository_get_file_by_metadata(db_session, test_building_laz_path):
+async def test_file_repository_get_file_by_metadata(
+    db_session: AsyncSession, test_building_laz_path: Path
+) -> None:
     """Repository should fetch file by exact metadata."""
     workspace = await create_test_workspace(db_session)
     file_payload = FileService.collect_file_data(test_building_laz_path)
@@ -67,8 +77,8 @@ async def test_file_repository_get_file_by_metadata(db_session, test_building_la
 
 @pytest.mark.asyncio
 async def test_file_repository_update_status(
-    db_session, test_building_shifted_laz_path
-):
+    db_session: AsyncSession, test_building_shifted_laz_path: Path
+) -> None:
     """Repository should update file status in place."""
     workspace = await create_test_workspace(db_session)
     file_payload = FileService.collect_file_data(test_building_shifted_laz_path)
@@ -95,8 +105,8 @@ async def test_file_repository_update_status(
 
 @pytest.mark.asyncio
 async def test_file_repository_get_by_status_returns_matching_files(
-    db_session, test_building_ifc_path, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_ifc_path: Path, test_building_laz_path: Path
+) -> None:
     """Repository should return files filtered by status."""
     workspace = await create_test_workspace(db_session)
     first_file = await FileRepository.create(
@@ -131,8 +141,8 @@ async def test_file_repository_get_by_status_returns_matching_files(
 
 @pytest.mark.asyncio
 async def test_file_repository_get_all_keys_returns_all_file_keys(
-    db_session, test_building_ifc_path, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_ifc_path: Path, test_building_laz_path: Path
+) -> None:
     """Repository should return all file keys."""
     workspace = await create_test_workspace(db_session)
     first_file = await FileRepository.create(
@@ -157,8 +167,8 @@ async def test_file_repository_get_all_keys_returns_all_file_keys(
 
 @pytest.mark.asyncio
 async def test_file_repository_create_persists_pending_file(
-    db_session, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_laz_path: Path
+) -> None:
     """Service should create a pending file entry in the database."""
     workspace = await create_test_workspace(db_session)
 
@@ -177,8 +187,8 @@ async def test_file_repository_create_persists_pending_file(
 
 @pytest.mark.asyncio
 async def test_bim_repository_create_and_get_by_project_and_file_id(
-    db_session, test_building_ifc_path
-):
+    db_session: AsyncSession, test_building_ifc_path: Path
+) -> None:
     """Repository should return all file keys."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -220,8 +230,8 @@ async def test_bim_repository_create_and_get_by_project_and_file_id(
 
 @pytest.mark.asyncio
 async def test_bim_repository_set_point_cloud(
-    db_session, test_building_ifc_path, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_ifc_path: Path, test_building_laz_path: Path
+) -> None:
     """Repository should set point cloud for BIM."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -272,8 +282,8 @@ async def test_bim_repository_set_point_cloud(
 
 @pytest.mark.asyncio
 async def test_point_cloud_repository_create_get_by_file_id(
-    db_session, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_laz_path: Path
+) -> None:
     """Repository should fetch point cloud by file ID."""
     workspace = await create_test_workspace(db_session)
 
@@ -308,8 +318,10 @@ async def test_point_cloud_repository_create_get_by_file_id(
 
 @pytest.mark.asyncio
 async def test_point_cloud_converted_repository_create_and_get_by_point_cloud_id(
-    db_session, test_building_laz_path, test_building_shifted_laz_path
-):
+    db_session: AsyncSession,
+    test_building_laz_path: Path,
+    test_building_shifted_laz_path: Path,
+) -> None:
     """Repository should create point cloud converted entry and fetch it by point cloud ID."""
     workspace = await create_test_workspace(db_session)
 

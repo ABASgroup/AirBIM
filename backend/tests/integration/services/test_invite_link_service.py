@@ -3,6 +3,7 @@
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import (
     InvalidInvitationError,
@@ -23,7 +24,7 @@ from tests.helpers import create_test_user, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_generate_invite_link(db_session):
+async def test_generate_invite_link(db_session: AsyncSession) -> None:
     """Service should generate invite link."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -41,7 +42,9 @@ async def test_generate_invite_link(db_session):
 
 
 @pytest.mark.asyncio
-async def test_generate_invite_link_for_personal_workspace(db_session):
+async def test_generate_invite_link_for_personal_workspace(
+    db_session: AsyncSession,
+) -> None:
     """Service should not generate invite link for personal workspace."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.PERSONAL
@@ -55,7 +58,9 @@ async def test_generate_invite_link_for_personal_workspace(db_session):
 
 
 @pytest.mark.asyncio
-async def test_generate_invite_link_for_nonexistent_workspace(db_session):
+async def test_generate_invite_link_for_nonexistent_workspace(
+    db_session: AsyncSession,
+) -> None:
     """Service should not generate invite link for nonexistent workspace."""
     user = await create_test_user(db_session)
 
@@ -66,7 +71,7 @@ async def test_generate_invite_link_for_nonexistent_workspace(db_session):
 
 
 @pytest.mark.asyncio
-async def test_validate_invite_link(db_session):
+async def test_validate_invite_link(db_session: AsyncSession) -> None:
     """Service should validate invite link."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -81,14 +86,14 @@ async def test_validate_invite_link(db_session):
 
 
 @pytest.mark.asyncio
-async def test_validate_invalid_invite_link(db_session):
+async def test_validate_invalid_invite_link(db_session: AsyncSession) -> None:
     """Service should not validate invalid invite link."""
     with pytest.raises(InvalidInvitationError):
         await validate_invite_link("invalid_token", session=db_session)
 
 
 @pytest.mark.asyncio
-async def test_revoke_links(db_session):
+async def test_revoke_links(db_session: AsyncSession) -> None:
     """Service should revoke invite links."""
     workspace = await create_test_workspace(db_session)
     user1 = await create_test_user(db_session)

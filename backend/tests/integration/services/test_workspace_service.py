@@ -1,6 +1,7 @@
 """Tests for Workspace Service."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from core.roles import Role
@@ -16,13 +17,13 @@ from services.workspace import (
 
 from tests.helpers import (
     create_test_membership,
-    create_test_user,
     create_test_workspace,
+    create_test_user,
 )
 
 
 @pytest.mark.asyncio
-async def test_create_and_get_workspace(db_session):
+async def test_create_and_get_workspace(db_session: AsyncSession) -> None:
     """Service should return workspace by its ID."""
     workspace_data = WorkspaceModel(name="Test Workspace", type=WorkspaceType.TEAM)
 
@@ -39,7 +40,7 @@ async def test_create_and_get_workspace(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_user_workspaces(db_session):
+async def test_get_user_workspaces(db_session: AsyncSession) -> None:
     """Service should return all workspaces where user is a member."""
     workspace1 = await create_test_workspace(db_session)
     workspace2 = await create_test_workspace(db_session)
@@ -63,7 +64,7 @@ async def test_get_user_workspaces(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_team_workspace(db_session):
+async def test_delete_team_workspace(db_session: AsyncSession) -> None:
     """Service should delete team workspace."""
     workspace = await create_test_workspace(db_session)
 
@@ -77,7 +78,7 @@ async def test_delete_team_workspace(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_personal_workspace(db_session):
+async def test_delete_personal_workspace(db_session: AsyncSession) -> None:
     """Service should not allow deleting personal workspace."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.PERSONAL

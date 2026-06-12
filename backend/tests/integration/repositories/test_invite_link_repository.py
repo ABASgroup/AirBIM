@@ -1,6 +1,7 @@
 """Tests for Invite link Repository."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.roles import Role
 
@@ -8,11 +9,13 @@ from repositories.invite_link import InviteLinkRepository
 
 from schemas.invite_link import InviteLinkModel
 
-from tests.helpers import create_test_workspace, create_test_user
+from tests.helpers import create_test_user, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_invite_link_repository_create_and_get_by_token(db_session):
+async def test_invite_link_repository_create_and_get_by_token(
+    db_session: AsyncSession,
+) -> None:
     """Test creating an invite link and retrieving it."""
     # Create a workspace and user
     workspace = await create_test_workspace(db_session)
@@ -43,7 +46,9 @@ async def test_invite_link_repository_create_and_get_by_token(db_session):
 
 
 @pytest.mark.asyncio
-async def test_invite_link_repository_get_by_workspace_id_and_role(db_session):
+async def test_invite_link_repository_get_by_workspace_id_and_role(
+    db_session: AsyncSession,
+) -> None:
     """Test retrieving an invite link by workspace ID and role."""
     # Create a workspace and user
     workspace = await create_test_workspace(db_session)
@@ -74,7 +79,9 @@ async def test_invite_link_repository_get_by_workspace_id_and_role(db_session):
 
 
 @pytest.mark.asyncio
-async def test_invite_link_repository_delete_by_workspace_id(db_session):
+async def test_invite_link_repository_delete_by_workspace_id(
+    db_session: AsyncSession,
+) -> None:
     """Test deleting invite links by workspace ID."""
     # Create a workspace and user
     workspace = await create_test_workspace(db_session)

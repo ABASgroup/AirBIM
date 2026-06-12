@@ -3,14 +3,15 @@
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.workspace import WorkspaceRepository
 
-from tests.helpers import create_test_workspace, create_test_project
+from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_base_repository_create(db_session):
+async def test_base_repository_create(db_session: AsyncSession) -> None:
     """Test the 'create' method of the base repository."""
     workspace = await create_test_workspace(db_session)
     assert workspace is not None
@@ -20,7 +21,7 @@ async def test_base_repository_create(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_get_all(db_session):
+async def test_base_repository_get_all(db_session: AsyncSession) -> None:
     """Test the 'get_all' method of the base repository."""
     workspace1 = await create_test_workspace(db_session)
 
@@ -39,7 +40,7 @@ async def test_base_repository_get_all(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_get_by_id(db_session):
+async def test_base_repository_get_by_id(db_session: AsyncSession) -> None:
     """Test the 'get_by_id' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
@@ -56,7 +57,7 @@ async def test_base_repository_get_by_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_update_by_id(db_session):
+async def test_base_repository_update_by_id(db_session: AsyncSession) -> None:
     """Test the 'update_by_id' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
@@ -71,7 +72,7 @@ async def test_base_repository_update_by_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_delete(db_session):
+async def test_base_repository_delete(db_session: AsyncSession) -> None:
     """Test the 'delete' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
@@ -86,7 +87,7 @@ async def test_base_repository_delete(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_delete_by_id(db_session):
+async def test_base_repository_delete_by_id(db_session: AsyncSession) -> None:
     """Test the 'delete_by_id' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 
@@ -103,7 +104,7 @@ async def test_base_repository_delete_by_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_base_repository_refresh(db_session):
+async def test_base_repository_refresh(db_session: AsyncSession) -> None:
     """Test the 'refresh' method of the base repository."""
     workspace = await create_test_workspace(db_session)
 

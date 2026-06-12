@@ -3,8 +3,11 @@
 from datetime import datetime, timezone
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import NotFoundError
+
+from infrastructure.storage import Storage
 
 from schemas.stage import StageModel
 
@@ -20,7 +23,7 @@ from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_create_stage(db_session):
+async def test_create_stage(db_session: AsyncSession) -> None:
     """Service should create stage."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -34,7 +37,7 @@ async def test_create_stage(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_stage(db_session):
+async def test_get_stage(db_session: AsyncSession) -> None:
     """Service should return stage by its ID."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -50,7 +53,7 @@ async def test_get_stage(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_stage_with_project(db_session):
+async def test_get_stage_with_project(db_session: AsyncSession) -> None:
     """Service should return stage with project by stage ID."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -68,7 +71,7 @@ async def test_get_stage_with_project(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_project_stages(db_session):
+async def test_get_project_stages(db_session: AsyncSession) -> None:
     """Service should return all stages related to the project."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -85,7 +88,7 @@ async def test_get_project_stages(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_project_stages_no_stages(db_session):
+async def test_get_project_stages_no_stages(db_session: AsyncSession) -> None:
     """Service should raise NotFoundError if project doesn't have stages."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -94,7 +97,7 @@ async def test_get_project_stages_no_stages(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_stage(db_session, storage):
+async def test_delete_stage(db_session: AsyncSession, storage: Storage) -> None:
     """Service should delete stage."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)

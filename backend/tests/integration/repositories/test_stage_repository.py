@@ -4,16 +4,17 @@ from datetime import datetime, timezone
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.stage import StageRepository
 
 from schemas.stage import StageModel
 
-from tests.helpers import create_test_workspace, create_test_project
+from tests.helpers import create_test_project, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_stage_repository_create_and_get_by_id(db_session):
+async def test_stage_repository_create_and_get_by_id(db_session: AsyncSession) -> None:
     """Test stage creation and fetching by stage ID and project ID."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -37,7 +38,7 @@ async def test_stage_repository_create_and_get_by_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_stage_repository_get_by_project_id(db_session):
+async def test_stage_repository_get_by_project_id(db_session: AsyncSession) -> None:
     """Test fetching stages by project ID."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
@@ -59,7 +60,9 @@ async def test_stage_repository_get_by_project_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_stage_repository_get_by_id_with_project_nonexistent(db_session):
+async def test_stage_repository_get_by_id_with_project_nonexistent(
+    db_session: AsyncSession,
+) -> None:
     """Test fetching stage by ID that does not exist."""
     fetched_stage = await StageRepository.get_by_id_with_project(
         stage_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),

@@ -10,15 +10,15 @@ from infrastructure.storage import Storage
 
 
 @pytest.mark.asyncio
-async def test_storage_bucket_exists(storage: Storage):
+async def test_storage_bucket_exists(storage: Storage) -> None:
     """Storage should correctly check if bucket exists."""
-    assert storage._bucket_exists() is True, "Bucket should exist"
+    assert storage._bucket_exists() is True, "Bucket should exist"  # pylint: disable=protected-access
 
 
 @pytest.mark.asyncio
 async def test_storage_can_upload_and_download_file(
     storage: Storage, test_building_ifc_path: Path, tmp_path: Path
-):
+) -> None:
     """Storage should be able to upload and download files."""
     key = "test-storage"
     storage.upload_file_locally(key, str(test_building_ifc_path))
@@ -38,7 +38,7 @@ async def test_storage_can_upload_and_download_file(
 @pytest.mark.asyncio
 async def test_storage_can_upload_and_download_file_object(
     storage: Storage, test_building_ifc_path: Path
-):
+) -> None:
     """Storage should be able to upload and download file objects."""
     key = "test-storage-object"
     with test_building_ifc_path.open("rb") as file:
@@ -51,7 +51,7 @@ async def test_storage_can_upload_and_download_file_object(
 
 
 @pytest.mark.asyncio
-async def test_storage_download_nonexistent_file(storage: Storage):
+async def test_storage_download_nonexistent_file(storage: Storage) -> None:
     """Storage should raise an error when trying to download a non-existent file."""
     key = "nonexistent-file"
     with pytest.raises(ClientError):
@@ -61,7 +61,7 @@ async def test_storage_download_nonexistent_file(storage: Storage):
 
 
 @pytest.mark.asyncio
-async def test_storage_can_get_keys(storage: Storage):
+async def test_storage_can_get_keys(storage: Storage) -> None:
     """Storage should be able to list keys in the bucket and use prefix."""
     keys = ["test-key-1", "test-key-2", "test-key-3"]
     extra_keys = ["extra-key-1", "extra-key-2"]
@@ -84,7 +84,9 @@ async def test_storage_can_get_keys(storage: Storage):
 
 
 @pytest.mark.asyncio
-async def test_storage_can_delete_files(storage: Storage, test_building_ifc_path: Path):
+async def test_storage_can_delete_files(
+    storage: Storage, test_building_ifc_path: Path
+) -> None:
     """Storage should be able to delete files."""
     keys = ["delete-test-key-1", "delete-test-key-2"]
     extra_keys = ["extra1-delete-key", "extra2-delete-key-1", "extra2-delete-key-2"]

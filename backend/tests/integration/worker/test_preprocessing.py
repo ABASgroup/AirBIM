@@ -1,11 +1,14 @@
 """Integration tests for Celery preprocessing worker tasks."""
 
 import json
+from pathlib import Path
 
 import aiofiles
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.database import session_maker
+from infrastructure.storage import Storage
 
 from models.workspace import WorkspaceType
 
@@ -26,8 +29,11 @@ from tests.helpers import (
 
 @pytest.mark.asyncio
 async def test_convert_point_cloud(
-    db_session, storage, test_building_laz_path, tmp_path
-):
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+    tmp_path: Path,
+) -> None:
     """Preprocessing worker should generate potree files from LAZ for visualization."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -37,7 +43,7 @@ async def test_convert_point_cloud(
 
     point_cloud_file_key = FileService.create_file_key(test_building_laz_path.name)
     file.key = point_cloud_file_key
-    storage.upload_file_locally(point_cloud_file_key, test_building_laz_path)
+    storage.upload_file_locally(point_cloud_file_key, str(test_building_laz_path))
 
     created_task = await create_test_task(
         db_session,
@@ -48,9 +54,11 @@ async def test_convert_point_cloud(
 
     await db_session.commit()
 
-    convert_point_cloud_task.delay(point_cloud.id, created_task.id)
+    convert_point_cloud_task.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        point_cloud.id, created_task.id
+    )
 
-    async def assert_converted_point_cloud_generated():
+    async def assert_converted_point_cloud_generated() -> None:
         async with session_maker() as session:
 
             converted_files = await FileService.get_converted_point_cloud_files(
@@ -72,7 +80,7 @@ async def test_convert_point_cloud(
 
             path_to_metadata_json = tmp_path / "metadata.json"
             storage.download_file_locally(
-                files_dict["metadata.json"].key, path_to_metadata_json
+                files_dict["metadata.json"].key, str(path_to_metadata_json)
             )
             async with aiofiles.open(
                 path_to_metadata_json, mode="r", encoding="utf-8"

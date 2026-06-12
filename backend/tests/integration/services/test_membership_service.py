@@ -1,6 +1,7 @@
 """Tests for Membership Service."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import (
     MembershipViolationError,
@@ -27,7 +28,7 @@ from tests.helpers import (
 
 
 @pytest.mark.asyncio
-async def test_create_membership(db_session):
+async def test_create_membership(db_session: AsyncSession) -> None:
     """Service should create membership."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -43,7 +44,7 @@ async def test_create_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_membership(db_session):
+async def test_get_membership(db_session: AsyncSession) -> None:
     """Service should return membership."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -57,7 +58,7 @@ async def test_get_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_membership(db_session):
+async def test_get_nonexistent_membership(db_session: AsyncSession) -> None:
     """Service should raise NotMemberError if membership does not exist."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -67,7 +68,7 @@ async def test_get_nonexistent_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_workspace_members(db_session):
+async def test_get_workspace_members(db_session: AsyncSession) -> None:
     """Service should return all workspace memberships."""
     workspace = await create_test_workspace(db_session)
     user1 = await create_test_user(db_session, email="test@test.com")
@@ -88,7 +89,7 @@ async def test_get_workspace_members(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_membership(db_session):
+async def test_delete_membership(db_session: AsyncSession) -> None:
     """Service should delete membership."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -108,7 +109,7 @@ async def test_delete_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_owner_membership(db_session):
+async def test_delete_owner_membership(db_session: AsyncSession) -> None:
     """Service should not allow deleting owner membership."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -122,7 +123,7 @@ async def test_delete_owner_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_nonexistent_membership(db_session):
+async def test_delete_nonexistent_membership(db_session: AsyncSession) -> None:
     """Service should raise NotMemberError when trying to delete non-existent membership."""
     workspace = await create_test_workspace(db_session)
     user = await create_test_user(db_session)
@@ -132,7 +133,7 @@ async def test_delete_nonexistent_membership(db_session):
 
 
 @pytest.mark.asyncio
-async def test_change_user_role(db_session):
+async def test_change_user_role(db_session: AsyncSession) -> None:
     """Service should change user role."""
     workspace = await create_test_workspace(db_session)
     editor = await create_test_user(db_session, email="test@test.com")
@@ -156,7 +157,7 @@ async def test_change_user_role(db_session):
 
 
 @pytest.mark.asyncio
-async def test_change_user_role_to_owner(db_session):
+async def test_change_user_role_to_owner(db_session: AsyncSession) -> None:
     """Service should not allow changing user role to owner."""
     workspace = await create_test_workspace(db_session)
     editor = await create_test_user(db_session, email="test@test.com")
@@ -179,7 +180,7 @@ async def test_change_user_role_to_owner(db_session):
 
 
 @pytest.mark.asyncio
-async def test_change_owner_role(db_session):
+async def test_change_owner_role(db_session: AsyncSession) -> None:
     """Service should not allow changing owner's role."""
     workspace = await create_test_workspace(db_session)
     editor = await create_test_user(db_session, email="test@test.com")
@@ -202,7 +203,9 @@ async def test_change_owner_role(db_session):
 
 
 @pytest.mark.asyncio
-async def test_change_user_role_nonexistent_membership(db_session):
+async def test_change_user_role_nonexistent_membership(
+    db_session: AsyncSession,
+) -> None:
     """Service should raise NotMemberError when trying to change role of non-existent membership."""
     workspace = await create_test_workspace(db_session)
     editor = await create_test_user(db_session, email="test@test.com")

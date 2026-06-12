@@ -3,6 +3,7 @@
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.task import TaskRepository
 
@@ -12,7 +13,7 @@ from tests.helpers import create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_task_repository_create(db_session):
+async def test_task_repository_create(db_session: AsyncSession) -> None:
     """Test task creation."""
     workspace = await create_test_workspace(db_session)
     task = await TaskRepository.create(

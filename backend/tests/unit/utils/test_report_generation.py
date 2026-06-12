@@ -1,19 +1,20 @@
 """Unit tests for utils.report_generation."""
 
 from pathlib import Path
-from unittest.mock import patch
+from typing import Any
 
 import openpyxl
+import pytest
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
-import pytest
+from pytest_mock import MockerFixture
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, PageBreak
+from reportlab.platypus import PageBreak, SimpleDocTemplate, Table
 
 from utils.report_generation import generate_excel_report, generate_pdf_report
 
 
-def test_basic_report(tmp_path):
+def test_basic_report(tmp_path: Path) -> None:
     """Correct structure: headers in row 1, values in row 2."""
     file_path = tmp_path / "report.xlsx"
     data = {"Name": "Alice", "Age": 30}
@@ -29,7 +30,7 @@ def test_basic_report(tmp_path):
     assert ws.cell(2, 2).value == 30
 
 
-def test_empty_data_creates_empty_sheet(tmp_path):
+def test_empty_data_creates_empty_sheet(tmp_path: Path) -> None:
     """Empty dict creates a file with sheet title but no data rows."""
     file_path = tmp_path / "empty.xlsx"
     generate_excel_report("Empty", {}, file_path)
@@ -41,7 +42,7 @@ def test_empty_data_creates_empty_sheet(tmp_path):
     assert ws.max_row is None or ws.max_row == 1
 
 
-def test_style_and_width(tmp_path):
+def test_style_and_width(tmp_path: Path) -> None:
     """Headers get yellow fill, column widths are calculated correctly."""
     file_path = tmp_path / "styled.xlsx"
     # "Short" (len 5) vs "1" (len 1) -> max 5, width = 5+3=8 -> clamped to min 11
@@ -64,7 +65,7 @@ def test_style_and_width(tmp_path):
     assert ws.column_dimensions[get_column_letter(2)].width == 15
 
 
-def test_basic_pdf_creation(tmp_path):
+def test_basic_pdf_creation(tmp_path: Path) -> None:
     """A valid PDF file is created and is non-empty."""
     file_path = tmp_path / "report.pdf"
     data = {"Name": "Alice", "Age": 30}
@@ -74,7 +75,7 @@ def test_basic_pdf_creation(tmp_path):
     assert file_path.stat().st_size > 0
 
 
-def test_empty_data_creates_pdf(tmp_path):
+def test_empty_data_creates_pdf(tmp_path: Path) -> None:
     """Empty data dict still produces a valid PDF file."""
     file_path = tmp_path / "empty.pdf"
     generate_pdf_report("Empty", {}, file_path)
@@ -83,7 +84,9 @@ def test_empty_data_creates_pdf(tmp_path):
     assert file_path.stat().st_size > 0
 
 
-def test_value_cleaner_called_for_all_values(tmp_path, mocker):
+def test_value_cleaner_called_for_all_values(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """_value_cleaner is called for each value in the data dict."""
     mock_cleaner = mocker.patch(
         "utils.report_generation._value_cleaner", side_effect=lambda x: f"clean_{x}"
@@ -99,7 +102,7 @@ def test_value_cleaner_called_for_all_values(tmp_path, mocker):
     mock_cleaner.assert_any_call(None)
 
 
-def test_table_creation_and_styling(tmp_path, mocker):
+def test_table_creation_and_styling(tmp_path: Path, mocker: MockerFixture) -> None:
     """Verify that Table is created with correct data and style."""
     mock_table = mocker.patch("utils.report_generation.Table", wraps=Table)
     mock_style = mocker.patch("utils.report_generation.TableStyle")
@@ -128,7 +131,7 @@ def test_table_creation_and_styling(tmp_path, mocker):
     )
 
 
-def test_images_added_when_provided(tmp_path, mocker):
+def test_images_added_when_provided(tmp_path: Path, mocker: MockerFixture) -> None:
     """When images list is not empty, PageBreak and Images are added to the story."""
     mock_image = mocker.patch("utils.report_generation.Image")
     # Mock Image instance attributes to avoid file access
@@ -140,7 +143,11 @@ def test_images_added_when_provided(tmp_path, mocker):
     original_build = SimpleDocTemplate.build
     story_elements = []
 
-    def fake_build(self, story, **kwargs):
+    def fake_build(
+        self: SimpleDocTemplate,
+        story: list[Any],
+        **kwargs: Any,
+    ) -> Any:
         story_elements.extend(story)
         # Still write the file for the assertion
         return original_build(self, story, **kwargs)
@@ -163,7 +170,7 @@ def test_images_added_when_provided(tmp_path, mocker):
     assert len(image_elements) == 2
 
 
-def test_missing_directory_raises(tmp_path):
+def test_missing_directory_raises(tmp_path: Path) -> None:
     """A FileNotFoundError is raised if the target directory does not exist."""
     bad_path = tmp_path / "missing" / "report.pdf"
     with pytest.raises(FileNotFoundError):

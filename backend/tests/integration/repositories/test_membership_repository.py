@@ -1,6 +1,7 @@
 """Tests for Membership Repository."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.roles import Role
 
@@ -8,11 +9,11 @@ from repositories.membership import MembershipRepository
 
 from schemas.membership import MembershipModel
 
-from tests.helpers import create_test_workspace, create_test_user
+from tests.helpers import create_test_user, create_test_workspace
 
 
 @pytest.mark.asyncio
-async def test_membership_repository_create_and_get(db_session):
+async def test_membership_repository_create_and_get(db_session: AsyncSession) -> None:
     """Test creating a membership and retrieving it."""
     # Create a workspace
     workspace = await create_test_workspace(db_session)
@@ -37,7 +38,9 @@ async def test_membership_repository_create_and_get(db_session):
 
 
 @pytest.mark.asyncio
-async def test_membership_repository_get_all_workspace_users(db_session):
+async def test_membership_repository_get_all_workspace_users(
+    db_session: AsyncSession,
+) -> None:
     """Test retrieving all memberships in a workspace."""
     # Create a workspace and users
     workspace = await create_test_workspace(db_session)
@@ -67,7 +70,9 @@ async def test_membership_repository_get_all_workspace_users(db_session):
 
 
 @pytest.mark.asyncio
-async def test_membership_repository_get_all_user_memberships(db_session):
+async def test_membership_repository_get_all_user_memberships(
+    db_session: AsyncSession,
+) -> None:
     """Test retrieving all memberships for a user."""
     # Create a workspace and user
     workspace1 = await create_test_workspace(db_session)
@@ -101,7 +106,9 @@ async def test_membership_repository_get_all_user_memberships(db_session):
 
 
 @pytest.mark.asyncio
-async def test_membership_repository_delete_user_workspace_membership(db_session):
+async def test_membership_repository_delete_user_workspace_membership(
+    db_session: AsyncSession,
+) -> None:
     """Test deleting a user's membership in a workspace."""
     # Create a workspace and user
     workspace = await create_test_workspace(db_session)

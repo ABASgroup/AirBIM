@@ -1,10 +1,13 @@
 """Integration tests for Celery processing worker tasks."""
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.database import session_maker
+from infrastructure.storage import Storage
 
 from models.workspace import WorkspaceType
 
@@ -39,7 +42,9 @@ from tests.helpers import (
 
 
 @pytest.mark.asyncio
-async def test_convert_bim_to_point_cloud(db_session, storage, test_building_ifc_path):
+async def test_convert_bim_to_point_cloud(
+    db_session: AsyncSession, storage: Storage, test_building_ifc_path: Path
+) -> None:
     """Processing worker should generate point cloud (LAZ) from BIM (IFC) file."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -50,7 +55,7 @@ async def test_convert_bim_to_point_cloud(db_session, storage, test_building_ifc
 
     bim_file_key = FileService.create_file_key(test_building_ifc_path.name)
     file.key = bim_file_key
-    storage.upload_file_locally(bim_file_key, test_building_ifc_path)
+    storage.upload_file_locally(bim_file_key, str(test_building_ifc_path))
 
     created_task = await create_test_task(
         db_session,
@@ -61,9 +66,11 @@ async def test_convert_bim_to_point_cloud(db_session, storage, test_building_ifc
 
     await db_session.commit()
 
-    convert_bim_to_point_cloud.delay(bim.id, created_task.id)
+    convert_bim_to_point_cloud.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        bim.id, created_task.id
+    )
 
-    async def assert_converted_bim_generated():
+    async def assert_converted_bim_generated() -> None:
         async with session_maker() as session:
             new_bim = await FileService.get_bim_by_project_id(project.id, session)
             assert new_bim.point_cloud_id is not None
@@ -89,8 +96,11 @@ async def test_convert_bim_to_point_cloud(db_session, storage, test_building_ifc
 
 @pytest.mark.asyncio
 async def test_compare_scan_and_plan(
-    db_session, storage, test_building_laz_path, test_building_shifted_laz_path
-):
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+    test_building_shifted_laz_path: Path,
+) -> None:
     """Processing worker should generate point cloud from scan and plan comparison."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -105,7 +115,7 @@ async def test_compare_scan_and_plan(
     file_plan.key = FileService.create_file_key(test_building_laz_path.name)
 
     await db_session.commit()
-    storage.upload_file_locally(file_plan.key, test_building_laz_path)
+    storage.upload_file_locally(file_plan.key, str(test_building_laz_path))
 
     stage = await create_test_stage(db_session, project.id)
     file_scan = await create_test_file(
@@ -117,7 +127,7 @@ async def test_compare_scan_and_plan(
     file_scan.key = FileService.create_file_key(test_building_shifted_laz_path.name)
 
     await db_session.commit()
-    storage.upload_file_locally(file_scan.key, test_building_shifted_laz_path)
+    storage.upload_file_locally(file_scan.key, str(test_building_shifted_laz_path))
 
     created_task = await create_test_task(
         db_session,
@@ -128,9 +138,11 @@ async def test_compare_scan_and_plan(
 
     await db_session.commit()
 
-    compare_scan_and_plan.delay(stage.id, created_task.id)
+    compare_scan_and_plan.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        stage.id, created_task.id
+    )
 
-    async def assert_scan_and_plan_comparison_generated():
+    async def assert_scan_and_plan_comparison_generated() -> None:
         async with session_maker() as session:
             recording_result = (
                 await RecordingResultService.get_recording_results_for_project(
@@ -156,8 +168,11 @@ async def test_compare_scan_and_plan(
 
 @pytest.mark.asyncio
 async def test_check_progress(
-    db_session, storage, test_building_laz_path, test_building_shifted_laz_path
-):
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+    test_building_shifted_laz_path: Path,
+) -> None:
     """Processing worker should generate point cloud from check progress."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -174,7 +189,7 @@ async def test_check_progress(
     point_cloud_before.stage_id = stage_before.id
     point_cloud_before.type = PointCloudType.SCAN
     file_before.key = FileService.create_file_key(test_building_laz_path.name)
-    storage.upload_file_locally(file_before.key, test_building_laz_path)
+    storage.upload_file_locally(file_before.key, str(test_building_laz_path))
 
     stage_after = await create_test_stage(
         db_session, project.id, datetime(2000, 1, 1, tzinfo=timezone.utc)
@@ -186,7 +201,7 @@ async def test_check_progress(
     point_cloud_after.stage_id = stage_after.id
     point_cloud_after.type = PointCloudType.SCAN
     file_after.key = FileService.create_file_key(test_building_shifted_laz_path.name)
-    storage.upload_file_locally(file_after.key, test_building_shifted_laz_path)
+    storage.upload_file_locally(file_after.key, str(test_building_shifted_laz_path))
 
     created_task = await create_test_task(
         db_session,
@@ -197,9 +212,11 @@ async def test_check_progress(
 
     await db_session.commit()
 
-    check_progress.delay(stage_before.id, stage_after.id, created_task.id)
+    check_progress.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        stage_before.id, stage_after.id, created_task.id
+    )
 
-    async def assert_scan_and_plan_comparison_generated():
+    async def assert_scan_and_plan_comparison_generated() -> None:
         async with session_maker() as session:
             recording_result = (
                 await RecordingResultService.get_recording_results_for_project(
@@ -225,12 +242,12 @@ async def test_check_progress(
 
 @pytest.mark.asyncio
 async def test_create_recording_result_pdf_report(
-    db_session,
-    storage,
-    test_building_laz_path,
-    test_photo_1_jpg_path,
-    test_photo_2_jpg_path,
-):
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+    test_photo_1_jpg_path: Path,
+    test_photo_2_jpg_path: Path,
+) -> None:
     """Default worker should generate and store pdf report for recording result."""
     workspace = await create_test_workspace(
         db_session, workspace_type=WorkspaceType.TEAM
@@ -238,7 +255,7 @@ async def test_create_recording_result_pdf_report(
     project = await create_test_project(db_session, workspace.id)
     file = await create_test_file(db_session, workspace.id, test_building_laz_path)
     file.key = FileService.create_file_key(test_building_laz_path.name)
-    storage.upload_file_locally(file.key, test_building_laz_path)
+    storage.upload_file_locally(file.key, str(test_building_laz_path))
     point_cloud = await create_test_point_cloud(db_session, file.id)
 
     test_data = {
@@ -261,13 +278,13 @@ async def test_create_recording_result_pdf_report(
         db_session, workspace.id, test_photo_1_jpg_path
     )
     photo_file_1.key = FileService.create_file_key(test_photo_1_jpg_path.name)
-    storage.upload_file_locally(photo_file_1.key, test_photo_1_jpg_path)
+    storage.upload_file_locally(photo_file_1.key, str(test_photo_1_jpg_path))
 
     photo_file_2 = await create_test_file(
         db_session, workspace.id, test_photo_2_jpg_path
     )
     photo_file_2.key = FileService.create_file_key(test_photo_2_jpg_path.name)
-    storage.upload_file_locally(photo_file_2.key, test_photo_2_jpg_path)
+    storage.upload_file_locally(photo_file_2.key, str(test_photo_2_jpg_path))
 
     await RecordingResultRepository.add_photos(
         recording_result, photo_files=[photo_file_1, photo_file_2], session=db_session
@@ -282,9 +299,11 @@ async def test_create_recording_result_pdf_report(
 
     await db_session.commit()
 
-    create_recording_result_pdf_report.delay(recording_result.id, created_task.id)
+    create_recording_result_pdf_report.delay(  # pyright: ignore[reportFunctionMemberAccess]
+        recording_result.id, created_task.id
+    )
 
-    async def assert_report_generated():
+    async def assert_report_generated() -> None:
         async with session_maker() as session:
             record = await RecordingResultRepository.get_by_id(
                 recording_result.id, session

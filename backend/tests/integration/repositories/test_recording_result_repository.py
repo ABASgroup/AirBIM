@@ -1,21 +1,26 @@
 """Tests for Recording result Repository."""
 
+from pathlib import Path
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.recording_result import RecordingResultRepository
 
 from schemas.recording_result import RecordingResultModel, RecordingResultType
 
 from tests.helpers import (
-    create_test_workspace,
-    create_test_project,
     create_test_file,
     create_test_point_cloud,
+    create_test_project,
+    create_test_workspace,
 )
 
 
 @pytest.mark.asyncio
-async def test_recording_result_repository_create(db_session, test_building_laz_path):
+async def test_recording_result_repository_create(
+    db_session: AsyncSession, test_building_laz_path: Path
+) -> None:
     """Test the creation of a recording result."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -45,8 +50,8 @@ async def test_recording_result_repository_create(db_session, test_building_laz_
 
 @pytest.mark.asyncio
 async def test_recording_result_repository_get_by_project_id(
-    db_session, test_building_laz_path
-):
+    db_session: AsyncSession, test_building_laz_path: Path
+) -> None:
     """Test getting recording results by project id."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -77,8 +82,11 @@ async def test_recording_result_repository_get_by_project_id(
 
 @pytest.mark.asyncio
 async def test_recording_result_repository_add_and_get_photos(
-    db_session, test_building_laz_path, test_photo_1_jpg_path, test_photo_2_jpg_path
-):
+    db_session: AsyncSession,
+    test_building_laz_path: Path,
+    test_photo_1_jpg_path: Path,
+    test_photo_2_jpg_path: Path,
+) -> None:
     """Test adding photos to a recording result."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -120,8 +128,8 @@ async def test_recording_result_repository_add_and_get_photos(
 
 @pytest.mark.asyncio
 async def test_recording_result_repository_add_pdf_report(
-    db_session, test_building_laz_path, test_report_pdf_path
-):
+    db_session: AsyncSession, test_building_laz_path: Path, test_report_pdf_path: Path
+) -> None:
     """Test adding a PDF report to a recording result."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
@@ -156,8 +164,8 @@ async def test_recording_result_repository_add_pdf_report(
 
 @pytest.mark.asyncio
 async def test_recording_result_repository_add_excel_report(
-    db_session, test_building_laz_path, test_report_xlsx_path
-):
+    db_session: AsyncSession, test_building_laz_path: Path, test_report_xlsx_path: Path
+) -> None:
     """Test adding an Excel report to a recording result."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace.id)
