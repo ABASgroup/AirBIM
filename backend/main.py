@@ -55,6 +55,6 @@ async def ping() -> dict:
 # launch
 if __name__ == "__main__":
     uvicorn.run("main:app",
-                host=api_config.API_HOST,
-                port=api_config.API_PORT,
+                host=api_config.HOST,
+                port=api_config.PORT,
                 reload=True)
