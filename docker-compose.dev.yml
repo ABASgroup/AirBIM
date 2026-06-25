@@ -1,0 +1,46 @@
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "entrypoint.dev.sh"]
+
+  worker:
+    environment:
+      - C_FORCE_ROOT=true
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=2 --pool=solo' /app"]
+
+  worker-converter:
+    environment:
+      - C_FORCE_ROOT=true
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=2 --pool=prefork' /app"]
+
+  worker-processing:
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-c", "exec micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=2 --pool=prefork' /app"]
+
+  beat:
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    container_name: airbim-frontend-dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host"
+    depends_on:
+      - backend
+
+volumes:
+  frontend_node_modules:

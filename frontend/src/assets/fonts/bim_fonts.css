@@ -1,0 +1,50 @@
+/* Стиль для проекта, работает над бутстрапом */
+
+body {
+    font-family: 'PTSansCaption', Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'RobotoMono', Arial, sans-serif;
+}
+
+h1 {
+    font-size: 96px;
+}
+
+h2 {
+    font-size: 64px;
+}
+
+h3 {
+    font-size: 48px;
+}
+
+h4 {
+    font-size: 36px;
+    margin: 20px 0px 20px 0px;
+}
+
+h5 {
+    font-size: 24px;
+}
+
+p {
+    font-size: 16px;
+    font-family: 'PTSansCaption', Arial, sans-serif;
+}
+
+pre {
+    font-size: 16px;
+    font-family: 'PTSansCaption', Arial, sans-serif;
+}
+
+input {
+    font-family: 'PTSansCaption', Arial, sans-serif;
+    font-size: 16px;
+}

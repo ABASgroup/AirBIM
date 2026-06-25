@@ -1,0 +1,34 @@
+FROM mambaorg/micromamba:latest
+
+ENV MAMBA_DOCKERFILE_ACTIVATE=1
+
+USER root
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    git \
+    libxcursor1 \
+    libx11-6 \
+    libgl1 \
+    libglib2.0-0 \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+USER $MAMBA_USER
+
+RUN micromamba install -y -n base -c conda-forge \
+    python=3.12 \
+    pip "python-pdal>=3.5" \
+    && micromamba clean --all --yes
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER . .
+
+ARG EXTRAS=""
+ENV EXTRAS=${EXTRAS}
+
+RUN sed 's/\${EXTRAS}/'"$EXTRAS"'/g' requirements.processing.txt > /tmp/requirements.patched.txt
+
+RUN --mount=type=secret,id=github_token,uid=57439 \
+    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+    micromamba run -n base pip install --no-cache-dir -r requirements.txt -r /tmp/requirements.patched.txt

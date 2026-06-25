@@ -9,6 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+!frontend/public/potree/libs/three.js/build/
+!frontend/public/potree/libs/three.js/build/**
 develop-eggs/
 dist/
 downloads/
@@ -143,6 +145,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.github_token
 
 # Spyder project settings
 .spyderproject
@@ -205,3 +208,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# AirBIM specific ignores
+.airbim_deploy_mode
+micromamba

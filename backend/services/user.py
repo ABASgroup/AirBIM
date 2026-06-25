@@ -1,0 +1,40 @@
+"""Service layer logic for User."""
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.exceptions import (
+    InvalidLoginInfoError,
+    AlreadyExistsError)
+from core.security import get_password_hash, verify_password
+from repositories.user import UserRepository
+from models.user import User
+from schemas.user import UserModel, UserRegisterRequest
+
+
+async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
+    """
+    Create a new user in the database.
+    """
+    # check if user exists
+    user = await UserRepository.get_by_email(user_data.email, session)
+
+    if user is not None:
+        raise AlreadyExistsError("user")
+
+    # hide password!
+    password_hashed = get_password_hash(user_data.password)
+
+    user_data_db = UserModel(username=user_data.username,
+                             password_hashed=password_hashed,
+                             email=user_data.email)
+    user = await UserRepository.create(user_data_db.model_dump(exclude_unset=True), session=session)
+    return user
+
+
+async def authenticate_user(email: str, password: str, session: AsyncSession) -> User:
+    """Checks user data (email, password)"""
+    user = await UserRepository.get_by_email(email, session)
+
+    # check email and password
+    if user is None or not verify_password(password, user.password_hashed):
+        raise InvalidLoginInfoError("Email or password is incorrect")
+
+    return user

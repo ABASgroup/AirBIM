@@ -1,0 +1,10 @@
+export { default as LandingPage } from "./LandingPage";
+export { default as LoginPage } from "./LoginPage";
+export { default as RegistrationPage } from "./RegistrationPage";
+export { default as WorkspacePage } from "./WorkspacePage";
+export { default as SettingsPage } from "./SettingsPage";
+export { default as DashboardPage } from "./DashboardPage";
+export { default as ProjectPage } from "./ProjectPage";
+export { default as InvitePage } from "./InvitePage";
+export { default as PotreeScenePage } from "./PotreeScenePage";
+export { default as ResultPage } from "./ResultPage";

@@ -1,0 +1,2 @@
+onnxruntime==1.25.1
+airbim-processing${EXTRAS} @ git+https://${GITHUB_TOKEN}@github.com/ABASgroup/airbim-processing.git@v0.3.1

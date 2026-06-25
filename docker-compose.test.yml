@@ -1,0 +1,152 @@
+services:
+  backend:
+    container_name: airbim-test-runner
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Alembic run migrations and then launch container to wait execution of tests.
+    # You can run tests with:
+    #   'docker exec -it airbim-test-runner python -m pytest tests/'
+    # or just enter to container with:
+    #   'docker exec -it airbim-test-runner bash' 
+    # and run tests with:
+    #   'python -m pytest tests/'
+    command: ["sh", "-c", "alembic upgrade head && pip install -r requirements.test.txt && sleep infinity"]
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      database:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+
+  storage:
+    container_name: airbim-test-storage
+    image: quay.io/minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY_ID:-test_minio_admin}
+      - MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY:-test_minio_pass}
+      - MINIO_BUCKET=${STORAGE_BUCKET:-airbim-test-bucket}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${STORAGE_PORT_EXTERNAL}:${STORAGE_PORT_INTERNAL}"
+      - "9001:9001"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+  database:
+    container_name: airbim-test-database
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-test_db_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-test_db_pass}
+      POSTGRES_DB: ${DB_NAME:-test_db_name}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT_EXTERNAL:-5432}:${DB_PORT_INTERNAL:-5432}"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-test_db_user} -d ${DB_NAME:-test_db_name}" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    container_name: airbim-test-cache
+    image: redis:latest
+    command: [ "redis-server", "--requirepass", "${CACHE_PASSWORD:-test_cache_pass}", "--appendonly", "yes" ]
+    ports:
+      - "${CACHE_PORT_EXTERNAL:-6379}:${CACHE_PORT_INTERNAL:-6379}"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${CACHE_PASSWORD:-test_cache_pass}", "ping" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+  broker:
+    container_name: airbim-test-broker
+    image: redis:latest
+    command: [ "redis-server", "--port", "6380", "--requirepass", "${BROKER_PASSWORD:-test_broker_pass}", "--appendonly", "yes" ]
+    ports:
+      - "${BROKER_PORT_EXTERNAL:-6380}:${BROKER_PORT_EXTERNAL:-6380}"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-p", "6380", "-a", "${BROKER_PASSWORD:-test_broker_pass}", "ping" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    container_name: airbim-test-worker
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4' /app"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - C_FORCE_ROOT=true
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+  worker-converter:
+    container_name: airbim-test-worker-converter
+    command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q converter --concurrency=4' /app"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.converter
+    environment:
+      - C_FORCE_ROOT=true
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+  worker-processing:
+    container_name: airbim-test-worker-processing
+    command: ["sh", "-c", "exec micromamba run -n base python -m watchfiles --filter python 'python -m celery -A infrastructure.celery_app:celery_app worker -l info -Q processing --concurrency=4' /app"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.processing
+      args:
+        EXTRAS: ""
+      secrets:
+        - github_token
+    environment:
+      - C_FORCE_ROOT=true
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      broker:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+secrets:
+  github_token:
+    file: ./.github_token
