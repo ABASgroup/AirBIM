@@ -44,13 +44,13 @@ async def get_db_session_dependency():
 
 def get_current_user_id(token: str = Depends(oauth2_scheme)):
     """
-    Get current user ID using a JWT token.
+    Get current user ID using an access token.
 
     Will work only if user is authenticated and provides a valid token.
     """
     try:
         payload = jwt.decode(token,
-                             api_config.JWT_SECRET_KEY,
+                             api_config.TOKEN_SECRET_KEY,
                              algorithms=[api_config.JWT_ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:

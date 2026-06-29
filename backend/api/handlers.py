@@ -1,9 +1,7 @@
 """FastAPI exception handlers."""
 import logging
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-
 from core.exceptions import *
 
 
@@ -100,8 +98,19 @@ async def value_error_handler(request: Request, exc: ValueError):
     )
 
 
+async def invalid_token_handler(request: Request, exc: InvalidTokenError):
+    logger.exception("App exception: %s", exc)
+    return JSONResponse(
+        status_code=401,
+        content={"message": exc.message}
+    )
+
+
 def add_exception_handlers(app: FastAPI):
-    """Registers exceptions handlers"""
+    """
+    Registers exceptions handlers.
+
+    """
     app.add_exception_handler(Exception, handle_unhandled_exception)
     app.add_exception_handler(NotFoundError, not_found_handler)
     app.add_exception_handler(NotMemberError, not_member_handler)
@@ -120,3 +129,5 @@ def add_exception_handlers(app: FastAPI):
                               membership_violation_handler)
     app.add_exception_handler(ValueError,
                               value_error_handler)
+    app.add_exception_handler(InvalidTokenError,
+                              invalid_token_handler)

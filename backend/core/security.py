@@ -20,15 +20,35 @@ def create_access_token(user_id: uuid.UUID, data: dict | None = None) -> str:
     Uses user ID for sub claim.
 
     Uses settings stated in the API config.
-    
+
     You can optionally include additional data in the token by passing a dictionary to the `data` parameter.
     """
     to_encode = data.copy() if data else {}
     expire = datetime.now(timezone.utc) + \
-        timedelta(minutes=api_config.JWT_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "sub": str(user_id)})
+        timedelta(minutes=api_config.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "sub": str(user_id), "type": "access"})
     encoded_jwt = jwt.encode(to_encode,
-                             key=api_config.JWT_SECRET_KEY,
+                             key=api_config.TOKEN_SECRET_KEY,
+                             algorithm=api_config.JWT_ALGORITHM)
+    return encoded_jwt
+
+
+def create_refresh_token(user_id: uuid.UUID, data: dict | None = None) -> str:
+    """
+    Generates a JWT refresh token.
+
+    Uses user ID for sub claim.
+
+    Uses settings stated in the API config.
+
+    You can optionally include additional data in the token by passing a dictionary to the `data` parameter.
+    """
+    to_encode = data.copy() if data else {}
+    expire = datetime.now(timezone.utc) + \
+        timedelta(minutes=api_config.REFRESH_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "sub": str(user_id), "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode,
+                             key=api_config.TOKEN_SECRET_KEY,
                              algorithm=api_config.JWT_ALGORITHM)
     return encoded_jwt
 
@@ -46,8 +66,8 @@ def get_password_hash(password: str) -> str:
 def generate_link_token(byte_length: int = 32) -> str:
     """
     Generates URL-friendly random token for links.
-    
-    Use as a basic method to generate tokens for links.
+
+    Use as a basic method to generate tokens for your links.
     """
     return token_urlsafe(byte_length)
 
@@ -55,7 +75,7 @@ def generate_link_token(byte_length: int = 32) -> str:
 def hash_link_token(token: str) -> str:
     """
     Hashes link token.
-    
+
     Uses SHA-256 and encodes the hash in URL-safe base64.
     """
     hash_object = hashlib.sha256(token.encode())
