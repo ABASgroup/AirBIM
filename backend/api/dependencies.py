@@ -1,13 +1,14 @@
 """FastAPI related dependencies."""
 import uuid
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 
+from schemas.token import RefreshTokenRequest
 from core.configs.api import api_config
 from core.roles import ROLE_PERMISSIONS, Permission
-from core.exceptions import NoRequiredPermissionError, NotMemberError
+from core.exceptions import NoRequiredPermissionError, NotMemberError, InvalidTokenError
 from core.dependencies import get_session_maker
 
 from services.membership import get_membership
@@ -42,26 +43,67 @@ async def get_db_session_dependency():
         yield session
 
 
-def get_current_user_id(token: str = Depends(oauth2_scheme)):
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
     """
-    Get current user ID using an access token.
+    Alias for :func:`get_current_user_id_from_access_token`.
+    """
+    return get_current_user_id_from_access_token(token)
+
+
+def get_current_user_id_from_access_token(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
+    """
+    Get current user ID using the access token.
 
     Will work only if user is authenticated and provides a valid token.
+
+    The main method to get user ID.
     """
     try:
         payload = jwt.decode(token,
                              api_config.TOKEN_SECRET_KEY,
                              algorithms=[api_config.JWT_ALGORITHM])
+
+        if payload.get("type") != "access":
+            raise InvalidTokenError(details="invalid token type")
+
+        # cast the type to user id matching the database ID type
         user_id = payload.get("sub")
         if user_id is None:
             raise JWTError
-        # cast the type to user id matching the database ID type
         return uuid.UUID(user_id)
     except JWTError as exc:
-        credentials_exception = HTTPException(
-            status_code=401,
-            detail=f"Could not validate credentials: {exc}",
-            headers={"WWW-Authenticate": "Bearer"},
+        credentials_exception = InvalidTokenError(
+            details=f"could not validate credentials ({exc})",
+        )
+        raise credentials_exception from exc
+
+
+def get_current_user_id_from_refresh_token(token: RefreshTokenRequest = Body()):
+    """
+    Get current user ID using the access token.
+
+    Will work only if user is authenticated and provides a valid token.
+
+    Use only to refresh tokens.
+    """
+    try:
+        payload = jwt.decode(
+            token.refresh_token,
+            api_config.TOKEN_SECRET_KEY,
+            algorithms=[api_config.JWT_ALGORITHM]
+        )
+
+        if payload.get("type") != "refresh":
+            raise InvalidTokenError(details="invalid token type")
+
+        # cast the type to user id matching the database ID type
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise JWTError
+        return uuid.UUID(user_id)
+    except JWTError as exc:
+        credentials_exception = InvalidTokenError(
+            details=f"could not validate credentials ({exc})",
         )
         raise credentials_exception from exc
 

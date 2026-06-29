@@ -18,7 +18,7 @@ class RefreshTokenModel(BaseModel):
     user_id: UUID
     expires_at: datetime = Field(
         default_factory=lambda: datetime.now(
-            timezone.utc) + timedelta(minutes=api_config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            timezone.utc) + timedelta(minutes=api_config.REFRESH_TOKEN_EXPIRE_MINUTES)
     )
 
 
