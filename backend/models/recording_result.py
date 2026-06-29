@@ -19,6 +19,10 @@ class RecordingResultType(StrEnum):
 
 
 class RecordingResult(BaseModel):
+    """
+    A result from a recording, which can be of type progress or plan fact.
+    The main source of information about a recording.
+    """
     __tablename__ = "recording_results"
 
     project_id: Mapped["UUID"] = mapped_column(

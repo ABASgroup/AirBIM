@@ -1,3 +1,4 @@
+"""Various file models in the system."""
 from uuid import UUID
 from typing import Optional
 from enum import StrEnum
@@ -55,6 +56,11 @@ class File(BaseModel):
 
 
 class PointCloud(BaseModel):
+    """
+    Represents a point cloud file in the system. 
+    Point clouds can be of different types (plan, scan, recording)
+    and can be associated with a stage.
+    """
     __tablename__ = "point_clouds"
 
     stage_id: Mapped["UUID"] = mapped_column(
@@ -97,6 +103,11 @@ class PointCloud(BaseModel):
 
 
 class PointCloudConverted(BaseModel):
+    """
+    Converted point cloud files that are associated with a point cloud. 
+    These files are generated from the original point cloud 
+    file and can be used for visualization.
+    """
     __tablename__ = "point_cloud_converted"
 
     point_cloud_id: Mapped["UUID"] = mapped_column(
@@ -113,6 +124,9 @@ class PointCloudConverted(BaseModel):
 
 
 class BIM(BaseModel):
+    """
+    Building Information Model (BIM) file associated with a project.
+    """
     __tablename__ = "bims"
 
     project_id: Mapped["UUID"] = mapped_column(
@@ -138,7 +152,9 @@ class BIM(BaseModel):
 
 
 class ResultPhoto(BaseModel):
-    """Photos of a recording result (e.g. photo of the actual progress)."""
+    """
+    Photos of a recording result (e.g. photo of the actual progress).
+    """
     __tablename__ = "result_photos"
 
     result_id: Mapped["UUID"] = mapped_column(

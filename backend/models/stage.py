@@ -6,6 +6,10 @@ from .base import BaseModel
 
 
 class Stage(BaseModel):
+    """
+    A stage is a part of a project, 
+    some step in the project lifecycle represented with a date and a scan (point cloud).
+    """
     __tablename__ = "stages"
 
     project_id: Mapped[UUID] = mapped_column(

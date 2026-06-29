@@ -1,12 +1,16 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum
+from sqlalchemy import ForeignKey, Enum, DateTime
 from datetime import datetime
 from core.roles import Role
 from .base import BaseModel
 
 
 class InviteLink(BaseModel):
+    """
+    Links that allow users to join a workspace created by a workspace member. 
+    Include a role for a new member.
+    """
     __tablename__ = "invite_links"
 
     token_hashed: Mapped[str] = mapped_column(index=True, unique=True)
@@ -30,4 +34,5 @@ class InviteLink(BaseModel):
         back_populates="invite_links"
     )
 
-    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)

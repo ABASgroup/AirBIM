@@ -22,6 +22,5 @@ class APIConfig(BaseSettings):
                                       env_file_encoding='utf-8',
                                       extra='ignore')
 
-print(ENV_PATH)
 # import these to get the configurations
 api_config = APIConfig()  # type: ignore
