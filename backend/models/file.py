@@ -88,8 +88,7 @@ class PointCloud(BaseModel):
     )
     file: Mapped["File"] = relationship(
         cascade="all, delete",
-        passive_deletes=True,
-        lazy="selectin"
+        passive_deletes=True
     )
 
     __table_args__ = (
@@ -167,4 +166,4 @@ class ResultPhoto(BaseModel):
         ForeignKey("files.id", ondelete="CASCADE"),
         primary_key=True
     )
-    file: Mapped["File"] = relationship(lazy="selectin")
+    file: Mapped["File"] = relationship()

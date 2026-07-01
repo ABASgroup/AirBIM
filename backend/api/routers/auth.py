@@ -10,7 +10,7 @@ from core.dependencies import get_database_uow, DatabaseSessionUOW
 from api.dependencies import get_current_user_id_from_refresh_token
 from models.workspace import WorkspaceType
 from services import auth as auth_service
-from services import workspace as workspace_service
+from services.workspace import WorkspaceService
 from services import membership as membership_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -26,7 +26,7 @@ async def register(data: UserRegisterRequest, uow: DatabaseSessionUOW = Depends(
 
         workspace = WorkspaceModel(
             name=data.workspace_name, type=WorkspaceType.PERSONAL)
-        workspace = await workspace_service.create_workspace(workspace, uow.session)
+        workspace = await WorkspaceService.create_workspace(workspace, uow.session)
 
         membership = MembershipModel(
             workspace_id=workspace.id,

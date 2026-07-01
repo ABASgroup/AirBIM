@@ -20,17 +20,6 @@ class InviteLinkRepository(BaseRepository[InviteLink]):
         await session.execute(stmt)
 
     @classmethod
-    async def get_by_workspace_id_and_role(
-            cls, workspace_id: uuid.UUID, role: Role, session: AsyncSession) -> InviteLink | None:
-        """Get invite link by workspace ID and role."""
-        result = await session.execute(
-            select(cls._model)
-            .where(cls._model.workspace_id == workspace_id)
-            .where(cls._model.role == role)
-        )
-        return result.scalar_one_or_none()
-
-    @classmethod
     async def get_by_token(cls, token_hashed: str, session: AsyncSession) -> InviteLink | None:
         """Get invite link using its token."""
         stmt = select(cls._model).options(

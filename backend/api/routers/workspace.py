@@ -1,9 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends
-from infrastructure.storage import Storage
 from core.dependencies import (
     get_database_uow,
-    get_storage,
     DatabaseSessionUOW
 )
 from core.roles import Role, get_role_permissions, Permission
@@ -22,9 +20,9 @@ from schemas.membership import (
     MembershipUserResponse
 )
 from schemas.task import TaskResponse
-from services import project as project_service
+from services.project import ProjectService
 from services import membership as membership_service
-from services import workspace as workspace_service
+from services.workspace import WorkspaceService
 from services import invite_link as invite_link_service
 from services.task import TaskService
 
@@ -149,7 +147,7 @@ async def get_user_workspaces(
     - Team workspaces
     """
     async with uow:
-        workspaces = await workspace_service.get_user_workspaces(user_id, session=uow.session)
+        workspaces = await WorkspaceService.get_user_workspaces(user_id, session=uow.session)
     return workspaces
 
 
@@ -167,7 +165,7 @@ async def get_workspace(
     Get all workspace data.
     """
     async with uow:
-        workspaces = await workspace_service.get_workspace(workspace_id, session=uow.session)
+        workspaces = await WorkspaceService.get_workspace(workspace_id, session=uow.session)
     return workspaces
 
 
@@ -185,7 +183,7 @@ async def create_workspace(
     async with uow:
         workspace = WorkspaceModel(
             name=workspace_data.name, type=WorkspaceType.TEAM)
-        workspace = await workspace_service.create_workspace(workspace, uow.session)
+        workspace = await WorkspaceService.create_workspace(workspace, uow.session)
 
         # current user is the owner
         membership = MembershipModel(
@@ -204,8 +202,7 @@ async def create_workspace(
 )
 async def delete_team_workspace(
     workspace_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Delete workspace and all related data and files.
@@ -215,10 +212,9 @@ async def delete_team_workspace(
     Requires permission.
     """
     async with uow:
-        workspace = await workspace_service.delete_team_workspace(
+        workspace = await WorkspaceService.delete_team_workspace(
             workspace_id,
-            session=uow.session,
-            storage=storage
+            session=uow.session
         )
     return workspace
 
@@ -285,7 +281,7 @@ async def get_workspace_projects(
 ):
     """Get all projects related to the workspace."""
     async with uow:
-        projects = await project_service.get_workspace_projects(
+        projects = await ProjectService.get_workspace_projects(
             workspace_id, session=uow.session
         )
     return projects
@@ -306,7 +302,7 @@ async def create_project(
         project_data_db = ProjectModel(workspace_id=workspace_id,
                                        name=project_data.name,
                                        description=project_data.description)
-        project = await project_service.create_project(project_data_db, session=uow.session)
+        project = await ProjectService.create_project(project_data_db, session=uow.session)
     return project
 
 
@@ -329,7 +325,6 @@ async def get_workspace_tasks(
     Requires permission.
     """
     async with uow:
-        workspace = await workspace_service.get_workspace(workspace_id, uow.session)
         tasks = await TaskService.get_tasks_by_workspace_id(workspace_id, statuses, uow.session)
 
     return tasks

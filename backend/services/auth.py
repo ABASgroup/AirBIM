@@ -1,11 +1,11 @@
 """Service layer logic for User."""
-import uuid
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.exceptions import (
     InvalidLoginInfoError,
-    NotFoundError,
     AlreadyExistsError,
-    InvalidTokenError
+    InvalidTokenError,
+    NotFoundError
 )
 from core.security import get_password_hash, verify_password, create_access_token, create_refresh_token
 from repositories.user import UserRepository
@@ -13,6 +13,16 @@ from repositories.refresh_token import RefreshTokenRepository
 from models.user import User
 from schemas.user import UserModel, UserRegisterRequest
 from schemas.token import RefreshTokenModel
+
+
+async def get_user(user_id: UUID, session: AsyncSession):
+    """Get a user from the database by ID."""
+    user = await UserRepository.get_by_id(user_id, session)
+
+    if user is None:
+        raise NotFoundError("User was not found.")
+
+    return user
 
 
 async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
@@ -41,17 +51,19 @@ async def authenticate_user(email: str, password: str, session: AsyncSession) ->
 
     # check email and password
     if user is None or not verify_password(password, user.password_hashed):
-        raise InvalidLoginInfoError("Email or password is incorrect")
+        raise InvalidLoginInfoError("Email or password is incorrect.")
 
     return user
 
 
-async def create_tokens(user_id: uuid.UUID, session: AsyncSession) -> tuple[str, str]:
+async def create_tokens(user_id: UUID, session: AsyncSession) -> tuple[str, str]:
     """
     Creates new access and refresh tokens.
 
     Returns both tokens respectively.
     """
+    await get_user(user_id, session)
+
     old_token = await RefreshTokenRepository.get_by_user_id(
         user_id,
         session=session
@@ -73,7 +85,7 @@ async def create_tokens(user_id: uuid.UUID, session: AsyncSession) -> tuple[str,
     return access_token, refresh_token
 
 
-async def update_tokens(user_id: uuid.UUID, session: AsyncSession):
+async def update_tokens(user_id: UUID, session: AsyncSession):
     """
     Creates new access and refresh tokens.
 

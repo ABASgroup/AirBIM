@@ -3,7 +3,12 @@ from celery import chain
 from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
 from core.exceptions import NotFoundError
-from schemas.task import TaskModel
+from core.roles import Permission
+from core.dependencies import (
+    get_database_uow,
+    get_storage,
+    DatabaseSessionUOW
+)
 from infrastructure.storage import Storage
 from models.task import TaskType
 from services.file import FileService
@@ -17,14 +22,7 @@ from schemas.file import (
     FileTaskResponse,
     PointCloudResponse
 )
-from schemas.task import TaskResponse
-from core.roles import Permission
-from core.dependencies import (
-    get_database_uow,
-    get_storage,
-    DatabaseSessionUOW
-)
-
+from schemas.task import TaskResponse, TaskModel
 from api.dependencies import require_file_permission
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -212,14 +210,19 @@ async def get_point_cloud(
 
 
 @router.get("/point_clouds/{point_cloud_id}/{filename}")
-async def get_pointcloud_file(
+async def get_point_cloud_file(
     point_cloud_id: uuid.UUID,
     filename: str,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
     storage: Storage = Depends(get_storage)
 ):
+    """
+    Get a specific file of the converted point cloud by its filename.
+    
+    You may need it for PotreeConverter in order to visualize the point cloud.
+    """
     async with uow:
-        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+        await FileService.get_point_cloud(point_cloud_id, session=uow.session)
         files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
 
     for file in files:

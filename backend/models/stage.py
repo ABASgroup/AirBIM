@@ -25,6 +25,5 @@ class Stage(BaseModel):
     project: Mapped["Project"] = relationship(back_populates="stages")
     point_cloud: Mapped["PointCloud"] = relationship(
         back_populates="stage",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        cascade="all, delete-orphan"
     )

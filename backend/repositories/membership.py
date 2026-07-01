@@ -18,7 +18,7 @@ class MembershipRepository(BaseRepository[Membership]):
     ):
         """
         Get all memberships in the workspace using its ID.
-        
+
         Also loads user data with membership data.
         """
         result = await session.execute(

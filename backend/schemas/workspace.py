@@ -5,11 +5,19 @@ from .base import Response
 
 class WorkspaceCreateRequest(BaseModel):
     name: str
+    description: str | None = None
+
+
+class WorkspaceUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    name: str | None = None
+    description: str | None = None
 
 
 class WorkspaceResponse(Response):
     """API Response schema."""
     name: str
+    description: str | None = None
     type: WorkspaceType
 
 

@@ -13,7 +13,7 @@ from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
-import services.stage as stage_service
+from services.stage import StageService
 from services.recording_result import RecordingResultService
 from services.task import TaskService
 
@@ -21,6 +21,8 @@ from services.task import TaskService
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
 # save artifacts
+
+# use lazy imports for processing library so your main app would work without exceptions
 
 storage = get_storage()
 
@@ -38,7 +40,6 @@ class ProcessingTask(celery_app.Task):
     max_retries=5,
 )
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
-    # lazy imports so your main app would work
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
@@ -186,7 +187,7 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
             await TaskService.start_task(task_id, self.request.id, uow.session)
 
             # get stage and its point cloud
-            stage = await stage_service.get_stage(stage_id, session=uow.session)
+            stage = await StageService.get_stage(stage_id, session=uow.session)
             stage_point_cloud = await FileService.get_point_cloud(
                 stage.point_cloud.id, session=uow.session)
             # get bim (POINT CLOUD MUST ALREADY EXIST)
@@ -304,8 +305,8 @@ def check_progress(
             task = await TaskService.start_task(task_id, self.request.id, uow.session)
 
             # get stages and their point clouds
-            old_stage = await stage_service.get_stage(old_stage_id, session=uow.session)
-            new_stage = await stage_service.get_stage(new_stage_id, session=uow.session)
+            old_stage = await StageService.get_stage(old_stage_id, session=uow.session)
+            new_stage = await StageService.get_stage(new_stage_id, session=uow.session)
 
             old_stage_point_cloud = await FileService.get_point_cloud(
                 old_stage.point_cloud.id, session=uow.session)
