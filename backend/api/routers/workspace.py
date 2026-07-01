@@ -306,7 +306,7 @@ async def create_project(
     return project
 
 
-@router.post(
+@router.get(
     "/{workspace_id}/tasks",
     response_model=list[TaskResponse],
     dependencies=[

@@ -9,6 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+!frontend/public/potree/libs/three.js/build/
+!frontend/public/potree/libs/three.js/build/**
 develop-eggs/
 dist/
 downloads/

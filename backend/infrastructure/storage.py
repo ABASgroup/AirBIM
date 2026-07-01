@@ -77,9 +77,22 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
-        response = self._client.get_object(Bucket=self._bucket_name, Key=key)
+        response = self.get_object(key)
         content = response['Body']
         return content
+
+    def get_object(self, key: str, range_header: str | None = None) -> dict:
+        """
+        Get object from storage, optionally with HTTP Range support.
+
+        Args:
+            key (str): key/path of the file in the storage
+            range_header (str | None): Range header value, e.g. "bytes=0-1023"
+        """
+        params: dict = {'Bucket': self._bucket_name, 'Key': key}
+        if range_header:
+            params['Range'] = range_header
+        return self._client.get_object(**params)
 
     def upload_file_locally(self, key: str, file_path: str):
         """
@@ -165,9 +178,6 @@ class Storage:
         Args:
             prefix (str): key prefix of the files you want to delete
         """
-        if not prefix.endswith("/"):
-            prefix += "/"
-
         bucket = self._resource.Bucket(self._bucket_name)
 
         keys_to_delete = [{'Key': obj.key}

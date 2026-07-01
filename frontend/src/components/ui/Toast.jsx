@@ -42,7 +42,7 @@ export const Toast = ({ type = "primary", title, message, onClose, duration = 50
   const config = colors[type] || colors.primary;
 
   return (
-    <div className={`bg-background-color rounded-[5px] overflow-hidden min-w-[300px] max-w-[400px] shadow-bottom
+    <div className={`z-70 rounded-[5px] overflow-hidden min-w-[300px] max-w-[400px] shadow-bottom
             border-l-5 ${config.border} bg-surface/50 backdrop-blur-md transition-all duration-1000 ease-in-out
             ${isFading ? "opacity-0 translate-x-[120%]" : isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[120%]"}`}>
       <div className="flex items-start p-3 gap-3">

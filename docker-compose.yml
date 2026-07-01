@@ -20,14 +20,14 @@ services:
       retries: 5
 
   database:
-    container_name: airbim-database
+    container_name: database
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-      PGDATA: /var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
       - "${DB_PORT_EXTERNAL:-5432}:${DB_PORT_INTERNAL:-5432}"
     volumes:

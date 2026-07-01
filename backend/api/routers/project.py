@@ -282,12 +282,13 @@ async def get_project_bim(
     """
     async with uow:
         project = await ProjectService.get_project(project_id, session=uow.session)
-        bim_id = project.bim.id
 
-        if bim_id is None:
+        bim = project.bim
+
+        if bim is None:
             raise NotFoundError("Project has no BIM.")
 
-        bim = await FileService.get_bim(bim_id, session=uow.session)
+        bim = await FileService.get_bim(bim.id, session=uow.session)
 
     return bim
 

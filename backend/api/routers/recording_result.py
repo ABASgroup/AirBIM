@@ -37,6 +37,26 @@ async def get_recording_result(
     return result
 
 
+@router.delete(
+    "",
+    response_model=RecordingResultResponse,
+    dependencies=[
+        Depends(require_recording_result_permission(
+            Permission.RECORDING_RESULT_VIEW))],
+)
+async def delete_recording_result(recording_result_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
+    """
+    Delete recording result.
+
+    All relevant data will be lost (reports, photos, point cloud, etc.).
+
+    Requires permission.
+    """
+    async with uow:
+        result = await RecordingResultService.delete_recording_result(recording_result_id, uow.session)
+    return result
+
+
 @router.get(
     "/excel",
     response_model=FileResponse,
@@ -83,26 +103,3 @@ async def get_pdf_report(
     async with uow:
         report = await RecordingResultService.get_pdf_report(recording_result_id, uow.session)
     return report
-
-
-@router.delete(
-    "",
-    response_model=RecordingResultResponse,
-    dependencies=[
-        Depends(require_recording_result_permission(
-            Permission.RECORDING_RESULT_VIEW))],
-)
-async def delete_recording_result(
-    recording_result_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow)
-):
-    """
-    Delete recording result.
-
-    All relevant data will be lost (reports, photos, point cloud, etc.).
-
-    Requires permission.
-    """
-    async with uow:
-        result = await RecordingResultService.delete_recording_result(recording_result_id, uow.session)
-    return result

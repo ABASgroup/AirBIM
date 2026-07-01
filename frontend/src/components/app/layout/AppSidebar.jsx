@@ -5,7 +5,8 @@ import { Dropdown, FilledButton, ActionMenu } from "@ui";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { CreateWorkspaceForm } from "@app/components/CreateWorkspaceForm";
 import { createWorkspace, getWorkspaces, deleteWorkspace } from "@/api/workspace";
-import { Can } from "@app/components";
+import { useTaskProgress } from "@/context/TaskProgressContext";
+import { ProgressBar } from "@app/components";
 
 export const AppSidebar = () => {
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -14,6 +15,8 @@ export const AppSidebar = () => {
   const { workspaces, currentWorkspace, switchWorkspace, setWorkspaces } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
+  const { hasPermission } = useWorkspace();
+  const { activeTasks } = useTaskProgress();
   const handleSelect = (ws) => {
     switchWorkspace(ws.id);
     setIsOpen(false);
@@ -34,13 +37,13 @@ export const AppSidebar = () => {
   };
 
   return (
-    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50">
-      <div className="bg-surface/70 h-15 w-full border-border-color border-b-3">
+    <aside className="w-50 shrink-0 sticky top-0 h-screen border-border-color border-r-3 z-50 flex flex-col justify-between">
+      <div className="bg-surface/70 h-14 w-full border-border-color border-b-3">
         <Dropdown
           label={currentWorkspace?.name}
           isOpen={isOpen}
           onToggle={(open) => { setIsOpen(open); if (!open) setActiveMenuId(null) }}
-          className="h-15 px-4"
+          className="h-14 px-4"
         >
           {workspaces.map((ws) => (
             <div
@@ -76,14 +79,12 @@ export const AppSidebar = () => {
                   onClose={() => setActiveMenuId(null)}
                   buttonRef={{ current: actionBtnRefs.current[ws.id] }}
                 >
-                  <Can permission="workspace:delete">
-                    {ws.type !== "personal" && (
-                      <button onClick={() => handleDeleteWorkspace(ws.id)}>
-                        <i className="fa-solid fa-trash"></i>
-                        Удалить
-                      </button>
-                    )}
-                  </Can>
+                  {hasPermission("workspace:delete") && ws.type !== "personal" && (
+                    <button onClick={() => handleDeleteWorkspace(ws.id)}>
+                      <i className="fa-solid fa-trash"></i>
+                      Удалить
+                    </button>
+                  )}
                   <button onClick={() => {
                     setIsOpen(null);
                     setActiveMenuId(null);
@@ -107,6 +108,27 @@ export const AppSidebar = () => {
         onClose={() => setIsCreateWorkspaceModalOpen(false)}
         onCreate={handleCreateWorkspace}
       />
+
+      {activeTasks.length > 0 && (
+        <div className="bg-surface mt-auto shrink-0 rounded-t-[10px]">
+          <div className="max-h-[200px]">
+            <div className="my-3 text-center">
+              <span>Текущие задачи</span>
+            </div>
+            <div className="max-h-[160px] overflow-y-auto p-3 bg-background-color rounded-t-[10px]">
+              {activeTasks.map(task => (
+                <ProgressBar
+                  key={task.id}
+                  taskType={task.type}
+                  entityType={task.entity_type}
+                  entityId={task.entity_id}
+                  percentage={task.progress}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

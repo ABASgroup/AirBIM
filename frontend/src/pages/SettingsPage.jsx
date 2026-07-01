@@ -1,6 +1,6 @@
 // Страница настроек
 import { UnfilledButton } from "@ui";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 function SettingsPage() {
     // Временный выход из аккаунта

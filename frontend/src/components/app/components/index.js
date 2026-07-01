@@ -1,5 +1,4 @@
 export { CreateWorkspaceForm } from "./CreateWorkspaceForm";
-export { IfcViewerDrawer } from "./IfcViewerDrawer";
 export { InviteManagerModal } from "./InviteManagerModal";
 export { MemberList } from "./MemberList";
 export { ProjectModal } from "./ProjectModal";
@@ -7,3 +6,8 @@ export { ProjectsList } from "./ProjectsList";
 export { WorkspaceTabPanel } from "./WorkspaceTabPanel";
 export { RoleTooltip } from "./RoleTooltip";
 export { Can } from "./Can";
+export { StageUploadModal } from "./StageUploadModal";
+export { StagesAccordion } from "./StagesAccordion";
+export { ProgressModal } from "./ProgressModal";
+export { ProgressBar } from "./ProgressBar";
+export { PlanFactModal } from "./PlanFactModal";
