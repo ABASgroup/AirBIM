@@ -25,7 +25,7 @@ def test_create_access_token() -> None:
 
     # decode the token to verify its contents
     decoded = jwt.decode(
-        token, key=api_config.JWT_SECRET_KEY, algorithms=[api_config.JWT_ALGORITHM]
+        token, key=api_config.TOKEN_SECRET_KEY, algorithms=[api_config.JWT_ALGORITHM]
     )
 
     assert decoded["sub"] == str(user_id)

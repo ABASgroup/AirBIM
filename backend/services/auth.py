@@ -15,100 +15,104 @@ from schemas.user import UserModel, UserRegisterRequest
 from schemas.token import RefreshTokenModel
 
 
-async def get_user(user_id: UUID, session: AsyncSession):
-    """Get a user from the database by ID."""
-    user = await UserRepository.get_by_id(user_id, session)
+class AuthService:
+    """Service layer for user authentication and management."""
 
-    if user is None:
-        raise NotFoundError("User was not found.")
+    @classmethod
+    async def get_user(cls, user_id: UUID, session: AsyncSession):
+        """Get a user from the database by ID."""
+        user = await UserRepository.get_by_id(user_id, session)
 
-    return user
+        if user is None:
+            raise NotFoundError("User was not found.")
 
+        return user
 
-async def register_user(user_data: UserRegisterRequest, session: AsyncSession):
-    """
-    Create a new user in the database.
-    """
-    # check if user exists
-    user = await UserRepository.get_by_email(user_data.email, session)
+    @classmethod
+    async def register_user(cls, user_data: UserRegisterRequest, session: AsyncSession):
+        """
+        Create a new user in the database.
+        """
+        # check if user exists
+        user = await UserRepository.get_by_email(user_data.email, session)
 
-    if user is not None:
-        raise AlreadyExistsError("user")
+        if user is not None:
+            raise AlreadyExistsError("user")
 
-    # hide password!
-    password_hashed = get_password_hash(user_data.password)
+        # hide password!
+        password_hashed = get_password_hash(user_data.password)
 
-    user_data_db = UserModel(username=user_data.username,
-                             password_hashed=password_hashed,
-                             email=user_data.email)
-    user = await UserRepository.create(user_data_db.model_dump(exclude_unset=True), session=session)
-    return user
+        user_data_db = UserModel(username=user_data.username,
+                                 password_hashed=password_hashed,
+                                 email=user_data.email)
+        user = await UserRepository.create(user_data_db.model_dump(exclude_unset=True), session=session)
+        return user
 
+    @classmethod
+    async def authenticate_user(cls, email: str, password: str, session: AsyncSession) -> User:
+        """Checks user data (email, password)"""
+        user = await UserRepository.get_by_email(email, session)
 
-async def authenticate_user(email: str, password: str, session: AsyncSession) -> User:
-    """Checks user data (email, password)"""
-    user = await UserRepository.get_by_email(email, session)
+        # check email and password
+        if user is None or not verify_password(password, user.password_hashed):
+            raise InvalidLoginInfoError("Email or password is incorrect.")
 
-    # check email and password
-    if user is None or not verify_password(password, user.password_hashed):
-        raise InvalidLoginInfoError("Email or password is incorrect.")
+        return user
 
-    return user
+    @classmethod
+    async def create_tokens(cls, user_id: UUID, session: AsyncSession) -> tuple[str, str]:
+        """
+        Creates new access and refresh tokens.
 
+        Returns both tokens respectively.
+        """
+        await cls.get_user(user_id, session)
 
-async def create_tokens(user_id: UUID, session: AsyncSession) -> tuple[str, str]:
-    """
-    Creates new access and refresh tokens.
+        old_token = await RefreshTokenRepository.get_by_user_id(
+            user_id,
+            session=session
+        )
 
-    Returns both tokens respectively.
-    """
-    await get_user(user_id, session)
+        if old_token:
+            await RefreshTokenRepository.delete(old_token, session=session)
 
-    old_token = await RefreshTokenRepository.get_by_user_id(
-        user_id,
-        session=session
-    )
+        refresh_token = create_refresh_token(user_id)
 
-    if old_token:
+        refresh_token_db = RefreshTokenModel(
+            token=refresh_token,
+            user_id=user_id,
+        )
+
+        await RefreshTokenRepository.create(refresh_token_db.model_dump(), session=session)
+        access_token = create_access_token(user_id)
+
+        return access_token, refresh_token
+
+    @classmethod
+    async def update_tokens(cls, user_id: UUID, session: AsyncSession):
+        """
+        Creates new access and refresh tokens.
+
+        Old refresh token validation is required.
+        """
+        old_token = await RefreshTokenRepository.get_by_user_id(
+            user_id,
+            session=session
+        )
+
+        if old_token is None:
+            raise InvalidTokenError("refresh token is not found")
+
         await RefreshTokenRepository.delete(old_token, session=session)
 
-    refresh_token = create_refresh_token(user_id)
+        new_refresh_token = create_refresh_token(user_id)
 
-    refresh_token_db = RefreshTokenModel(
-        token=refresh_token,
-        user_id=user_id,
-    )
+        refresh_token_db = RefreshTokenModel(
+            token=new_refresh_token,
+            user_id=user_id,
+        )
 
-    await RefreshTokenRepository.create(refresh_token_db.model_dump(), session=session)
-    access_token = create_access_token(user_id)
+        await RefreshTokenRepository.create(refresh_token_db.model_dump(), session=session)
+        access_token = create_access_token(user_id)
 
-    return access_token, refresh_token
-
-
-async def update_tokens(user_id: UUID, session: AsyncSession):
-    """
-    Creates new access and refresh tokens.
-
-    Old refresh token validation is required.
-    """
-    old_token = await RefreshTokenRepository.get_by_user_id(
-        user_id,
-        session=session
-    )
-
-    if old_token is None:
-        raise InvalidTokenError("refresh token is not found")
-
-    await RefreshTokenRepository.delete(old_token, session=session)
-
-    new_refresh_token = create_refresh_token(user_id)
-
-    refresh_token_db = RefreshTokenModel(
-        token=new_refresh_token,
-        user_id=user_id,
-    )
-
-    await RefreshTokenRepository.create(refresh_token_db.model_dump(), session=session)
-    access_token = create_access_token(user_id)
-
-    return access_token, new_refresh_token
+        return access_token, new_refresh_token

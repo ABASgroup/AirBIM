@@ -21,7 +21,10 @@ class StageService:
     @classmethod
     async def get_project_stages(cls, project_id: UUID, session: AsyncSession) -> list[Stage]:
         """Get all stages related to the project."""
-        stages = await StageRepository.get_by_project_id(project_id, session=session)
+        stages = await StageRepository.get_by_project_id(
+            project_id,
+            session=session,
+        )
         stages = list(stages)
 
         return stages
@@ -54,7 +57,14 @@ class StageService:
         """
         Create a new stage for the project.
         """
-        stage = await StageRepository.create(stage_data.model_dump(exclude_unset=True), session=session)
+        stage = await StageRepository.create(
+            stage_data.model_dump(exclude_unset=True),
+            session=session,
+        )
+        stage = await cls.get_stage(
+            stage.id,
+            session=session
+        )
         return stage
 
     @classmethod

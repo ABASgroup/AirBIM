@@ -1,6 +1,6 @@
 """FastAPI related dependencies."""
 import uuid
-from fastapi import Depends, HTTPException, Body
+from fastapi import Depends, Body
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
@@ -13,8 +13,8 @@ from core.dependencies import get_session_maker
 
 from services.membership import get_membership
 from services.recording_result import RecordingResultService
-from services.stage import get_stage_with_project
-from services.project import get_project
+from services.stage import StageService
+from services.project import ProjectService
 from services.file import FileService
 
 
@@ -148,7 +148,7 @@ def require_project_permission(permission: Permission):
         user_id: uuid.UUID = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
-        project = await get_project(project_id, session=session)
+        project = await ProjectService.get_project(project_id, session=session)
 
         membership = await get_membership(
             user_id,
@@ -182,7 +182,7 @@ def require_recording_result_permission(permission: Permission):
             session=session,
         )
 
-        project = await get_project(recording_result.project_id, session=session)
+        project = await ProjectService.get_project(recording_result.project_id, session=session)
 
         membership = await get_membership(
             user_id,
@@ -211,7 +211,7 @@ def require_stage_permission(permission: Permission):
         user_id: uuid.UUID = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
-        stage = await get_stage_with_project(stage_id, session=session)
+        stage = await StageService.get_stage(stage_id, session=session)
 
         membership = await get_membership(
             user_id,

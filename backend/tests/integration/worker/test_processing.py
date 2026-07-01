@@ -306,7 +306,7 @@ async def test_create_recording_result_pdf_report(
     async def assert_report_generated() -> None:
         async with session_maker() as session:
             record = await RecordingResultRepository.get_by_id(
-                recording_result.id, session
+                recording_result.id, session, relations=["pdf_report"]
             )
             assert record is not None
             assert record.pdf_report is not None

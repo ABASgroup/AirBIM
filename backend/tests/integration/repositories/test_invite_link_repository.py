@@ -46,39 +46,6 @@ async def test_invite_link_repository_create_and_get_by_token(
 
 
 @pytest.mark.asyncio
-async def test_invite_link_repository_get_by_workspace_id_and_role(
-    db_session: AsyncSession,
-) -> None:
-    """Test retrieving an invite link by workspace ID and role."""
-    # Create a workspace and user
-    workspace = await create_test_workspace(db_session)
-    user = await create_test_user(db_session)
-
-    # Create an invite link for the workspace with a specific role
-    invite_link_data = InviteLinkModel(
-        token_hashed="hashed_token_2",
-        workspace_id=workspace.id,
-        creator_id=user.id,
-        role=Role.OWNER,
-    ).model_dump(exclude_unset=True)
-    created_invite_link = await InviteLinkRepository.create(
-        invite_link_data, db_session
-    )
-
-    # Retrieve the invite link by workspace ID and role
-    retrieved_invite_link = await InviteLinkRepository.get_by_workspace_id_and_role(
-        workspace_id=workspace.id, role=Role.OWNER, session=db_session
-    )
-
-    # Assertions
-    assert retrieved_invite_link is not None
-    assert retrieved_invite_link.id == created_invite_link.id
-    assert retrieved_invite_link.workspace_id == workspace.id
-    assert retrieved_invite_link.creator_id == user.id
-    assert retrieved_invite_link.role == Role.OWNER
-
-
-@pytest.mark.asyncio
 async def test_invite_link_repository_delete_by_workspace_id(
     db_session: AsyncSession,
 ) -> None:
@@ -103,9 +70,9 @@ async def test_invite_link_repository_delete_by_workspace_id(
     )
 
     # Try to retrieve any invite link for the workspace
-    retrieved_invite_link = await InviteLinkRepository.get_by_workspace_id_and_role(
-        workspace_id=workspace.id, role=Role.MEMBER, session=db_session
+    retrieved_invite_link = await InviteLinkRepository.get_by_workspace_id(
+        workspace_id=workspace.id, session=db_session
     )
-
+    print(retrieved_invite_link)
     # Assertions
-    assert retrieved_invite_link is None
+    assert retrieved_invite_link == [] or retrieved_invite_link is None

@@ -76,6 +76,9 @@ class BaseRepository(Generic[ModelT]):
 
         entry = await session.get(cls._model, entry_id, options=options)
 
+        if entry is not None and relations:
+            await session.refresh(entry, attribute_names=relations)
+
         return entry
 
     @classmethod
@@ -97,6 +100,7 @@ class BaseRepository(Generic[ModelT]):
             cls._model.id.in_(entry_ids)).options(*options)
 
         result = await session.execute(stmt)
+
         return result.scalars().all()
 
     @classmethod

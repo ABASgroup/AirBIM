@@ -56,11 +56,14 @@ async def confirm_upload(
             session=uow.session,
             storage=storage,
         )
+        try:
+            bim = await FileService.get_bim_by_file_id(
+                file_id=file.id,
+                session=uow.session
+            )
+        except: 
+            bim = None
 
-        bim = await FileService.get_bim_by_file_id(
-            file_id=file.id,
-            session=uow.session
-        )
         if bim and bim.point_cloud_id is None:
             bim_id = bim.id
 
@@ -225,7 +228,7 @@ async def get_point_cloud_file(
 ):
     """
     Get a specific file of the converted point cloud by its filename.
-    
+
     You may need it for PotreeConverter in order to visualize the point cloud.
 
     Gives access to a file from point cloud conversion.

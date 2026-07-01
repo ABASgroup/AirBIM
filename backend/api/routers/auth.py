@@ -9,7 +9,7 @@ from core.roles import Role, Permission
 from core.dependencies import get_database_uow, DatabaseSessionUOW
 from api.dependencies import get_current_user_id_from_refresh_token
 from models.workspace import WorkspaceType
-from services import auth as auth_service
+from services.auth import AuthService
 from services.workspace import WorkspaceService
 from services import membership as membership_service
 
@@ -22,7 +22,7 @@ async def register(data: UserRegisterRequest, uow: DatabaseSessionUOW = Depends(
     Registers a new user and creates their personal workspace.
     """
     async with uow:
-        user = await auth_service.register_user(data, uow.session)
+        user = await AuthService.register_user(data, uow.session)
 
         workspace = WorkspaceModel(
             name=data.workspace_name, type=WorkspaceType.PERSONAL)
@@ -36,7 +36,7 @@ async def register(data: UserRegisterRequest, uow: DatabaseSessionUOW = Depends(
 
         await membership_service.create_membership(membership, uow.session)
 
-        access_token, refresh_token = await auth_service.create_tokens(
+        access_token, refresh_token = await AuthService.create_tokens(
             user_id=user.id,
             session=uow.session
         )
@@ -58,8 +58,8 @@ async def login(
     Login data is `email` and `password`, not username.
     """
     async with uow:
-        user = await auth_service.authenticate_user(data.username, data.password, uow.session)
-        access_token, refresh_token = await auth_service.create_tokens(
+        user = await AuthService.authenticate_user(data.username, data.password, uow.session)
+        access_token, refresh_token = await AuthService.create_tokens(
             user.id,
             session=uow.session
         )
@@ -81,7 +81,7 @@ async def refresh_tokens(
     Requires user to be authorized.
     """
     async with uow:
-        access_token, refresh_token = await auth_service.update_tokens(
+        access_token, refresh_token = await AuthService.update_tokens(
             user_id,
             session=uow.session
         )

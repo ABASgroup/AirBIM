@@ -19,6 +19,10 @@ class StageRepository(BaseRepository[Stage]):
         """Get stages related to some project using its ID."""
         result = await session.execute(
             select(cls._model)
+            .options(
+                selectinload(cls._model.point_cloud),
+                selectinload(cls._model.project)
+            )
             .where(cls._model.project_id == project_id)
         )
         return result.scalars().all()

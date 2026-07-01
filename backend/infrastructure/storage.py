@@ -29,11 +29,19 @@ class Storage:
         )
         self._bucket_name = storage_config.STORAGE_BUCKET
         self._url_expiration_time = storage_config.STORAGE_URL_EXP_TIME
+        self._bucket_ready = False
 
-        # create bucket only if it doesn't exists
+    def _ensure_bucket(self) -> None:
+        """Create the bucket on first real use if it is missing."""
+        if self._bucket_ready:
+            return
+
+        # create bucket only if it doesn't exist
         # safe measure
         if not self._bucket_exists():
             self._client.create_bucket(Bucket=self._bucket_name)
+
+        self._bucket_ready = True
 
     def _bucket_exists(self):
         """Check if storage bucket exists."""
@@ -64,6 +72,7 @@ class Storage:
             prefix (str): prefix for the save path (added to filename)
             filename (str): name you want to use for the file
         """
+        self._ensure_bucket()
         response = self._client.upload_fileobj(file, self._bucket_name, key)
         return response
 
@@ -89,6 +98,7 @@ class Storage:
             key (str): key/path of the file in the storage
             range_header (str | None): Range header value, e.g. "bytes=0-1023"
         """
+        self._ensure_bucket()
         params: dict = {'Bucket': self._bucket_name, 'Key': key}
         if range_header:
             params['Range'] = range_header
@@ -102,6 +112,7 @@ class Storage:
             key (str): key/path of the file in the storage
             file_path (str): path to the file
         """
+        self._ensure_bucket()
         self._client.upload_file(
             Filename=file_path,
             Bucket=self._bucket_name,
@@ -118,6 +129,7 @@ class Storage:
             key (str): key/path of the file in the storage
             save_path (str): save path of the file
         """
+        self._ensure_bucket()
         self._client.download_file(self._bucket_name, key, save_path)
 
     def get_upload_link(self, key: str):
@@ -127,6 +139,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
+        self._ensure_bucket()
         url = self._external_client.generate_presigned_url(
             ClientMethod='put_object',
             Params={'Bucket': self._bucket_name, 'Key': key},
@@ -141,6 +154,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
+        self._ensure_bucket()
         url = self._external_client.generate_presigned_url(
             ClientMethod='get_object',
             Params={'Bucket': self._bucket_name, 'Key': key},
@@ -150,6 +164,7 @@ class Storage:
 
     def get_all_keys(self) -> list[str]:
         """Get all keys in the bucket."""
+        self._ensure_bucket()
         bucket = self._resource.Bucket(self._bucket_name)
         return [obj.key for obj in bucket.objects.all()]
 
@@ -160,6 +175,7 @@ class Storage:
         Args:
             prefix (str): key prefix of the files you need
         """
+        self._ensure_bucket()
         bucket = self._resource.Bucket(self._bucket_name)
 
         keys = []
@@ -178,6 +194,7 @@ class Storage:
         Args:
             prefix (str): key prefix of the files you want to delete
         """
+        self._ensure_bucket()
         bucket = self._resource.Bucket(self._bucket_name)
 
         keys_to_delete = [{'Key': obj.key}
@@ -206,6 +223,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
+        self._ensure_bucket()
         response = self._client.delete_object(
             Bucket=self._bucket_name, Key=key)
         return response
@@ -217,6 +235,7 @@ class Storage:
         Args:
             keys (list[str]): keys/paths of the files in the storage
         """
+        self._ensure_bucket()
         # format to S3 API
         all_objects = [{'Key': key} for key in keys]
 
@@ -224,7 +243,7 @@ class Storage:
         batch_size = 1000
         for i in range(0, len(all_objects), batch_size):
             batch = all_objects[i:i + batch_size]
-            response = self._client.delete_objects(
+            self._client.delete_objects(
                 Bucket=self._bucket_name,
                 Delete={
                     'Objects': batch,
@@ -239,6 +258,7 @@ class Storage:
         Args:
             key (str): key/path of the file in the storage
         """
+        self._ensure_bucket()
         try:
             self._client.head_object(Bucket=self._bucket_name, Key=key)
             return True

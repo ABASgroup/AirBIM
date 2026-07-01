@@ -59,7 +59,8 @@ async def test_personal_workspace_cannot_be_deleted(api_client: AsyncClient) -> 
     assert "personal workspace" in response.json().get("message", "").lower()
 
     workspaces = await get_user_workspaces_via_api(api_client, user.headers)
-    assert any(workspace["id"] == personal_workspace["id"] for workspace in workspaces)
+    assert any(workspace["id"] == personal_workspace["id"]
+               for workspace in workspaces)
 
 
 @pytest.mark.asyncio
@@ -124,7 +125,8 @@ async def test_get_my_workspaces_returns_personal_and_team(
 
     assert len(workspaces) == 2
     assert team_workspace["id"] in workspace_ids
-    assert workspace_types == {WorkspaceType.PERSONAL.value, WorkspaceType.TEAM.value}
+    assert workspace_types == {
+        WorkspaceType.PERSONAL.value, WorkspaceType.TEAM.value}
 
 
 @pytest.mark.asyncio
@@ -389,8 +391,8 @@ async def test_get_workspace_tasks_returns_list(
     api_client: AsyncClient,
     auth_context: AuthContext,
 ) -> None:
-    """POST /workspaces/{id}/tasks should return workspace tasks list."""
-    response = await api_client.post(
+    """GET /workspaces/{id}/tasks should return workspace tasks list."""
+    response = await api_client.get(
         f"/workspaces/{auth_context.workspace_id}/tasks",
         headers=auth_context.headers,
     )
@@ -454,7 +456,7 @@ async def test_workspace_endpoints_return_401_without_token(
         api_client.post(f"/workspaces/{workspace.id}/projects"),
         api_client.post(f"/workspaces/{workspace.id}/invites"),
         api_client.post(f"/workspaces/{workspace.id}/invites/revoke"),
-        api_client.post(f"/workspaces/{workspace.id}/tasks"),
+        api_client.get(f"/workspaces/{workspace.id}/tasks"),
     ]
 
     for response in await gather_responses(list(protected_requests)):
@@ -479,10 +481,12 @@ async def test_workspace_endpoints_return_403_for_non_member(
     )
     await db_session.commit()
 
-    outsider_headers = {"Authorization": f"Bearer {create_access_token(outsider.id)}"}
+    outsider_headers = {
+        "Authorization": f"Bearer {create_access_token(outsider.id)}"}
 
     protected_requests = [
-        api_client.get(f"/workspaces/{workspace.id}", headers=outsider_headers),
+        api_client.get(f"/workspaces/{workspace.id}",
+                       headers=outsider_headers),
         api_client.get(
             f"/workspaces/{workspace.id}/memberships/", headers=outsider_headers
         ),
@@ -495,7 +499,8 @@ async def test_workspace_endpoints_return_403_for_non_member(
         api_client.post(
             f"/workspaces/{workspace.id}/invites/revoke", headers=outsider_headers
         ),
-        api_client.post(f"/workspaces/{workspace.id}/tasks", headers=outsider_headers),
+        api_client.get(
+            f"/workspaces/{workspace.id}/tasks", headers=outsider_headers),
     ]
 
     for response in await gather_responses(list(protected_requests)):
@@ -530,7 +535,7 @@ async def test_workspace_endpoints_returns_403_for_unrelated_workspace(
             f"/workspaces/{other_workspace.id}/invites/revoke",
             headers=auth_context.headers,
         ),
-        api_client.post(
+        api_client.get(
             f"/workspaces/{other_workspace.id}/tasks", headers=auth_context.headers
         ),
     ]

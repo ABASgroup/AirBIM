@@ -83,7 +83,8 @@ async def test_clean_up_files(
     old_pending_file = await create_test_file(
         db_session, workspace.id, file_path=test_building_laz_path
     )
-    old_pending_file.created_at = old_pending_file.created_at - timedelta(days=2)
+    old_pending_file.created_at = old_pending_file.created_at - \
+        timedelta(days=2)
     assert old_pending_file.status == FileStatus.PENDING
     assert (
         await FileRepository.get_by_id(old_pending_file.id, session=db_session)
@@ -455,14 +456,11 @@ async def test_get_bim_raises_for_nonexistent_id(db_session: AsyncSession) -> No
     with pytest.raises(NotFoundError):
         await FileService.get_bim(uuid.uuid4(), session=db_session)
 
-    assert (
-        await FileService.get_bim_by_file_id(uuid.uuid4(), session=db_session) is None
-    )
+    with pytest.raises(NotFoundError):
+        await FileService.get_bim_by_file_id(uuid.uuid4(), session=db_session)
 
-    assert (
+    with pytest.raises(NotFoundError):
         await FileService.get_bim_by_project_id(uuid.uuid4(), session=db_session)
-        is None
-    )
 
 
 @pytest.mark.asyncio
@@ -484,7 +482,8 @@ async def test_generate_bim_upload_link(
     )
 
     assert isinstance(link, str)
-    storage_port = storage._external_client.meta.endpoint_url.split(":")[-1]  # pylint: disable=protected-access
+    storage_port = storage._external_client.meta.endpoint_url.split(
+        ":")[-1]  # pylint: disable=protected-access
     assert link.startswith(f"http://localhost:{storage_port}") or link.startswith(
         f"https://localhost:{storage_port}"
     )
@@ -513,7 +512,8 @@ async def test_generate_point_cloud_upload_link(
     )
 
     assert isinstance(link, str)
-    storage_port = storage._external_client.meta.endpoint_url.split(":")[-1]  # pylint: disable=protected-access
+    storage_port = storage._external_client.meta.endpoint_url.split(
+        ":")[-1]  # pylint: disable=protected-access
     assert link.startswith(f"http://localhost:{storage_port}") or link.startswith(
         f"https://localhost:{storage_port}"
     )
