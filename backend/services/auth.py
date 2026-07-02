@@ -11,7 +11,7 @@ from core.security import get_password_hash, verify_password, create_access_toke
 from repositories.user import UserRepository
 from repositories.refresh_token import RefreshTokenRepository
 from models.user import User
-from schemas.user import UserModel, UserRegisterRequest
+from schemas.user import UserModel, UserRegisterRequest, UserUpdate
 from schemas.token import RefreshTokenModel
 
 
@@ -25,6 +25,15 @@ class AuthService:
 
         if user is None:
             raise NotFoundError("User was not found.")
+
+        return user
+
+    @classmethod
+    async def update_user(cls, user_id: UUID, user_data: UserUpdate, session: AsyncSession):
+        """Update user info."""
+        user = await cls.get_user(user_id, session)
+
+        user = await UserRepository.update(user, user_data.model_dump(exclude_unset=True), session)
 
         return user
 

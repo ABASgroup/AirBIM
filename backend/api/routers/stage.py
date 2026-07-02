@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from celery import chain
 from infrastructure.storage import Storage
-from schemas.stage import StageResponse
+from schemas.stage import StageResponse, StageUpdate
 from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
@@ -70,6 +70,27 @@ async def delete_stage(
     """
     async with uow:
         stage = await StageService.delete_stage(stage_id, session=uow.session)
+    return stage
+
+
+@router.patch(
+    "",
+    response_model=StageResponse,
+    dependencies=[
+        Depends(require_stage_permission(Permission.STAGE_EDIT))],
+)
+async def edit_stage(
+    stage_id: uuid.UUID,
+    stage_data: StageUpdate,
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
+):
+    """
+    Edit stage data.
+
+    Requires permission.
+    """
+    async with uow:
+        stage = await StageService.update_stage(stage_id, stage_data, session=uow.session)
     return stage
 
 

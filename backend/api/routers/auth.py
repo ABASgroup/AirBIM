@@ -1,13 +1,13 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from schemas.user import UserRegisterRequest
+from schemas.user import UserRegisterRequest, UserUpdate, UserResponse
 from schemas.token import TokenResponse
 from schemas.membership import MembershipModel
 from schemas.workspace import WorkspaceModel
 from core.roles import Role, Permission
 from core.dependencies import get_database_uow, DatabaseSessionUOW
-from api.dependencies import get_current_user_id_from_refresh_token
+from api.dependencies import get_current_user_id_from_refresh_token, get_current_user_id
 from models.workspace import WorkspaceType
 from services.auth import AuthService
 from services.workspace import WorkspaceService
@@ -90,6 +90,21 @@ async def refresh_tokens(
         access_token=access_token,
         refresh_token=refresh_token
     )
+
+
+@router.patch("", response_model=UserResponse)
+async def edit_user(
+    user_id: UUID = Depends(get_current_user_id),
+    user_data: UserUpdate = Depends(),
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
+):
+    """
+    Update current user info.
+    """
+    async with uow:
+        user = await AuthService.update_user(user_id, user_data, uow.session)
+
+    return user
 
 
 @router.get("/permissions")

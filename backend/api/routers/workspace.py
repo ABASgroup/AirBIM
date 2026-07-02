@@ -12,7 +12,12 @@ from models.task import TaskStatus
 from schemas.invite_link import InviteLinkRequest, NewInviteLinkResponse
 from schemas.project import ProjectModel, ProjectCreateRequest, ProjectResponse
 from schemas.user import UserResponse
-from schemas.workspace import WorkspaceModel, WorkspaceCreateRequest, WorkspaceResponse
+from schemas.workspace import (
+    WorkspaceModel,
+    WorkspaceCreateRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate
+)
 from schemas.membership import (
     MembershipPermissionsResponse,
     MembershipModel,
@@ -42,6 +47,8 @@ async def access(
     Use if you need to specify permissions.
 
     If user is not a member of the workspace, returns an error.
+
+    Requires permission.
     """
     async with uow:
         membership = await membership_service.get_membership(
@@ -73,7 +80,7 @@ async def get_workspace_members(
     """
     Get all workspace members.
 
-    Permission required.
+    Requires permission.
     """
     async with uow:
         memberships = await membership_service.get_workspace_members(
@@ -94,10 +101,11 @@ async def remove_user_from_workspace(
     uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
     """
-    Remove user from the workspace
+    Remove user from the workspace.
 
-    - Permission required
-    - You can't remove the owner from his own workspace
+    You can't remove the owner from his own workspace.
+
+    Requires permission.
     """
     async with uow:
         removed_membership = await membership_service.delete_membership(
@@ -121,7 +129,7 @@ async def change_user_role(
     """
     Change user role in the workspace.
 
-    Permission required.
+    Requires permission.
     """
     async with uow:
         membership = await membership_service.change_user_role(
@@ -163,6 +171,8 @@ async def get_workspace(
 ):
     """
     Get all workspace data.
+
+    Requires permission.
     """
     async with uow:
         workspaces = await WorkspaceService.get_workspace(workspace_id, session=uow.session)
@@ -178,7 +188,10 @@ async def create_workspace(
     """
     Creates a new workspace, making current user its owner.
 
-    You can create only team workspace, personal workspace is created automatically during registration.
+    You can create only team workspace, personal 
+    workspace is created automatically during registration.
+
+    Requires permission.
     """
     async with uow:
         workspace = WorkspaceModel(
@@ -190,6 +203,28 @@ async def create_workspace(
             workspace_id=workspace.id, user_id=user_id, role=Role.OWNER
         )
         await membership_service.create_membership(membership, uow.session)
+
+    return workspace
+
+
+@router.patch(
+    "/{workspace_id}",
+    response_model=WorkspaceResponse,
+    dependencies=[Depends(require_workspace_permission(
+                  Permission.WORKSPACE_EDIT))]
+)
+async def edit_workspace(
+    workspace_id: uuid.UUID,
+    workspace_data: WorkspaceUpdate,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
+):
+    """
+    Edit the workspace.
+
+    Requires permission.
+    """
+    async with uow:
+        workspace = await WorkspaceService.update_workspace(workspace_id, workspace_data, uow.session)
 
     return workspace
 
@@ -224,7 +259,7 @@ async def get_invite_link(
     workspace_id: uuid.UUID,
     link_data: InviteLinkRequest,
     membership: Membership = Depends(
-        require_workspace_permission(Permission.PROJECT_CREATE)
+        require_workspace_permission(Permission.MEMBERS_INVITE)
     ),
     uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
@@ -234,6 +269,8 @@ async def get_invite_link(
     Use if you need a new link.
 
     Always save token from the response, otherwise it will be lost.
+
+    Requires permission.
     """
     async with uow:
         link, token = await invite_link_service.generate_invite_link(
@@ -264,6 +301,8 @@ async def revoke_invite_links(
     Revoke invite links for the workspace.
 
     Old links (created before the call) will become obsolete and invalid.
+
+    Requires permission.
     """
     async with uow:
         await invite_link_service.revoke_links(workspace_id, session=uow.session)
@@ -279,7 +318,11 @@ async def get_workspace_projects(
     workspace_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
-    """Get all projects related to the workspace."""
+    """
+    Get all projects related to the workspace.
+
+    Requires permission.
+    """
     async with uow:
         projects = await ProjectService.get_workspace_projects(
             workspace_id, session=uow.session
@@ -298,6 +341,11 @@ async def create_project(
     project_data: ProjectCreateRequest,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
 ):
+    """
+    Create project in this workspace.
+
+    Requires permission.
+    """
     async with uow:
         project_data_db = ProjectModel(workspace_id=workspace_id,
                                        name=project_data.name,
