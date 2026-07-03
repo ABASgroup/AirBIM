@@ -14,23 +14,21 @@ from utils.files import (
     get_all_dir_files,
     clean_path
 )
+from .base_task import BaseTask
 
 
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
 # save artifacts
 
-class ConverterTask(celery_app.Task):
+class ConverterTask(BaseTask):
+    abstract = True
     queue = 'converter'
 
 
 @celery_app.task(
     base=ConverterTask,
     bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def convert_point_cloud_task(
     self,
@@ -54,7 +52,6 @@ def convert_point_cloud_task(
             if current_progress == 0:
                 await TaskService.start_task(
                     task_id,
-                    celery_task_id=self.request.id,
                     session=uow.session
                 )
 
@@ -141,16 +138,4 @@ def convert_point_cloud_task(
                     session=uow.session
                 )
 
-    try:
-        run_async(run_task())
-    except Exception:
-        async def mark_failed():
-            async with get_database_uow() as uow:
-                await TaskService.update_task_status(
-                    task_id,
-                    status=TaskStatus.FAILED,
-                    session=uow.session
-                )
-
-        run_async(mark_failed())
-        raise
+    run_async(run_task())

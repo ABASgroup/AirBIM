@@ -16,6 +16,7 @@ from services.file import FileService
 from services.stage import StageService
 from services.recording_result import RecordingResultService
 from services.task import TaskService
+from .base_task import BaseTask
 
 
 # heavy tasks with long duration must never use database transaction for far too long
@@ -27,17 +28,14 @@ from services.task import TaskService
 storage = get_storage()
 
 
-class ProcessingTask(celery_app.Task):
+class ProcessingTask(BaseTask):
+    abstract = True
     queue = 'processing'
 
 
 @celery_app.task(
     base=ProcessingTask,
     bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
     import ifcopenshell  # type: ignore
@@ -76,7 +74,6 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
             # task that is being executed
             await TaskService.start_task(
                 task_id,
-                celery_task_id=self.request.id,
                 session=uow.session
             )
 
@@ -173,10 +170,6 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
 @celery_app.task(
     base=ProcessingTask,
     bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float = 0.05):
     from airbim_processing import compute_deviations    # type: ignore
@@ -285,10 +278,6 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
 @celery_app.task(
     base=ProcessingTask,
     bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def check_progress(
     self,
@@ -413,10 +402,6 @@ def check_progress(
 @celery_app.task(
     base=ProcessingTask,
     bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def create_recording_result_pdf_report(self, recording_result_id: UUID, task_id: UUID) -> UUID:
     """

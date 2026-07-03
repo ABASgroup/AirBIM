@@ -32,7 +32,6 @@ class TaskService:
     async def start_task(
         cls,
         task_id: UUID,
-        celery_task_id: str,
         session: AsyncSession
     ) -> Task:
         """
@@ -43,7 +42,6 @@ class TaskService:
         task = await cls.get_task(task_id, session=session)
 
         task_update_data = TaskUpdateModel(
-            celery_task_id=celery_task_id,
             status=TaskStatus.STARTED,
         )
         task = await TaskRepository.update(
@@ -100,20 +98,39 @@ class TaskService:
     ) -> Task:
         """
         Update task status.
-        
+
         If the task is finished (succeeded or failed), the progress is set to 100
         and the finished_at timestamp is set to the current time.
         """
         task = await cls.get_task(task_id, session=session)
 
-        if status == TaskStatus.FAILED or status == TaskStatus.SUCCEEDED:
+        if status in [TaskStatus.FAILED, TaskStatus.CANCELED, TaskStatus.SUCCEEDED]:
             task_update_data = TaskUpdateModel(
                 progress=100,
-                status=status, 
+                status=status,
                 finished_at=datetime.now(timezone.utc)
-                )
+            )
         else:
             task_update_data = TaskUpdateModel(status=status)
+        task = await TaskRepository.update(task, task_update_data.model_dump(exclude_unset=True), session=session)
+
+        await session.flush()
+        return task
+
+    @classmethod
+    async def add_meta_info(
+        cls,
+        task_id: UUID,
+        meta: str,
+        session: AsyncSession
+    ):
+        """Add meta information to the task."""
+        # need to separate info entry
+        meta += f"\n{datetime.now(timezone.utc).isoformat()} - {meta}"
+
+        task = await cls.get_task(task_id, session=session)
+
+        task_update_data = TaskUpdateModel(meta=meta)
         task = await TaskRepository.update(task, task_update_data.model_dump(exclude_unset=True), session=session)
 
         await session.flush()

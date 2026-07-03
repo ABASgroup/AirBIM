@@ -11,9 +11,11 @@ from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from utils.report_generation import generate_excel_report
 from utils.files import clean_path
+from .base_task import BaseTask
 
 
-class DefaultTask(celery_app.Task):
+class DefaultTask(BaseTask):
+    abstract = True
     queue = 'default'
 
 
@@ -42,10 +44,6 @@ def clean_up_files() -> str:
 
 @celery_app.task(
     base=DefaultTask,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUID) -> UUID:
     """

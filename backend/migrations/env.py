@@ -21,7 +21,7 @@ from models.invite_link import InviteLink
 from models.membership import Membership
 from models.project import Project
 from models.user import User
-from models.task import Task
+from models.task import Task, TaskStep
 from models.refresh_token import RefreshToken
 
 from alembic import context
