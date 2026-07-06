@@ -51,7 +51,7 @@ class Task(BaseModel):
         nullable=False
     )
 
-    progress: Mapped[int] = mapped_column(default=0, nullable=True)
+    progress: Mapped[float] = mapped_column(default=0.0, nullable=True)
 
     type: Mapped[TaskType] = mapped_column(
         Enum(TaskType, name="task_type", create_constraint=True),
@@ -64,7 +64,7 @@ class Task(BaseModel):
         default=TaskStatus.STARTED
     )
 
-    steps: Mapped[int | None] = mapped_column(default=1, nullable=True)
+    steps: Mapped[int] = mapped_column(default=1, nullable=False)
 
     meta: Mapped[str | None] = mapped_column(
         nullable=True

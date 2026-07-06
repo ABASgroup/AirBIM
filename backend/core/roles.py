@@ -51,6 +51,8 @@ class Permission(enum.StrEnum):
     FILES_DOWNLOAD = "files:download"
     FILES_UPLOAD = "files:upload"
     FILES_DELETE = "files:delete"
+    # tasks
+    TASKS_START = "tasks:start"
 
 
 # assign permissions here
@@ -71,7 +73,8 @@ __member_permissions = [
     Permission.FILES_DOWNLOAD,
     Permission.MEMBERS_INVITE,
     Permission.MEMBERS_VIEW,
-    Permission.RECORDING_RESULT_DELETE
+    Permission.RECORDING_RESULT_DELETE,
+    Permission.TASKS_START,
 ]
 __member_permissions.extend(__viewer_permissions)
 
@@ -83,6 +86,7 @@ __admin_permissions = [
     Permission.MEMBERS_REMOVE,
     Permission.MEMBERS_EDIT_ROLE,
     Permission.MEMBERS_VIEW,
+    Permission.TASKS_START,
 ]
 __admin_permissions.extend(__member_permissions)
 

@@ -374,5 +374,4 @@ async def get_workspace_tasks(
     """
     async with uow:
         tasks = await TaskService.get_tasks_by_workspace_id(workspace_id, statuses, uow.session)
-
     return tasks

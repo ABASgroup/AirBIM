@@ -105,10 +105,10 @@ async def confirm_upload(
             # type: ignore[attr-defined]
             convert_point_cloud_task.s(task_id=created_task_id),
         )
-        task_result = pipeline.apply_async()
+        pipeline.apply_async()
 
     elif point_cloud_id is not None and created_task_id is not None:
-        task_result = convert_point_cloud_task.delay(  # type: ignore[attr-defined]
+        convert_point_cloud_task.delay(  # type: ignore[attr-defined]
             point_cloud_id=point_cloud_id,
             task_id=created_task_id,
         )
