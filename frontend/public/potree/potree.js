@@ -80436,34 +80436,26 @@ ENDSEC
 				});
 			});
 
-			let languages = [
-				["EN", "en"],
-				["FR", "fr"],
-				["DE", "de"],
-				["JP", "jp"],
-				["ES", "es"],
-				["SE", "se"],
-				["ZH", "zh"],
-				["IT", "it"],
-				["CA", "ca"]
-			];
+			// let languages = [
+			// 	["RU", "ru"],
+			// ];
 
-			let elLanguages = $('#potree_languages');
-			for(let i = 0; i < languages.length; i++){
-				let [key, value] = languages[i];
-				let element = $(`<a>${key}</a>`);
-				element.click(() => this.viewer.setLanguage(value));
+			// let elLanguages = $('#potree_languages');
+			// for(let i = 0; i < languages.length; i++){
+			// 	let [key, value] = languages[i];
+			// 	let element = $(`<a>${key}</a>`);
+			// 	element.click(() => this.viewer.setLanguage(value));
 
-				if(i === 0){
-					element.css("margin-left", "30px");
-				}
+			// 	if(i === 0){
+			// 		element.css("margin-left", "30px");
+			// 	}
 				
-				elLanguages.append(element);
+			// 	elLanguages.append(element);
 
-				if(i < languages.length - 1){
-					elLanguages.append($(document.createTextNode(' - ')));	
-				}
-			}
+			// 	if(i < languages.length - 1){
+			// 		elLanguages.append($(document.createTextNode(' - ')));	
+			// 	}
+			// }
 
 
 			// to close all, call
@@ -89235,9 +89227,9 @@ ENDSEC
 				this.mapView.init();
 
 				i18n.init({
-					lng: 'en',
+					lng: 'ru',
 					resGetPath: Potree.resourcePath + '/lang/__lng__/__ns__.json',
-					preload: ['en', 'fr', 'de', 'jp', 'se', 'es', 'zh', 'it','ca'],
+					preload: ['ru'],
 					getAsync: true,
 					debug: false
 				}, function (t) {
