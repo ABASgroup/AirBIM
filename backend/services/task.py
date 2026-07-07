@@ -134,6 +134,21 @@ class TaskService:
         return task
 
     @classmethod
+    async def cancel_task(
+        cls,
+        task_id: UUID,
+        session: AsyncSession
+    ) -> Task:
+        """
+        Cancel the task.
+
+        - Changes status to CANCELED and prevents further processing.
+        - Deletes all related data.
+        """
+        task = await cls.update_task_status(task_id=task_id, status=TaskStatus.CANCELED, session=session)
+        return task
+
+    @classmethod
     async def add_meta_info(
         cls,
         task_id: UUID,

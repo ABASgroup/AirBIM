@@ -16,6 +16,7 @@ from services.recording_result import RecordingResultService
 from services.stage import StageService
 from services.project import ProjectService
 from services.file import FileService
+from services.task import TaskService
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -245,6 +246,35 @@ def require_file_permission(permission: Permission):
         membership = await get_membership(
             user_id,
             file.workspace_id,
+            session)
+
+        if membership is None:
+            raise NotMemberError()
+
+        if permission not in ROLE_PERMISSIONS[membership.role]:
+            raise NoRequiredPermissionError(permission.value)
+        return membership
+    return checker
+
+
+def require_task_permission(permission: Permission):
+    """
+    Require certain membership permission from user to access an endpoint.
+
+    Uses task to validate permission.
+
+    Requires membership in the workspace.
+    """
+    async def checker(
+        task_id: uuid.UUID,
+        user_id: uuid.UUID = Depends(get_current_user_id),
+        session: AsyncSession = Depends(get_db_session_dependency)
+    ):
+        task = await TaskService.get_task(task_id, session=session)
+
+        membership = await get_membership(
+            user_id,
+            task.workspace_id,
             session)
 
         if membership is None:

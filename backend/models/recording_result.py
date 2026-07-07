@@ -1,5 +1,4 @@
 from uuid import UUID
-from typing import Optional
 from enum import StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, ForeignKey, Enum
