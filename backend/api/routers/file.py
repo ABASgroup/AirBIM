@@ -30,7 +30,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post(
     "/{file_id}/confirm",
-    response_model=FileResponse | FileTaskResponse,
+    response_model=FileResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
@@ -61,7 +61,7 @@ async def confirm_upload(
                 file_id=file.id,
                 session=uow.session
             )
-        except: 
+        except:
             bim = None
 
         if bim and bim.point_cloud_id is None:
@@ -81,9 +81,18 @@ async def confirm_upload(
                 entity_type="bim",
                 workspace_id=file.workspace_id,
                 type=TaskType.CONVERTING_BIM,
+                steps=2
             )
             created_task = await TaskService.create_task(task_data, session=uow.session)
             created_task_id = created_task.id
+            pipeline = chain(
+                # type: ignore[attr-defined]
+                convert_bim_to_point_cloud.s(
+                    bim_id=bim_id, task_id=created_task_id),
+                # type: ignore[attr-defined]
+                convert_point_cloud_task.s(task_id=created_task_id),
+            )
+            pipeline.apply_async()
 
         # if it's a point cloud - create one task for point cloud conversion
         elif point_cloud_id is not None:
@@ -92,35 +101,18 @@ async def confirm_upload(
                 entity_type="point_cloud",
                 workspace_id=file.workspace_id,
                 type=TaskType.CONVERTING_POINT_CLOUD,
+                steps=1
             )
             created_task = await TaskService.create_task(task_data, session=uow.session)
             created_task_id = created_task.id
-        # else - no task is needed
+            convert_point_cloud_task.delay(  # type: ignore[attr-defined]
+                point_cloud_id=point_cloud_id,
+                task_id=created_task_id,
+            )
+        else:
+            pass
 
-    if bim_id is not None and created_task_id is not None:
-        pipeline = chain(
-            # type: ignore[attr-defined]
-            convert_bim_to_point_cloud.s(
-                bim_id=bim_id, task_id=created_task_id),
-            # type: ignore[attr-defined]
-            convert_point_cloud_task.s(task_id=created_task_id),
-        )
-        pipeline.apply_async()
-
-    elif point_cloud_id is not None and created_task_id is not None:
-        convert_point_cloud_task.delay(  # type: ignore[attr-defined]
-            point_cloud_id=point_cloud_id,
-            task_id=created_task_id,
-        )
-
-    if created_task_id is not None:
-        response = FileTaskResponse(
-            file=FileResponse.model_validate(file, from_attributes=True),
-            task=TaskResponse.model_validate(
-                created_task, from_attributes=True)
-        )
-    else:
-        response = FileResponse.model_validate(file, from_attributes=True)
+    response = FileResponse.model_validate(file, from_attributes=True)
 
     return response
 

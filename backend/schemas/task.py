@@ -9,7 +9,7 @@ class TaskModel(BaseModel):
     entity_id: UUID
     entity_type: str
     meta: str | None = None
-    steps: int = 1
+    steps: int
     workspace_id: UUID
     type: TaskType
     status: TaskStatus = TaskStatus.PENDING

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 import logging
 from celery.exceptions import Ignore
@@ -15,7 +16,7 @@ class BaseCeleryTask(celery_app.Task):
     """
     The base task for every Celery task in the app.
 
-    Every single task must use this class.
+    Every single task, that is not a periodic or maintenance task, must use this class.
     """
     abstract = True
 
@@ -37,6 +38,7 @@ class BaseCeleryTask(celery_app.Task):
         task_id = kwargs.get('task_id')
         step_name = self.name.split('.')[-1].replace('_', ' ')
         celery_task_id = self.request.id
+        self._step_started_at = datetime.now(timezone.utc)
 
         # check headers
         if task_id is None:
@@ -71,7 +73,7 @@ class BaseCeleryTask(celery_app.Task):
         run_async(self._update_meta(task_id, message))
 
         # DO NOT TOUCH: run the celery task's main logic
-        super().on_failure(exc, task_id, args, kwargs, einfo)
+        return super().on_failure(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
         """Executes on a success."""
@@ -85,7 +87,7 @@ class BaseCeleryTask(celery_app.Task):
         run_async(self._finish(task_id))
 
         # DO NOT TOUCH: run the celery task's main logic
-        super().on_success(retval, task_id, args, kwargs)
+        return super().on_success(retval, task_id, args, kwargs)
 
     def _fail_celery_task(self, reason: str = "Unknown error."):
         """
@@ -132,7 +134,7 @@ class BaseCeleryTask(celery_app.Task):
                 task_id=task_id,
                 name=step_name,
                 step_task_id=self.request.id,
-                started_at=self.request.time_start
+                started_at=self._step_started_at
             )
             await TaskService.create_task_step(task_step_data, uow.session)
 
@@ -143,20 +145,23 @@ class BaseCeleryTask(celery_app.Task):
         Will set finished_at for the task step and update the progress of the task if required.
         """
         async with get_database_uow() as uow:
+            finished_at = datetime.now(timezone.utc)
             # finish task step
             await TaskService.finish_task_step(
                 task_id=task_id,
                 step_task_id=self.request.id,
-                finished_at=self.request.time_start,
+                finished_at=finished_at,
                 session=uow.session
             )
             # update progress of the Task (based on amount of steps completed)
+            await TaskService.update_task_progress(task_id, session=uow.session)
 
     async def _fail(self, task_id: UUID):
         """
         Mark task as failed.
         """
         async with get_database_uow() as uow:
+            finished_at = datetime.now(timezone.utc)
             await TaskService.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.FAILED,
@@ -165,7 +170,7 @@ class BaseCeleryTask(celery_app.Task):
             await TaskService.finish_task_step(
                 task_id=task_id,
                 step_task_id=self.request.id,
-                finished_at=self.request.time_start,
+                finished_at=finished_at,
                 session=uow.session
             )
 

@@ -26,10 +26,8 @@ class ConverterTask(BaseCeleryTask):
 
 @celery_app.task(
     base=ConverterTask,
-    bind=True,
 )
 def convert_point_cloud_task(
-    self,
     point_cloud_id: uuid.UUID,
     *args,
     **kwargs
@@ -107,4 +105,4 @@ def convert_point_cloud_task(
                         session=uow.session
                     )
 
-    run_async(run_task())
+    return run_async(run_task())

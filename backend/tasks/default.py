@@ -18,9 +18,11 @@ class DefaultTask(BaseCeleryTask):
     queue = 'default'
 
 
-@celery_app.task(base=DefaultTask, ignore_result=True)
+@celery_app.task(ignore_result=True)
 def clean_up_files(*args, **kwargs) -> str:
     """
+    MAINTENANCE TASK: do not use BaseCeleryTask class here, because this is a simple periodic celery task.
+
     Cleans up files from the storage and the database periodically.
 
     Define the period in scheduler.

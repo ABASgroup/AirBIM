@@ -76,7 +76,6 @@ class TaskService:
     async def update_task_progress(
         cls,
         task_id: UUID,
-        progress: float,
         session: AsyncSession
     ) -> Task:
         """

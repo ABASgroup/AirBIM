@@ -163,6 +163,7 @@ async def compare_stage_scan_and_project_plan(
             entity_type="stage",
             workspace_id=stage.project.workspace_id,
             type=TaskType.COMPARING_PLAN_FACT,
+            steps=4
         )
         created_task = await TaskService.create_task(task_data, session=uow.session)
 

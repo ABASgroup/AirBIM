@@ -32,10 +32,9 @@ class ProcessingTask(BaseCeleryTask):
 
 
 @celery_app.task(
-    base=ProcessingTask,
-    bind=True,
+    base=ProcessingTask
 )
-def convert_bim_to_point_cloud(self, bim_id: UUID, *args, **kwargs):
+def convert_bim_to_point_cloud(bim_id: UUID, *args, **kwargs) -> UUID:
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
@@ -131,16 +130,15 @@ def convert_bim_to_point_cloud(self, bim_id: UUID, *args, **kwargs):
                     session=uow.session
                 )
 
-            return point_cloud_id
-
-        return run_async(run_task())
+        return point_cloud_id
+    point_cloud_id = run_async(run_task())
+    return point_cloud_id
 
 
 @celery_app.task(
-    base=ProcessingTask,
-    bind=True,
+    base=ProcessingTask
 )
-def compare_scan_and_plan(self, stage_id: UUID, tolerance: float = 0.05, *args, **kwargs):
+def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwargs) -> UUID:
     from airbim_processing import compute_deviations    # type: ignore
 
     async def run_task():
@@ -226,17 +224,15 @@ def compare_scan_and_plan(self, stage_id: UUID, tolerance: float = 0.05, *args, 
 
 
 @celery_app.task(
-    base=ProcessingTask,
-    bind=True,
+    base=ProcessingTask
 )
 def check_progress(
-    self,
     old_stage_id: UUID,
     new_stage_id: UUID,
     tolerance: float = 0.05,
     *args,
     **kwargs
-):
+) -> UUID:
     from airbim_processing import compute_progress    # type: ignore
 
     async def run_task():
@@ -332,10 +328,9 @@ def check_progress(
 
 
 @celery_app.task(
-    base=ProcessingTask,
-    bind=True,
+    base=ProcessingTask
 )
-def create_recording_result_pdf_report(self, recording_result_id: UUID, *args, **kwargs) -> UUID:
+def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwargs) -> UUID:
     """
     Generates a .pdf report for the recording result and stores it.
 
@@ -446,4 +441,5 @@ def create_recording_result_pdf_report(self, recording_result_id: UUID, *args, *
             )
 
         return recording_result.point_cloud_id
-    return run_async(run_task())
+    result_point_cloud = run_async(run_task())
+    return result_point_cloud
