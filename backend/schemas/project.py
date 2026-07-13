@@ -15,6 +15,8 @@ class ProjectResponse(Response):
     name: str
     description: str
     status: ProjectStatus
+    has_bim: bool = False
+    bim_preview_file_id: uuid.UUID | None = None
 
 
 class ProjectUpdate(BaseModel):

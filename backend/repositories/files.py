@@ -130,6 +130,19 @@ class BIMRepository(BaseRepository[BIM]):
         await session.flush()
         return bim
 
+    @classmethod
+    async def set_preview_file(
+        cls,
+        bim: BIM,
+        preview_file_id: UUID,
+        session: AsyncSession
+    ):
+        """Set connection to the BIM preview image file."""
+        bim.preview_file_id = preview_file_id
+
+        await session.flush()
+        return bim
+
 
 class PointCloudRepository(BaseRepository[PointCloud]):
     """Repository class for CRUD operations with PointCloud model."""

@@ -13,7 +13,7 @@ from infrastructure.storage import Storage
 from models.task import TaskType
 from services.file import FileService
 from services.task import TaskService
-from tasks.processing import convert_bim_to_point_cloud
+from tasks.processing import convert_bim_to_point_cloud, generate_bim_preview
 from tasks.preprocessing import convert_point_cloud_task
 from schemas.file import (
     FileDataRequest,
@@ -106,6 +106,7 @@ async def confirm_upload(
             convert_point_cloud_task.s(task_id=created_task_id),
         )
         task_result = pipeline.apply_async()
+        generate_bim_preview.delay(bim_id=bim_id)  # type: ignore[attr-defined]
 
     elif point_cloud_id is not None and created_task_id is not None:
         task_result = convert_point_cloud_task.delay(  # type: ignore[attr-defined]

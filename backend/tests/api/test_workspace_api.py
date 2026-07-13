@@ -17,12 +17,17 @@ from tests.api.helpers import (
     get_user_workspaces_via_api,
     register_user_via_api,
     role_has_permission,
+    setup_project_in_workspace,
 )
 from tests.helpers import (
+    create_test_bim,
+    create_test_file,
     create_test_membership,
     create_test_user,
     create_test_workspace,
 )
+from services.file import FileService
+from schemas.file import FileModel, FileStatus
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +339,47 @@ async def test_create_and_list_workspace_projects(
     assert list_response.status_code == 200
     projects = list_response.json()
     assert any(project["id"] == created_project["id"] for project in projects)
+    listed = next(project for project in projects if project["id"] == created_project["id"])
+    assert listed["has_bim"] is False
+    assert listed["bim_preview_file_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_list_workspace_projects_includes_bim_preview_fields(
+    api_client: AsyncClient,
+    auth_context: AuthContext,
+    db_session: AsyncSession,
+    test_building_ifc_path,
+) -> None:
+    """Project list should expose BIM preview metadata."""
+    project = await setup_project_in_workspace(db_session, auth_context.workspace_id)
+    file = await create_test_file(
+        db_session, auth_context.workspace_id, test_building_ifc_path
+    )
+    bim = await create_test_bim(db_session, project.id, file.id)
+
+    preview_file_data = FileModel(
+        workspace_id=auth_context.workspace_id,
+        filename="preview.jpg",
+        key=FileService.create_file_key("preview.jpg"),
+        content_type="image/jpeg",
+        size=1024,
+        status=FileStatus.UPLOADED,
+    )
+    await FileService.save_bim_preview_file(
+        bim.id, preview_file_data, session=db_session
+    )
+    await db_session.commit()
+
+    list_response = await api_client.get(
+        f"/workspaces/{auth_context.workspace_id}/projects",
+        headers=auth_context.headers,
+    )
+    assert list_response.status_code == 200
+
+    listed = next(p for p in list_response.json() if p["id"] == str(project.id))
+    assert listed["has_bim"] is True
+    assert listed["bim_preview_file_id"] is not None
 
 
 # ---------------------------------------------------------------------------

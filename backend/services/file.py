@@ -377,6 +377,23 @@ class FileService:
         return point_cloud.id
 
     @classmethod
+    async def save_bim_preview_file(
+        cls,
+        bim_id: uuid.UUID,
+        file_data: FileModel,
+        session: AsyncSession
+    ):
+        """Saves preview image file for the BIM."""
+        file = await cls.create_file(file_data, session=session)
+
+        bim = await cls.get_bim(bim_id, session=session)
+        await BIMRepository.set_preview_file(
+            bim=bim, preview_file_id=file.id, session=session
+        )
+
+        return file.id
+
+    @classmethod
     async def save_converted_point_cloud_file(
         cls,
         point_cloud_id: uuid.UUID,

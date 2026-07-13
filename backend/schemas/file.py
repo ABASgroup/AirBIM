@@ -89,3 +89,4 @@ class BIMResponse(Response):
     project_id: UUID
     file: FileResponse
     point_cloud_id: UUID | None = None
+    preview_file_id: UUID | None = None

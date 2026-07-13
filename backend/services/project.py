@@ -4,10 +4,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.exceptions import NotFoundError
 from repositories.project import ProjectRepository
 from models.project import Project
-from schemas.project import ProjectModel, ProjectUpdate
+from schemas.project import ProjectModel, ProjectUpdate, ProjectResponse
 
 
 class ProjectService:
+    @staticmethod
+    def _get_project_bim(project: Project):
+        bim = project.bim
+        if isinstance(bim, list):
+            return bim[0] if bim else None
+        return bim
+
+    @classmethod
+    def to_response(cls, project: Project) -> ProjectResponse:
+        bim = cls._get_project_bim(project)
+        return ProjectResponse(
+            id=project.id,
+            created_at=project.created_at,
+            updated_at=project.updated_at,
+            workspace_id=project.workspace_id,
+            name=project.name,
+            description=project.description,
+            status=project.status,
+            has_bim=bim is not None,
+            bim_preview_file_id=bim.preview_file_id if bim else None,
+        )
+
     @classmethod
     async def get_project(cls, project_id: uuid.UUID, session: AsyncSession) -> Project:
         """Get project using its ID."""

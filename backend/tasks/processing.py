@@ -39,6 +39,65 @@ class ProcessingTask(celery_app.Task):
     retry_backoff_max=600,
     max_retries=5,
 )
+def generate_bim_preview(self, bim_id: UUID):
+    from airbim_processing import ifc_to_image  # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            bim = await FileService.get_bim(bim_id, session=uow.session)
+            if bim.preview_file_id is not None:
+                return
+            bim_file = bim.file
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(os.path.join(tmp_dir, bim_file.filename))
+
+            storage.download_file_locally(
+                bim_file.key,
+                save_path=str(file_path)
+            )
+
+            try:
+                image_path = ifc_to_image(
+                    ifc_path=str(file_path),
+                    output_dir=str(clean_path(tmp_dir)),
+                    resolution=(400, 300),
+                    img_format="jpg",
+                )
+            except Exception:
+                print(f"Failed to generate BIM preview for bim_id={bim_id}")
+                return
+
+            file_info = FileService.collect_file_data(image_path)
+            storage.upload_file_locally(file_info["key"], str(image_path))
+
+            file_data = FileModel(
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=bim_file.workspace_id,
+            )
+
+            async with get_database_uow() as uow:
+                await FileService.save_bim_preview_file(
+                    bim_id,
+                    file_data=file_data,
+                    session=uow.session,
+                )
+
+    run_async(run_task())
+
+
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
