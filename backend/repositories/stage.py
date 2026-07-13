@@ -19,24 +19,10 @@ class StageRepository(BaseRepository[Stage]):
         """Get stages related to some project using its ID."""
         result = await session.execute(
             select(cls._model)
+            .options(
+                selectinload(cls._model.point_cloud),
+                selectinload(cls._model.project)
+            )
             .where(cls._model.project_id == project_id)
         )
         return result.scalars().all()
-
-    @classmethod
-    async def get_by_id_with_project(
-        cls,
-        stage_id: uuid.UUID,
-        session: AsyncSession
-    ):
-        """
-        Modification that loads stage's project.
-
-        Use to avoid N+1 problem when you require project with a stage.
-        """
-        result = await session.execute(
-            select(cls._model)
-            .options(selectinload(cls._model.project))
-            .where(cls._model.id == stage_id)
-        )
-        return result.scalar_one_or_none()

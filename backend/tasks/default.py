@@ -49,7 +49,7 @@ def clean_up_files() -> str:
 )
 def create_recording_result_excel_report(recording_result_id: UUID, task_id: UUID) -> UUID:
     """
-    Generates .xlxs report for the recording result and stores it.
+    Generates .xlsx report for the recording result and stores it.
 
     The following report will contain data from the recording result.
 

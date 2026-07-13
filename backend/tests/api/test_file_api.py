@@ -413,6 +413,12 @@ async def test_confirm_upload_for_bim_do_conversion_task(
             assert point_cloud_file.filename.endswith(".laz")
             assert storage.file_exists(point_cloud_file.key)
 
+            assert converted_bim.preview_file_id is not None
+            preview_file = await FileService.get_file(converted_bim.preview_file_id, session)
+            assert preview_file.size > 0
+            assert preview_file.content_type.startswith("image/")
+            assert storage.file_exists(preview_file.key)
+
     await wait_until(assert_bim_converted_to_point_cloud)
 
 

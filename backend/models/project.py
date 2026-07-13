@@ -11,6 +11,9 @@ class ProjectStatus(enum.StrEnum):
 
 
 class Project(BaseModel):
+    """
+    A building project in a workspace that has a BIM model.
+    """
     __tablename__ = "projects"
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(

@@ -13,7 +13,7 @@ from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
-import services.stage as stage_service
+from services.stage import StageService
 from services.recording_result import RecordingResultService
 from services.task import TaskService
 
@@ -21,6 +21,8 @@ from services.task import TaskService
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
 # save artifacts
+
+# use lazy imports for processing library so your main app would work without exceptions
 
 storage = get_storage()
 
@@ -37,8 +39,66 @@ class ProcessingTask(celery_app.Task):
     retry_backoff_max=600,
     max_retries=5,
 )
+def generate_bim_preview(self, bim_id: UUID):
+    from airbim_processing import ifc_to_image  # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            bim = await FileService.get_bim(bim_id, session=uow.session)
+            if bim.preview_file_id is not None:
+                return
+            bim_file = bim.file
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(os.path.join(tmp_dir, bim_file.filename))
+
+            storage.download_file_locally(
+                bim_file.key,
+                save_path=str(file_path)
+            )
+
+            try:
+                image_path = ifc_to_image(
+                    ifc_path=str(file_path),
+                    output_dir=str(clean_path(tmp_dir)),
+                    resolution=(400, 300),
+                    img_format="jpg",
+                )
+            except Exception:
+                print(f"Failed to generate BIM preview for bim_id={bim_id}")
+                return
+
+            file_info = FileService.collect_file_data(image_path)
+            storage.upload_file_locally(file_info["key"], str(image_path))
+
+            file_data = FileModel(
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=bim_file.workspace_id,
+            )
+
+            async with get_database_uow() as uow:
+                await FileService.save_bim_preview_file(
+                    bim_id,
+                    file_data=file_data,
+                    session=uow.session,
+                )
+
+    run_async(run_task())
+
+
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
-    # lazy imports so your main app would work
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
@@ -186,7 +246,7 @@ def compare_scan_and_plan(self, stage_id: UUID, task_id: UUID, tolerance: float 
             await TaskService.start_task(task_id, self.request.id, uow.session)
 
             # get stage and its point cloud
-            stage = await stage_service.get_stage(stage_id, session=uow.session)
+            stage = await StageService.get_stage(stage_id, session=uow.session)
             stage_point_cloud = await FileService.get_point_cloud(
                 stage.point_cloud.id, session=uow.session)
             # get bim (POINT CLOUD MUST ALREADY EXIST)
@@ -304,8 +364,8 @@ def check_progress(
             task = await TaskService.start_task(task_id, self.request.id, uow.session)
 
             # get stages and their point clouds
-            old_stage = await stage_service.get_stage(old_stage_id, session=uow.session)
-            new_stage = await stage_service.get_stage(new_stage_id, session=uow.session)
+            old_stage = await StageService.get_stage(old_stage_id, session=uow.session)
+            new_stage = await StageService.get_stage(new_stage_id, session=uow.session)
 
             old_stage_point_cloud = await FileService.get_point_cloud(
                 old_stage.point_cloud.id, session=uow.session)

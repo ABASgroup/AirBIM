@@ -19,6 +19,10 @@ class RecordingResultType(StrEnum):
 
 
 class RecordingResult(BaseModel):
+    """
+    A result from a recording, which can be of type progress or plan fact.
+    The main source of information about a recording.
+    """
     __tablename__ = "recording_results"
 
     project_id: Mapped["UUID"] = mapped_column(
@@ -37,8 +41,7 @@ class RecordingResult(BaseModel):
     pdf_report: Mapped["File"] = relationship(
         foreign_keys=[pdf_report_id],
         cascade="all, delete",
-        passive_deletes=True,
-        lazy="selectin"
+        passive_deletes=True
     )
 
     xlsx_report_id: Mapped["UUID"] = mapped_column(
@@ -49,8 +52,7 @@ class RecordingResult(BaseModel):
     xlsx_report: Mapped["File"] = relationship(
         foreign_keys=[xlsx_report_id],
         cascade="all, delete",
-        passive_deletes=True,
-        lazy="selectin"
+        passive_deletes=True
     )
 
     point_cloud_id: Mapped["UUID"] = mapped_column(

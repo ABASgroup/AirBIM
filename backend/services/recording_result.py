@@ -23,16 +23,14 @@ class RecordingResultService:
     @classmethod
     async def get_recording_result(cls, recording_result_id: UUID, session: AsyncSession) -> RecordingResult:
         """Get all recording results for a given project."""
-        result = await RecordingResultRepository.get_by_id(recording_result_id, session=session)
-
-        if result is None:
-            raise NotFoundError("No recording result with this ID.")
-
-        result = await RecordingResultRepository.refresh(
-            result,
+        result = await RecordingResultRepository.get_by_id(
+            recording_result_id,
             relations=["project", "pdf_report", "xlsx_report"],
             session=session
         )
+
+        if result is None:
+            raise NotFoundError("No recording result with this ID.")
 
         return result
 

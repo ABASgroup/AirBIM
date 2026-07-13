@@ -26,6 +26,7 @@ from tasks.processing import (
     compare_scan_and_plan,
     convert_bim_to_point_cloud,
     create_recording_result_pdf_report,
+    generate_bim_preview,
 )
 
 from tests.helpers import (
@@ -92,6 +93,40 @@ async def test_convert_bim_to_point_cloud(
             assert storage.file_exists(point_cloud_file.key)
 
     await wait_until(assert_converted_bim_generated)
+
+
+@pytest.mark.asyncio
+async def test_generate_bim_preview(
+    db_session: AsyncSession, storage: Storage, test_building_ifc_path: Path
+) -> None:
+    """Processing worker should generate preview image from BIM (IFC) file."""
+    workspace = await create_test_workspace(
+        db_session, workspace_type=WorkspaceType.TEAM
+    )
+    project = await create_test_project(db_session, workspace.id)
+    file = await create_test_file(db_session, workspace.id, test_building_ifc_path)
+    bim = await create_test_bim(db_session, project.id, file.id)
+
+    bim_file_key = FileService.create_file_key(test_building_ifc_path.name)
+    file.key = bim_file_key
+    storage.upload_file_locally(bim_file_key, str(test_building_ifc_path))
+
+    await db_session.commit()
+
+    generate_bim_preview.delay(bim.id)  # pyright: ignore[reportFunctionMemberAccess]
+
+    async def assert_preview_generated() -> None:
+        async with session_maker() as session:
+            updated_bim = await FileService.get_bim_by_project_id(project.id, session)
+            assert updated_bim.preview_file_id is not None
+
+            preview_file = await FileService.get_file(updated_bim.preview_file_id, session)
+            assert preview_file.size > 0
+            assert preview_file.status == FileStatus.UPLOADED
+            assert preview_file.content_type.startswith("image/")
+            assert storage.file_exists(preview_file.key)
+
+    await wait_until(assert_preview_generated)
 
 
 @pytest.mark.asyncio
@@ -306,7 +341,7 @@ async def test_create_recording_result_pdf_report(
     async def assert_report_generated() -> None:
         async with session_maker() as session:
             record = await RecordingResultRepository.get_by_id(
-                recording_result.id, session
+                recording_result.id, session, relations=["pdf_report"]
             )
             assert record is not None
             assert record.pdf_report is not None

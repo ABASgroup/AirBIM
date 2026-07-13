@@ -1,19 +1,20 @@
 """FastAPI related dependencies."""
 import uuid
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Body
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 
+from schemas.token import RefreshTokenRequest
 from core.configs.api import api_config
 from core.roles import ROLE_PERMISSIONS, Permission
-from core.exceptions import NoRequiredPermissionError, NotMemberError
+from core.exceptions import NoRequiredPermissionError, NotMemberError, InvalidTokenError
 from core.dependencies import get_session_maker
 
 from services.membership import get_membership
 from services.recording_result import RecordingResultService
-from services.stage import get_stage_with_project
-from services.project import get_project
+from services.stage import StageService
+from services.project import ProjectService
 from services.file import FileService
 
 
@@ -42,26 +43,67 @@ async def get_db_session_dependency():
         yield session
 
 
-def get_current_user_id(token: str = Depends(oauth2_scheme)):
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
     """
-    Get current user ID using a JWT token.
+    Alias for :func:`get_current_user_id_from_access_token`.
+    """
+    return get_current_user_id_from_access_token(token)
+
+
+def get_current_user_id_from_access_token(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
+    """
+    Get current user ID using the access token.
 
     Will work only if user is authenticated and provides a valid token.
+
+    The main method to get user ID.
     """
     try:
         payload = jwt.decode(token,
-                             api_config.JWT_SECRET_KEY,
+                             api_config.TOKEN_SECRET_KEY,
                              algorithms=[api_config.JWT_ALGORITHM])
+
+        if payload.get("type") != "access":
+            raise InvalidTokenError(details="invalid token type")
+
+        # cast the type to user id matching the database ID type
         user_id = payload.get("sub")
         if user_id is None:
             raise JWTError
-        # cast the type to user id matching the database ID type
         return uuid.UUID(user_id)
     except JWTError as exc:
-        credentials_exception = HTTPException(
-            status_code=401,
-            detail=f"Could not validate credentials: {exc}",
-            headers={"WWW-Authenticate": "Bearer"},
+        credentials_exception = InvalidTokenError(
+            details=f"could not validate credentials ({exc})",
+        )
+        raise credentials_exception from exc
+
+
+def get_current_user_id_from_refresh_token(token: RefreshTokenRequest = Body()):
+    """
+    Get current user ID using the access token.
+
+    Will work only if user is authenticated and provides a valid token.
+
+    Use only to refresh tokens.
+    """
+    try:
+        payload = jwt.decode(
+            token.refresh_token,
+            api_config.TOKEN_SECRET_KEY,
+            algorithms=[api_config.JWT_ALGORITHM]
+        )
+
+        if payload.get("type") != "refresh":
+            raise InvalidTokenError(details="invalid token type")
+
+        # cast the type to user id matching the database ID type
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise JWTError
+        return uuid.UUID(user_id)
+    except JWTError as exc:
+        credentials_exception = InvalidTokenError(
+            details=f"could not validate credentials ({exc})",
         )
         raise credentials_exception from exc
 
@@ -106,7 +148,7 @@ def require_project_permission(permission: Permission):
         user_id: uuid.UUID = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
-        project = await get_project(project_id, session=session)
+        project = await ProjectService.get_project(project_id, session=session)
 
         membership = await get_membership(
             user_id,
@@ -140,7 +182,7 @@ def require_recording_result_permission(permission: Permission):
             session=session,
         )
 
-        project = await get_project(recording_result.project_id, session=session)
+        project = await ProjectService.get_project(recording_result.project_id, session=session)
 
         membership = await get_membership(
             user_id,
@@ -169,7 +211,7 @@ def require_stage_permission(permission: Permission):
         user_id: uuid.UUID = Depends(get_current_user_id),
         session: AsyncSession = Depends(get_db_session_dependency)
     ):
-        stage = await get_stage_with_project(stage_id, session=session)
+        stage = await StageService.get_stage(stage_id, session=session)
 
         membership = await get_membership(
             user_id,

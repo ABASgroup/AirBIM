@@ -98,12 +98,20 @@ class TaskService:
         status: TaskStatus,
         session: AsyncSession
     ) -> Task:
-        """Update task status."""
+        """
+        Update task status.
+        
+        If the task is finished (succeeded or failed), the progress is set to 100
+        and the finished_at timestamp is set to the current time.
+        """
         task = await cls.get_task(task_id, session=session)
 
         if status == TaskStatus.FAILED or status == TaskStatus.SUCCEEDED:
             task_update_data = TaskUpdateModel(
-                status=status, finished_at=datetime.now(timezone.utc))
+                progress=100,
+                status=status, 
+                finished_at=datetime.now(timezone.utc)
+                )
         else:
             task_update_data = TaskUpdateModel(status=status)
         task = await TaskRepository.update(task, task_update_data.model_dump(exclude_unset=True), session=session)

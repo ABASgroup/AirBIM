@@ -8,12 +8,7 @@ from core.roles import Role
 
 from schemas.workspace import WorkspaceModel, WorkspaceType
 
-from services.workspace import (
-    create_workspace,
-    delete_team_workspace,
-    get_user_workspaces,
-    get_workspace,
-)
+from services.workspace import WorkspaceService
 
 from tests.helpers import (
     create_test_membership,
@@ -25,14 +20,15 @@ from tests.helpers import (
 @pytest.mark.asyncio
 async def test_create_and_get_workspace(db_session: AsyncSession) -> None:
     """Service should return workspace by its ID."""
-    workspace_data = WorkspaceModel(name="Test Workspace", type=WorkspaceType.TEAM)
+    workspace_data = WorkspaceModel(
+        name="Test Workspace", type=WorkspaceType.TEAM)
 
-    workspace = await create_workspace(workspace_data, session=db_session)
+    workspace = await WorkspaceService.create_workspace(workspace_data, session=db_session)
 
     assert workspace.id is not None
     assert workspace.name == "Test Workspace"
 
-    retrieved_workspace = await get_workspace(workspace.id, session=db_session)
+    retrieved_workspace = await WorkspaceService.get_workspace(workspace.id, session=db_session)
 
     assert retrieved_workspace is not None
     assert retrieved_workspace.id == workspace.id
@@ -49,7 +45,7 @@ async def test_get_user_workspaces(db_session: AsyncSession) -> None:
         db_session, workspace_id=workspace1.id, user_id=user.id, role=Role.MEMBER
     )
 
-    workspaces = await get_user_workspaces(user.id, session=db_session)
+    workspaces = await WorkspaceService.get_user_workspaces(user.id, session=db_session)
     assert len(workspaces) == 1
     assert workspace1 in workspaces
 
@@ -57,7 +53,7 @@ async def test_get_user_workspaces(db_session: AsyncSession) -> None:
         db_session, workspace_id=workspace2.id, user_id=user.id, role=Role.OWNER
     )
 
-    workspaces = await get_user_workspaces(user.id, session=db_session)
+    workspaces = await WorkspaceService.get_user_workspaces(user.id, session=db_session)
     assert len(workspaces) == 2
     assert workspace1 in workspaces
     assert workspace2 in workspaces
@@ -68,13 +64,13 @@ async def test_delete_team_workspace(db_session: AsyncSession) -> None:
     """Service should delete team workspace."""
     workspace = await create_test_workspace(db_session)
 
-    await delete_team_workspace(workspace.id, session=db_session)
+    await WorkspaceService.delete_team_workspace(workspace.id, session=db_session)
 
     with pytest.raises(NotFoundError):
-        await get_workspace(workspace.id, session=db_session)
+        await WorkspaceService.get_workspace(workspace.id, session=db_session)
 
     with pytest.raises(NotFoundError):
-        await delete_team_workspace(workspace.id, session=db_session)
+        await WorkspaceService.delete_team_workspace(workspace.id, session=db_session)
 
 
 @pytest.mark.asyncio
@@ -85,4 +81,4 @@ async def test_delete_personal_workspace(db_session: AsyncSession) -> None:
     )
 
     with pytest.raises(ProhibitedWorkspaceActionError):
-        await delete_team_workspace(workspace.id, session=db_session)
+        await WorkspaceService.delete_team_workspace(workspace.id, session=db_session)

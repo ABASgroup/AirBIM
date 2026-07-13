@@ -7,7 +7,7 @@ from core.exceptions import AlreadyExistsError, InvalidLoginInfoError
 
 from schemas.user import UserRegisterRequest
 
-from services.user import authenticate_user, register_user
+from services.auth import AuthService
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,7 @@ async def test_register_user_creates_hashed_password(db_session: AsyncSession) -
         workspace_name="Service workspace",
     )
 
-    user = await register_user(request, session=db_session)
+    user = await AuthService.register_user(request, session=db_session)
 
     assert user.id is not None
     assert user.email == "service@example.com"
@@ -37,7 +37,7 @@ async def test_register_user_duplicate_email(db_session: AsyncSession) -> None:
         password="password1",
         workspace_name="First workspace",
     )
-    await register_user(request, session=db_session)
+    await AuthService.register_user(request, session=db_session)
 
     duplicate_request = UserRegisterRequest(
         username="second-service-user",
@@ -46,7 +46,7 @@ async def test_register_user_duplicate_email(db_session: AsyncSession) -> None:
         workspace_name="Second workspace",
     )
     with pytest.raises(AlreadyExistsError):
-        await register_user(duplicate_request, session=db_session)
+        await AuthService.register_user(duplicate_request, session=db_session)
 
 
 @pytest.mark.asyncio
@@ -58,9 +58,9 @@ async def test_authenticate_user_success(db_session: AsyncSession) -> None:
         password="correct-password",
         workspace_name="Auth workspace",
     )
-    await register_user(request, session=db_session)
+    await AuthService.register_user(request, session=db_session)
 
-    user = await authenticate_user(request.email, request.password, session=db_session)
+    user = await AuthService.authenticate_user(request.email, request.password, session=db_session)
     assert user is not None
     assert user.username == "auth-service-user"
 
@@ -74,14 +74,14 @@ async def test_authenticate_user_invalid_credentials(db_session: AsyncSession) -
         password="correct-password",
         workspace_name="Auth workspace",
     )
-    await register_user(request, session=db_session)
+    await AuthService.register_user(request, session=db_session)
 
     with pytest.raises(InvalidLoginInfoError):
-        _ = await authenticate_user(
+        _ = await AuthService.authenticate_user(
             request.email, "incorrect-password", session=db_session
         )
 
     with pytest.raises(InvalidLoginInfoError):
-        _ = await authenticate_user(
-            "nonexisten-user", request.password, session=db_session
+        _ = await AuthService.authenticate_user(
+            "nonexistent-user", request.password, session=db_session
         )

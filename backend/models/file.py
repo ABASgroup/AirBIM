@@ -1,3 +1,4 @@
+"""Various file models in the system."""
 from uuid import UUID
 from typing import Optional
 from enum import StrEnum
@@ -55,6 +56,11 @@ class File(BaseModel):
 
 
 class PointCloud(BaseModel):
+    """
+    Represents a point cloud file in the system. 
+    Point clouds can be of different types (plan, scan, recording)
+    and can be associated with a stage.
+    """
     __tablename__ = "point_clouds"
 
     stage_id: Mapped["UUID"] = mapped_column(
@@ -82,8 +88,7 @@ class PointCloud(BaseModel):
     )
     file: Mapped["File"] = relationship(
         cascade="all, delete",
-        passive_deletes=True,
-        lazy="selectin"
+        passive_deletes=True
     )
 
     __table_args__ = (
@@ -97,6 +102,11 @@ class PointCloud(BaseModel):
 
 
 class PointCloudConverted(BaseModel):
+    """
+    Converted point cloud files that are associated with a point cloud. 
+    These files are generated from the original point cloud 
+    file and can be used for visualization.
+    """
     __tablename__ = "point_cloud_converted"
 
     point_cloud_id: Mapped["UUID"] = mapped_column(
@@ -113,6 +123,9 @@ class PointCloudConverted(BaseModel):
 
 
 class BIM(BaseModel):
+    """
+    Building Information Model (BIM) file associated with a project.
+    """
     __tablename__ = "bims"
 
     project_id: Mapped["UUID"] = mapped_column(
@@ -126,19 +139,31 @@ class BIM(BaseModel):
     )
     point_cloud: Mapped[Optional["PointCloud"]] = relationship()
 
+    preview_file_id: Mapped[Optional["UUID"]] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True
+    )
+    preview_file: Mapped[Optional["File"]] = relationship(
+        foreign_keys=[preview_file_id]
+    )
+
     file_id: Mapped["UUID"] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=False,
         unique=True
     )
     file: Mapped["File"] = relationship(
+        foreign_keys=[file_id],
         cascade="all, delete",
         passive_deletes=True
     )
 
 
 class ResultPhoto(BaseModel):
-    """Photos of a recording result (e.g. photo of the actual progress)."""
+    """
+    Photos of a recording result (e.g. photo of the actual progress).
+    """
     __tablename__ = "result_photos"
 
     result_id: Mapped["UUID"] = mapped_column(
@@ -151,4 +176,4 @@ class ResultPhoto(BaseModel):
         ForeignKey("files.id", ondelete="CASCADE"),
         primary_key=True
     )
-    file: Mapped["File"] = relationship(lazy="selectin")
+    file: Mapped["File"] = relationship()

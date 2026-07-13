@@ -3,12 +3,17 @@ from celery import chain
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from core.exceptions import NotFoundError
-from schemas.task import TaskModel
+from core.roles import Permission
+from core.dependencies import (
+    get_database_uow,
+    get_storage,
+    DatabaseSessionUOW
+)
 from infrastructure.storage import Storage
 from models.task import TaskType
 from services.file import FileService
 from services.task import TaskService
-from tasks.processing import convert_bim_to_point_cloud
+from tasks.processing import convert_bim_to_point_cloud, generate_bim_preview
 from tasks.preprocessing import convert_point_cloud_task
 from schemas.file import (
     FileDataRequest,
@@ -17,14 +22,7 @@ from schemas.file import (
     FileTaskResponse,
     PointCloudResponse
 )
-from schemas.task import TaskResponse
-from core.roles import Permission
-from core.dependencies import (
-    get_database_uow,
-    get_storage,
-    DatabaseSessionUOW
-)
-
+from schemas.task import TaskResponse, TaskModel
 from api.dependencies import require_file_permission
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -58,11 +56,14 @@ async def confirm_upload(
             session=uow.session,
             storage=storage,
         )
+        try:
+            bim = await FileService.get_bim_by_file_id(
+                file_id=file.id,
+                session=uow.session
+            )
+        except: 
+            bim = None
 
-        bim = await FileService.get_bim_by_file_id(
-            file_id=file.id,
-            session=uow.session
-        )
         if bim and bim.point_cloud_id is None:
             bim_id = bim.id
 
@@ -105,6 +106,7 @@ async def confirm_upload(
             convert_point_cloud_task.s(task_id=created_task_id),
         )
         task_result = pipeline.apply_async()
+        generate_bim_preview.delay(bim_id=bim_id)  # type: ignore[attr-defined]
 
     elif point_cloud_id is not None and created_task_id is not None:
         task_result = convert_point_cloud_task.delay(  # type: ignore[attr-defined]
@@ -226,7 +228,9 @@ async def get_point_cloud_file(
     storage: Storage = Depends(get_storage)
 ):
     """
-    For Potree usage.
+    Get a specific file of the converted point cloud by its filename.
+
+    You may need it for PotreeConverter in order to visualize the point cloud.
 
     Gives access to a file from point cloud conversion.
     """

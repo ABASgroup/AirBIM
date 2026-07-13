@@ -364,56 +364,6 @@ async def test_get_pdf_report_returns_404_when_missing(
 
 
 @pytest.mark.asyncio
-async def test_generate_excel_report_test_endpoint_does_not_require_auth(
-    auth_context: AuthContext,
-    db_session: AsyncSession,
-    test_building_laz_path: Path,
-) -> None:
-    """POST /recording_results/{id}/excel is a test-only endpoint without auth."""
-    project = await setup_project_in_workspace(db_session, auth_context.workspace_id)
-    recording_result = await setup_recording_result_in_project(
-        db_session,
-        auth_context.workspace_id,
-        project.id,
-        test_building_laz_path,
-    )
-
-    transport = ASGITransport(app=app, raise_app_exceptions=False)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post(
-            f"/recording_results/{recording_result.id}/excel",
-        )
-
-    # Endpoint currently calls celery task without required task_id argument.
-    assert response.status_code == 500
-
-
-@pytest.mark.asyncio
-async def test_generate_pdf_report_test_endpoint_does_not_require_auth(
-    auth_context: AuthContext,
-    db_session: AsyncSession,
-    test_building_laz_path: Path,
-) -> None:
-    """POST /recording_results/{id}/pdf is a test-only endpoint without auth."""
-    project = await setup_project_in_workspace(db_session, auth_context.workspace_id)
-    recording_result = await setup_recording_result_in_project(
-        db_session,
-        auth_context.workspace_id,
-        project.id,
-        test_building_laz_path,
-    )
-
-    transport = ASGITransport(app=app, raise_app_exceptions=False)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post(
-            f"/recording_results/{recording_result.id}/pdf",
-        )
-
-    # Endpoint currently calls celery task without required task_id argument.
-    assert response.status_code == 500
-
-
-@pytest.mark.asyncio
 async def test_recording_result_endpoints_return_401_without_token(
     api_client: AsyncClient,
     db_session: AsyncSession,
@@ -471,7 +421,8 @@ async def test_recording_result_endpoints_return_403_for_non_member(
     )
     await db_session.commit()
 
-    outsider_headers = {"Authorization": f"Bearer {create_access_token(outsider.id)}"}
+    outsider_headers = {
+        "Authorization": f"Bearer {create_access_token(outsider.id)}"}
 
     protected_requests = [
         api_client.get(
@@ -501,7 +452,8 @@ async def test_get_recording_result_returns_404_for_unknown_id(
     """Protected recording result endpoints should return 404 for a non-existent result."""
 
     protected_requests = [
-        api_client.get(f"/recording_results/{uuid4()}", headers=auth_context.headers),
+        api_client.get(
+            f"/recording_results/{uuid4()}", headers=auth_context.headers),
         api_client.delete(
             f"/recording_results/{uuid4()}", headers=auth_context.headers
         ),

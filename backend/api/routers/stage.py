@@ -1,9 +1,8 @@
 import uuid
 from fastapi import APIRouter, Depends
 from celery import chain
-from core.exceptions import NotFoundError
 from infrastructure.storage import Storage
-from schemas.stage import StageResponse
+from schemas.stage import StageResponse, StageUpdate
 from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
@@ -12,7 +11,7 @@ from schemas.file import (
 )
 from schemas.task import TaskModel, TaskResponse
 from models.task import TaskType
-from services import stage as stage_service
+from services.stage import StageService
 from services.file import FileService
 from services.task import TaskService
 from core.roles import Permission
@@ -40,7 +39,7 @@ router = APIRouter(prefix="/stages/{stage_id}", tags=["project stages"])
 )
 async def get_stage(stage_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)):
     async with uow:
-        stage = await stage_service.get_stage(stage_id, session=uow.session)
+        stage = await StageService.get_stage(stage_id, session=uow.session)
     response = StageResponse(
         id=stage.id,
         created_at=stage.created_at,
@@ -62,8 +61,7 @@ async def get_stage(stage_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_d
 )
 async def delete_stage(
     stage_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Delete stage and all related data and files.
@@ -71,7 +69,28 @@ async def delete_stage(
     Requires permission.
     """
     async with uow:
-        stage = await stage_service.delete_stage(stage_id, session=uow.session, storage=storage)
+        stage = await StageService.delete_stage(stage_id, session=uow.session)
+    return stage
+
+
+@router.patch(
+    "",
+    response_model=StageResponse,
+    dependencies=[
+        Depends(require_stage_permission(Permission.STAGE_EDIT))],
+)
+async def edit_stage(
+    stage_id: uuid.UUID,
+    stage_data: StageUpdate,
+    uow: DatabaseSessionUOW = Depends(get_database_uow)
+):
+    """
+    Edit stage data.
+
+    Requires permission.
+    """
+    async with uow:
+        stage = await StageService.update_stage(stage_id, stage_data, session=uow.session)
     return stage
 
 
@@ -95,7 +114,7 @@ async def get_point_cloud_upload_link(
     Requires permission.
     """
     async with uow:
-        stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
+        stage = await StageService.get_stage(stage_id, session=uow.session)
         key = FileService.create_file_key(
             filename=file_data.filename
         )
@@ -137,7 +156,7 @@ async def compare_stage_scan_and_project_plan(
     Requires permission.
     """
     async with uow:
-        stage = await stage_service.get_stage_with_project(stage_id, session=uow.session)
+        stage = await StageService.get_stage(stage_id, session=uow.session)
 
         task_data = TaskModel(
             entity_id=stage_id,

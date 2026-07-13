@@ -3,6 +3,7 @@ export { InviteManagerModal } from "./InviteManagerModal";
 export { MemberList } from "./MemberList";
 export { ProjectModal } from "./ProjectModal";
 export { ProjectsList } from "./ProjectsList";
+export { ProjectPreviewThumbnail } from "./ProjectPreviewThumbnail";
 export { WorkspaceTabPanel } from "./WorkspaceTabPanel";
 export { RoleTooltip } from "./RoleTooltip";
 export { Can } from "./Can";
