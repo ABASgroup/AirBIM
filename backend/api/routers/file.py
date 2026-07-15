@@ -68,7 +68,7 @@ async def confirm_upload(
                 file_id=file.id,
                 session=uow.session
             )
-        except:
+        except NotFoundError:
             bim = None
 
         if bim and bim.point_cloud_id is None:
