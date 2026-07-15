@@ -6,7 +6,6 @@ from repositories.membership import MembershipRepository
 from core.exceptions import NotFoundError, ProhibitedWorkspaceActionError
 from models.workspace import WorkspaceType, Workspace
 from schemas.workspace import WorkspaceModel, WorkspaceUpdate
-from .project import ProjectService
 
 
 class WorkspaceService:
