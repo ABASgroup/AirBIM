@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, field_validator, AwareDatetime
 from models.task import TaskType, TaskStatus
@@ -9,30 +8,23 @@ class TaskModel(BaseModel):
     """Schema in DB. Use to create in DB."""
     entity_id: UUID
     entity_type: str
-    celery_task_id: str | None = None
+    meta: str | None = None
+    steps: int
     workspace_id: UUID
-    progress: int = 0
     type: TaskType
     status: TaskStatus = TaskStatus.PENDING
-
-    @field_validator("progress")
-    @classmethod
-    def validate_progress(cls, value: int) -> int:
-        if not (0 <= value <= 100):
-            raise ValueError("Progress must be in range from 0 to 100.")
-        return value
 
 
 class TaskUpdateModel(BaseModel):
     """Schema for updating task."""
-    progress: int | None = None
-    celery_task_id: str | None = None
+    progress: float | None = None
     status: TaskStatus | None = None
     finished_at: AwareDatetime | None = None
+    meta: str | None = None
 
     @field_validator("progress")
     @classmethod
-    def validate_progress(cls, value: int | None) -> int | None:
+    def validate_progress(cls, value: float | None) -> float | None:
         if value is not None and not (0 <= value <= 100):
             raise ValueError("Progress must be in range from 0 to 100.")
         return value
@@ -41,7 +33,7 @@ class TaskUpdateModel(BaseModel):
 class TaskResponse(Response):
     """API Response schema."""
     workspace_id: UUID
-    progress: int
+    progress: float
     type: TaskType
     status: TaskStatus
     entity_id: UUID
@@ -49,3 +41,17 @@ class TaskResponse(Response):
     started_at: AwareDatetime
     finished_at: AwareDatetime | None = None
     meta: str | None = None
+
+
+class TaskStepModel(BaseModel):
+    """Schema in DB. Use to create in DB."""
+    name: str
+    task_id: UUID
+    step_task_id: str
+    started_at: AwareDatetime
+
+
+class TaskStepUpdateModel(BaseModel):
+    """Schema for updating task."""
+    name: str | None = None
+    finished_at: AwareDatetime | None = None

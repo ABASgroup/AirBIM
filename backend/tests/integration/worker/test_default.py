@@ -136,9 +136,7 @@ async def test_create_recording_result_excel_report(
             workbook = openpyxl.load_workbook(test_excel_path, data_only=True)
             sheet = workbook.active
             assert sheet is not None
-            for col in sheet.iter_cols(values_only=True):
-                assert len(col) == 2
-                assert test_data.get(str(col[0])) is not None
-                assert str(test_data.get(str(col[0]))).strip("[]") == str(col[1])
+            rows = list(sheet.iter_rows(min_row=3, max_row=4, values_only=True))
+            assert rows == [("Ключ 1", "Ключ 2", "Ключ 3"), ("value", 123, "1, 2, 3")]
 
     await wait_until(assert_report_generated)

@@ -17,7 +17,7 @@ from schemas.file import (
     FileModel,
     FileResponse
 )
-from schemas.task import TaskModel
+from schemas.task import TaskResponse, TaskModel
 from schemas.recording_result import RecordingResultResponse
 from core.roles import Permission
 from core.dependencies import (
@@ -163,6 +163,9 @@ async def create_stage(
 
 @router.post(
     "/stages/progress",
+    response_model=TaskResponse,
+    dependencies=[
+        Depends(require_project_permission(Permission.TASKS_START))],
 )
 async def check_stage_progress(
     project_id: uuid.UUID,
@@ -196,27 +199,28 @@ async def check_stage_progress(
         task_data = TaskModel(
             entity_id=project_id,
             entity_type="project",
+            steps=4,
             workspace_id=project.workspace_id,
             type=TaskType.CHECKING_PROGRESS,
         )
         created_task = await TaskService.create_task(task_data, session=uow.session)
 
-    created_task_id = created_task.id
     # the process is about both checking progress and making reports
     # plus converting the cloud we need to
     pipeline = chain(
         check_progress.s(
-            task_id=created_task_id,
+            task_id=created_task.id,
             old_stage_id=old_stage.id,
             new_stage_id=new_stage.id,
             tolerance=tolerance
         ),
         create_recording_result_excel_report.s(
-            task_id=created_task_id),
+            task_id=created_task.id),
         create_recording_result_pdf_report.s(
-            task_id=created_task_id),
-        convert_point_cloud_task.s(task_id=created_task_id)
+            task_id=created_task.id),
+        convert_point_cloud_task.s(task_id=created_task.id)
     )
+
     task_result = pipeline.apply_async()
 
     return created_task
