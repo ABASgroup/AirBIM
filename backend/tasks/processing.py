@@ -98,6 +98,88 @@ def generate_bim_preview(self, bim_id: UUID):
     retry_backoff_max=600,
     max_retries=5,
 )
+def clean_raw_scan_task(
+    self,
+    point_cloud_id: UUID,
+    task_id: UUID,
+    config: dict | None = None,
+):
+    """
+    Clean/crop a stage scan LAZ in place (overwrite same storage key).
+
+    Returns point_cloud_id for the next chain step (Potree conversion).
+    """
+    from airbim_processing import RawScanPipelineConfig, clean_raw_scan  # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            await TaskService.start_task(
+                task_id,
+                celery_task_id=self.request.id,
+                session=uow.session,
+            )
+            point_cloud = await FileService.get_point_cloud(
+                point_cloud_id, session=uow.session
+            )
+            point_cloud_file = point_cloud.file
+            await TaskService.update_task_progress(
+                task_id, progress=10, session=uow.session
+            )
+
+        pipeline_config = RawScanPipelineConfig(**(config or {}))
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(
+                os.path.join(tmp_dir, point_cloud_file.filename)
+            )
+            storage.download_file_locally(
+                point_cloud_file.key,
+                save_path=str(file_path),
+            )
+
+            # overwrite locally (output_path=None)
+            clean_raw_scan(
+                input_path=str(file_path),
+                output_path=None,
+                config=pipeline_config,
+            )
+
+            async with get_database_uow() as uow:
+                await FileService.overwrite_file_content(
+                    point_cloud_file.id,
+                    local_path=file_path,
+                    storage=storage,
+                    session=uow.session,
+                )
+                await TaskService.update_task_progress(
+                    task_id, progress=50, session=uow.session
+                )
+
+        return point_cloud_id
+
+    try:
+        return run_async(run_task())
+    except Exception:
+        async def mark_failed():
+            async with get_database_uow() as uow:
+                await TaskService.update_task_status(
+                    task_id,
+                    status=TaskStatus.FAILED,
+                    session=uow.session,
+                )
+
+        run_async(mark_failed())
+        raise
+
+
+@celery_app.task(
+    base=ProcessingTask,
+    bind=True,
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=5,
+)
 def convert_bim_to_point_cloud(self, bim_id: UUID, task_id: UUID):
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore

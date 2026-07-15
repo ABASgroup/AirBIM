@@ -8,12 +8,14 @@ from schemas.file import (
     FileLinkResponse,
     FileModel,
     FileResponse,
+    RawScanCleanRequest,
 )
 from schemas.task import TaskModel, TaskResponse
 from models.task import TaskType
 from services.stage import StageService
 from services.file import FileService
 from services.task import TaskService
+from core.exceptions import NotFoundError
 from core.roles import Permission
 from core.dependencies import (
     get_database_uow,
@@ -24,8 +26,13 @@ from api.dependencies import (
     require_stage_permission
 )
 from tasks.preprocessing import convert_point_cloud_task
-from tasks.processing import compare_scan_and_plan, create_recording_result_pdf_report
+from tasks.processing import (
+    compare_scan_and_plan,
+    create_recording_result_pdf_report,
+    clean_raw_scan_task,
+)
 from tasks.default import create_recording_result_excel_report
+from utils.pointcloud import validate_crop_within_bounds
 
 
 router = APIRouter(prefix="/stages/{stage_id}", tags=["project stages"])
@@ -132,6 +139,67 @@ async def get_point_cloud_upload_link(
     )
 
     return response_data
+
+
+@router.post(
+    "/clouds/clean",
+    response_model=TaskResponse,
+    dependencies=[
+        Depends(require_stage_permission(Permission.FILES_UPLOAD))],
+)
+async def clean_stage_point_cloud(
+    stage_id: uuid.UUID,
+    clean_data: RawScanCleanRequest,
+    uow: DatabaseSessionUOW = Depends(get_database_uow),
+    storage: Storage = Depends(get_storage),
+):
+    """
+    Clean/crop uploaded stage scan (clean_raw_scan) then convert to Potree.
+
+    Crop bounds must stay within the file's XYZ extent when provided.
+    """
+    async with uow:
+        stage = await StageService.get_stage(stage_id, session=uow.session)
+        if stage.point_cloud is None:
+            raise NotFoundError("Stage has no point cloud.")
+
+        point_cloud = await FileService.get_point_cloud(
+            stage.point_cloud.id, session=uow.session
+        )
+        point_cloud_file = point_cloud.file
+
+        min_xyz, max_xyz = FileService.get_point_cloud_bounds_from_storage(
+            point_cloud_file.key, storage
+        )
+        validate_crop_within_bounds(
+            clean_data.crop_min_xyz,
+            clean_data.crop_max_xyz,
+            min_xyz,
+            max_xyz,
+        )
+
+        task_data = TaskModel(
+            entity_id=point_cloud.id,
+            entity_type="point_cloud",
+            workspace_id=stage.project.workspace_id,
+            type=TaskType.CONVERTING_POINT_CLOUD,
+        )
+        created_task = await TaskService.create_task(task_data, session=uow.session)
+
+    config_dict = clean_data.model_dump()
+    pipeline = chain(
+        # type: ignore[attr-defined]
+        clean_raw_scan_task.s(
+            point_cloud_id=point_cloud.id,
+            task_id=created_task.id,
+            config=config_dict,
+        ),
+        # type: ignore[attr-defined]
+        convert_point_cloud_task.s(task_id=created_task.id),
+    )
+    pipeline.apply_async()
+
+    return created_task
 
 
 @router.post(

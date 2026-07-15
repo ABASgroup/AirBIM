@@ -29,6 +29,7 @@ from tests.api.helpers import (
     role_has_permission,
     setup_project_in_workspace,
     setup_stage_in_project,
+    setup_point_cloud_with_stage,
 )
 from tests.helpers import (
     create_test_bim,
@@ -210,6 +211,86 @@ async def test_point_cloud_upload_returns_presigned_url_and_pending_file(
     assert body["file"]["workspace_id"] == str(auth_context.workspace_id)
     assert isinstance(body["url"], str)
     assert body["url"].startswith("http")
+
+
+@pytest.mark.asyncio
+async def test_clean_stage_point_cloud_starts_conversion_chain(
+    api_client: AsyncClient,
+    auth_context: AuthContext,
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+) -> None:
+    """POST /stages/{id}/clouds/clean should start clean+Potree chain."""
+    from models.file import FileStatus as ModelFileStatus
+    from repositories.files import FileRepository
+
+    point_cloud, file = await setup_point_cloud_with_stage(
+        db_session, auth_context.workspace_id, test_building_laz_path
+    )
+    with test_building_laz_path.open("rb") as file_obj:
+        storage.upload_file_object(file_obj, file.key)
+    await FileRepository.update_status(
+        file, ModelFileStatus.UPLOADED, session=db_session
+    )
+    await db_session.commit()
+
+    stage_id = point_cloud.stage_id
+    response = await api_client.post(
+        f"/stages/{stage_id}/clouds/clean",
+        json={},
+        headers=auth_context.headers,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["type"] == TaskType.CONVERTING_POINT_CLOUD.value
+    assert body["entity_id"] == str(point_cloud.id)
+
+    async def assert_converted() -> None:
+        async with session_maker() as session:
+            task = await TaskService.get_task(body["id"], session=session)
+            assert task.status == TaskStatus.SUCCEEDED
+            converted_files = await FileService.get_converted_point_cloud_files(
+                point_cloud.id, session=session
+            )
+            assert len(converted_files) >= 4
+
+    await wait_until(assert_converted)
+
+
+@pytest.mark.asyncio
+async def test_clean_stage_point_cloud_rejects_crop_outside_bounds(
+    api_client: AsyncClient,
+    auth_context: AuthContext,
+    db_session: AsyncSession,
+    storage: Storage,
+    test_building_laz_path: Path,
+) -> None:
+    """Crop outside file bounds should fail validation."""
+    from models.file import FileStatus as ModelFileStatus
+    from repositories.files import FileRepository
+
+    point_cloud, file = await setup_point_cloud_with_stage(
+        db_session, auth_context.workspace_id, test_building_laz_path
+    )
+    with test_building_laz_path.open("rb") as file_obj:
+        storage.upload_file_object(file_obj, file.key)
+    await FileRepository.update_status(
+        file, ModelFileStatus.UPLOADED, session=db_session
+    )
+    await db_session.commit()
+
+    response = await api_client.post(
+        f"/stages/{point_cloud.stage_id}/clouds/clean",
+        json={
+            "crop_min_xyz": [-1e12, -1e12, -1e12],
+            "crop_max_xyz": [1e12, 1e12, 1e12],
+        },
+        headers=auth_context.headers,
+    )
+
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio

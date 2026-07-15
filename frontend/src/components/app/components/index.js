@@ -8,6 +8,7 @@ export { WorkspaceTabPanel } from "./WorkspaceTabPanel";
 export { RoleTooltip } from "./RoleTooltip";
 export { Can } from "./Can";
 export { StageUploadModal } from "./StageUploadModal";
+export { CleanScanModal } from "./CleanScanModal";
 export { StagesAccordion } from "./StagesAccordion";
 export { ProgressModal } from "./ProgressModal";
 export { ProgressBar } from "./ProgressBar";
