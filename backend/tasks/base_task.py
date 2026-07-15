@@ -47,6 +47,7 @@ class BaseCeleryTask(celery_app.Task):
 
         # check task status
         if not run_async(self._task_is_ready(task_id)):
+            # TODO: separate fail and cancel
             self._fail_celery_task("Task is not ready.")
 
         # task is found, start task and make a task step

@@ -7,7 +7,11 @@ from models.recording_result import RecordingResultType
 from schemas.file import FileModel
 from schemas.recording_result import RecordingResultModel
 from utils.files import clean_path
-from utils.report_generation import generate_pdf_report
+from utils.report_generation import (
+    extract_report_sections,
+    generate_pdf_report,
+    translate_recording_result_type,
+)
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
@@ -207,6 +211,11 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
                 session=uow.session
             )
             # recording result
+            results["project_name"] = stage.project.name
+            results["project_description"] = stage.project.description
+            results["stage_name"] = stage.name
+            results["stage_description"] = stage.description
+            results["stage_start_date"] = stage.start_date
             result_data = RecordingResultModel(
                 project_id=stage.project_id,
                 data=results,
@@ -311,6 +320,14 @@ def check_progress(
             results['new_stage_id'] = str(new_stage.id)
 
             # recording result
+            results["project_name"] = old_stage.project.name
+            results["project_description"] = old_stage.project.description
+            results["old_stage_name"] = old_stage.name
+            results["old_stage_description"] = old_stage.description
+            results["old_stage_start_date"] = old_stage.start_date
+            results["new_stage_name"] = new_stage.name
+            results["new_stage_description"] = new_stage.description
+            results["new_stage_start_date"] = new_stage.start_date
             result_data = RecordingResultModel(
                 project_id=new_stage.project_id,
                 data=results,
@@ -354,7 +371,38 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
 
             # get data
             # it is dict, for real
-            data = recording_result.data
+            data = dict(recording_result.data)
+
+            section_specs = {
+                "Сведения о проекте": [
+                    ("project_name", "Название"),
+                    ("project_description", "Описание"),
+                ],
+            }
+
+            if recording_result.type == RecordingResultType.PROGRESS:
+                section_specs.update({
+                    "Старый этап": [
+                        ("old_stage_name", "Название"),
+                        ("old_stage_description", "Описание"),
+                        ("old_stage_start_date", "Дата начала"),
+                    ],
+                    "Новый этап": [
+                        ("new_stage_name", "Название"),
+                        ("new_stage_description", "Описание"),
+                        ("new_stage_start_date", "Дата начала"),
+                    ],
+                })
+            else:
+                section_specs.update({
+                    "Этап": [
+                        ("stage_name", "Название"),
+                        ("stage_description", "Описание"),
+                        ("stage_start_date", "Дата начала"),
+                    ],
+                })
+
+            sections, data = extract_report_sections(data, section_specs)
 
             # get resulting point cloud
             result_point_cloud = await FileService.get_point_cloud(
@@ -365,7 +413,7 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
             result_point_cloud_file = result_point_cloud.file
 
         # title for the report
-        title = f"{recording_result.type} report".capitalize().replace("_", " ")
+        title = translate_recording_result_type(recording_result.type)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             result_point_cloud_file_path = clean_path(
@@ -413,7 +461,11 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
 
             # generate report
             generate_pdf_report(
-                title, data, report_path, imgs=photo_paths
+                title,
+                data,
+                report_path,
+                imgs=photo_paths,
+                sections=sections,
             )
 
             # collect file data

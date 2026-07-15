@@ -24,10 +24,11 @@ def test_basic_report(tmp_path: Path) -> None:
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
     assert ws.title == "Test"
-    assert ws.cell(1, 1).value == "Name"
-    assert ws.cell(2, 1).value == "Alice"
-    assert ws.cell(1, 2).value == "Age"
-    assert ws.cell(2, 2).value == 30
+    assert ws.cell(1, 1).value == "Test"
+    assert ws.cell(3, 1).value == "Название"
+    assert ws.cell(4, 1).value == "Alice"
+    assert ws.cell(3, 2).value == "Возраст"
+    assert ws.cell(4, 2).value == 30
 
 
 def test_empty_data_creates_empty_sheet(tmp_path: Path) -> None:
@@ -38,8 +39,7 @@ def test_empty_data_creates_empty_sheet(tmp_path: Path) -> None:
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
     assert ws.title == "Empty"
-    # No data rows — max_row may be None or 1 depending on openpyxl version
-    assert ws.max_row is None or ws.max_row == 1
+    assert ws.cell(1, 1).value == "Empty"
 
 
 def test_style_and_width(tmp_path: Path) -> None:
@@ -54,14 +54,14 @@ def test_style_and_width(tmp_path: Path) -> None:
     ws = wb.active
 
     expected_fill = PatternFill(
-        start_color="FFCF40", end_color="FFCF40", fill_type="solid"
+        start_color="1F4E79", end_color="1F4E79", fill_type="solid"
     )
     for col in range(1, 3):
-        cell = ws.cell(1, col)
+        cell = ws.cell(3, col)
         assert cell.fill.start_color.rgb == expected_fill.start_color.rgb
         assert cell.fill.end_color.rgb == expected_fill.end_color.rgb
 
-    assert ws.column_dimensions[get_column_letter(1)].width == 11
+    assert ws.column_dimensions[get_column_letter(1)].width == 12
     assert ws.column_dimensions[get_column_letter(2)].width == 15
 
 
@@ -113,22 +113,65 @@ def test_table_creation_and_styling(tmp_path: Path, mocker: MockerFixture) -> No
 
     # Check that Table was called with headers + data rows
     expected_data = [
-        ["Parameter", "Value"],
-        ["Key1", "Val1"],
-        ["Key2", "Val2"],
+        ["Параметр", "Значение"],
+        ["Ключ 1", "Val1"],
+        ["Ключ 2", "Val2"],
     ]
     args, _ = mock_table.call_args
-    assert args[0] == expected_data
+    assert len(args[0]) == len(expected_data)
+    assert args[0][0] == expected_data[0]
+    assert [cell.getPlainText() for cell in args[0][1]] == expected_data[1]
+    assert [cell.getPlainText() for cell in args[0][2]] == expected_data[2]
 
     # Check that TableStyle was called with styling commands
     style_call_args = mock_style.call_args[0][0]
     assert any(
-        cmd[0] == "BACKGROUND" and cmd[3] == colors.HexColor("#2C3E50")
+        cmd[0] == "BACKGROUND" and cmd[3] == colors.HexColor("#1F4E79")
         for cmd in style_call_args
     )
     assert any(
         cmd[0] == "TEXTCOLOR" and cmd[3] == colors.white for cmd in style_call_args
     )
+
+
+def test_pdf_sections_are_rendered_separately(tmp_path: Path, mocker: MockerFixture) -> None:
+    """Metadata sections are rendered before the main report table."""
+    mock_table = mocker.patch("utils.report_generation.Table", wraps=Table)
+
+    file_path = tmp_path / "sections.pdf"
+    sections = {
+        "Сведения о проекте": {"Название": "Project A", "Описание": "Demo"},
+        "Этап": {"Название": "Stage 1", "Описание": "Scan"},
+    }
+    generate_pdf_report("Report", {"A": 1}, file_path, sections=sections)
+
+    assert mock_table.call_count == 3
+    first_call_rows = mock_table.call_args_list[0].args[0]
+    second_call_rows = mock_table.call_args_list[1].args[0]
+
+    assert first_call_rows[0] == ["Параметр", "Значение"]
+    assert [cell.getPlainText() for cell in first_call_rows[1]] == ["Название", "Project A"]
+    assert [cell.getPlainText() for cell in second_call_rows[1]] == ["Название", "Stage 1"]
+
+
+def test_excel_sections_are_rendered_separately(tmp_path: Path) -> None:
+    """Metadata sections are rendered above the main Excel data table."""
+    file_path = tmp_path / "sections.xlsx"
+    sections = {
+        "Сведения о проекте": {"Название": "Project A", "Описание": "Demo"},
+        "Этап": {"Название": "Stage 1", "Описание": "Scan"},
+    }
+    generate_excel_report("Report", {"A": 1}, file_path, sections=sections)
+
+    wb = openpyxl.load_workbook(file_path)
+    ws = wb.active
+
+    assert ws.cell(3, 1).value == "Сведения о проекте"
+    assert ws.cell(4, 1).value == "Название"
+    assert ws.cell(4, 2).value == "Project A"
+    assert ws.cell(7, 1).value == "Этап"
+    assert ws.cell(8, 1).value == "Название"
+    assert ws.cell(8, 2).value == "Stage 1"
 
 
 def test_images_added_when_provided(tmp_path: Path, mocker: MockerFixture) -> None:

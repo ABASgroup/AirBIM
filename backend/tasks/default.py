@@ -2,13 +2,18 @@ import os
 from uuid import UUID
 import tempfile
 from models.file import FileStatus
+from models.recording_result import RecordingResultType
 from schemas.file import FileModel
 from services.recording_result import RecordingResultService
 from services.file import FileService
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
-from utils.report_generation import generate_excel_report
+from utils.report_generation import (
+    extract_report_sections,
+    generate_excel_report,
+    translate_recording_result_type,
+)
 from utils.files import clean_path
 from .base_task import BaseCeleryTask
 
@@ -69,17 +74,48 @@ def create_recording_result_excel_report(recording_result_id: UUID, *args, **kwa
 
             # get data
             # it is dict, for real
-            data = recording_result.data
+            data = dict(recording_result.data)
+
+            section_specs = {
+                "Сведения о проекте": [
+                    ("project_name", "Название"),
+                    ("project_description", "Описание"),
+                ],
+            }
+
+            if recording_result.type == RecordingResultType.PROGRESS:
+                section_specs.update({
+                    "Старый этап": [
+                        ("old_stage_name", "Название"),
+                        ("old_stage_description", "Описание"),
+                        ("old_stage_start_date", "Дата начала"),
+                    ],
+                    "Новый этап": [
+                        ("new_stage_name", "Название"),
+                        ("new_stage_description", "Описание"),
+                        ("new_stage_start_date", "Дата начала"),
+                    ],
+                })
+            else:
+                section_specs.update({
+                    "Этап": [
+                        ("stage_name", "Название"),
+                        ("stage_description", "Описание"),
+                        ("stage_start_date", "Дата начала"),
+                    ],
+                })
+
+            sections, data = extract_report_sections(data, section_specs)
 
         # title for the report
-        title = f"{recording_result.type} report".capitalize().replace("_", " ")
+        title = translate_recording_result_type(recording_result.type)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = clean_path(os.path.join(
                 tmp_dir, f"{recording_result.type}_report.xlsx"))
 
             # generate report
-            generate_excel_report(title, data, file_path)
+            generate_excel_report(title, data, file_path, sections=sections)
 
             # collect file data
             file_info = FileService.collect_file_data(file_path)

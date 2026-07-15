@@ -142,9 +142,10 @@ class TaskService:
         Cancel the task.
 
         - Changes status to CANCELED and prevents further processing.
-        - Deletes all related data.
+        - Deletes related data of the task entity.
         """
         task = await cls.update_task_status(task_id=task_id, status=TaskStatus.CANCELED, session=session)
+
         return task
 
     @classmethod
@@ -156,11 +157,21 @@ class TaskService:
     ):
         """Add meta information to the task."""
         # need to separate info entry
-        meta += f"\n{datetime.now(timezone.utc).isoformat()} - {meta}"
+        meta = f"""
+        
+        {datetime.now(timezone.utc).isoformat()} - {meta}
+        """
 
         task = await cls.get_task(task_id, session=session)
 
-        task_update_data = TaskUpdateModel(meta=meta)
+        old_meta = task.meta
+
+        if old_meta is None:
+            old_meta = ""
+
+        new_meta = old_meta + meta
+
+        task_update_data = TaskUpdateModel(meta=new_meta)
         task = await TaskRepository.update(task, task_update_data.model_dump(exclude_unset=True), session=session)
         return task
 
