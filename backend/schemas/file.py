@@ -89,3 +89,37 @@ class BIMResponse(Response):
     project_id: UUID
     file: FileResponse
     point_cloud_id: UUID | None = None
+    preview_file_id: UUID | None = None
+
+
+class PointCloudBounds(BaseModel):
+    """Min/max XYZ of a LAS/LAZ file."""
+    min_xyz: tuple[float, float, float]
+    max_xyz: tuple[float, float, float]
+
+
+class FilePointCloudConfirmResponse(BaseModel):
+    """Confirm upload response for a stage scan point cloud."""
+    file: FileResponse
+    point_cloud_id: UUID
+    bounds: PointCloudBounds
+
+
+class RawScanCleanRequest(BaseModel):
+    """
+    Parameters for clean_raw_scan / RawScanPipelineConfig.
+
+    All fields optional; omitted values use package defaults on the worker.
+    """
+    deduplicate_cell_m: float | None = 0.001
+    poisson_sample_radius_m: float | None = None
+    statistical_outlier: bool = True
+    outlier_mean_k: int = 16
+    outlier_multiplier: float = 2.5
+    radius_outlier_radius_m: float | None = None
+    radius_outlier_min_k: int = 4
+    z_mad_k: float | None = None
+    crop_min_xyz: tuple[float | None, float | None, float | None] | None = None
+    crop_max_xyz: tuple[float | None, float | None, float | None] | None = None
+    noise_class: int = 1
+    compress_output: bool | None = None

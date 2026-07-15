@@ -13,13 +13,15 @@ from infrastructure.storage import Storage
 from models.task import TaskType
 from services.file import FileService
 from services.task import TaskService
-from tasks.processing import convert_bim_to_point_cloud
+from tasks.processing import convert_bim_to_point_cloud, generate_bim_preview
 from tasks.preprocessing import convert_point_cloud_task
 from schemas.file import (
     FileDataRequest,
     FileLinkResponse,
     FileResponse,
     FileTaskResponse,
+    FilePointCloudConfirmResponse,
+    PointCloudBounds,
     PointCloudResponse
 )
 from schemas.task import TaskResponse, TaskModel
@@ -44,10 +46,15 @@ async def confirm_upload(
     Confirm finishing uploading a file.
 
     You can't confirm file upload if file is not uploaded.
+
+    For BIM files starts IFC→LAZ→Potree conversion.
+    For stage point clouds returns bounds; cleaning+Potree start via
+    POST /stages/{stage_id}/clouds/clean.
     """
     bim_id: uuid.UUID | None = None
     point_cloud_id: uuid.UUID | None = None
     created_task_id: uuid.UUID | None = None
+    bounds: PointCloudBounds | None = None
 
     async with uow:
         file = await FileService.confirm_file_upload(

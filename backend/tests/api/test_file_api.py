@@ -303,14 +303,14 @@ async def test_confirm_upload_returns_409_when_file_already_uploaded(
 
 
 @pytest.mark.asyncio
-async def test_confirm_upload_for_point_cloud_do_conversion_task(
+async def test_confirm_upload_for_point_cloud_returns_bounds(
     api_client: AsyncClient,
     auth_context: AuthContext,
     db_session: AsyncSession,
     storage: Storage,
     test_building_laz_path: Path,
 ) -> None:
-    """Confirm for a point cloud file should start conversion task and finish it successfully"""
+    """Confirm for a point cloud should return bounds and not start Potree yet."""
     point_cloud, file = await setup_point_cloud_with_stage(
         db_session, auth_context.workspace_id, test_building_laz_path
     )
@@ -332,26 +332,17 @@ async def test_confirm_upload_for_point_cloud_do_conversion_task(
     body = response.json()
     assert body["file"]["id"] == str(file.id)
     assert body["file"]["status"] == FileStatus.UPLOADED.value
-    assert body["task"]["type"] == TaskType.CONVERTING_POINT_CLOUD.value
-    assert body["task"]["entity_id"] == str(point_cloud.id)
+    assert body["point_cloud_id"] == str(point_cloud.id)
+    assert "bounds" in body
+    assert len(body["bounds"]["min_xyz"]) == 3
+    assert len(body["bounds"]["max_xyz"]) == 3
+    assert "task" not in body
 
-    async def assert_file_converted() -> None:
-        async with session_maker() as session:
-
-            converted_files = await FileService.get_converted_point_cloud_files(
-                point_cloud.id, session=session
-            )
-            assert len(converted_files) >= 4
-
-            files_dict = {file.filename: file for file in converted_files}
-
-            required_files = ["log.txt", "metadata.json", "octree.bin", "hierarchy.bin"]
-            for req_file in required_files:
-                assert (
-                    req_file in files_dict
-                ), f"Missing required Potree file: {req_file}"
-
-    await wait_until(assert_file_converted)
+    async with session_maker() as session:
+        converted_files = await FileService.get_converted_point_cloud_files(
+            point_cloud.id, session=session
+        )
+        assert len(converted_files) == 0
 
 
 @pytest.mark.asyncio
@@ -412,6 +403,12 @@ async def test_confirm_upload_for_bim_do_conversion_task(
             assert point_cloud_file.filename is not None
             assert point_cloud_file.filename.endswith(".laz")
             assert storage.file_exists(point_cloud_file.key)
+
+            assert converted_bim.preview_file_id is not None
+            preview_file = await FileService.get_file(converted_bim.preview_file_id, session)
+            assert preview_file.size > 0
+            assert preview_file.content_type.startswith("image/")
+            assert storage.file_exists(preview_file.key)
 
     await wait_until(assert_bim_converted_to_point_cloud)
 

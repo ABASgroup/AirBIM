@@ -327,7 +327,7 @@ async def get_workspace_projects(
         projects = await ProjectService.get_workspace_projects(
             workspace_id, session=uow.session
         )
-    return projects
+    return [ProjectService.to_response(project) for project in projects]
 
 
 @router.post(

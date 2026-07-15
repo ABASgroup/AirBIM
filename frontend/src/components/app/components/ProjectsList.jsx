@@ -1,12 +1,18 @@
 // Список проектов на дашборде
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { getProjects, createProject, deleteProject, updateProject } from "@/api/project";
 import { getBimUploadLink, uploadFileWithPresignedLink, confirmBimUpload } from "@/api/file";
 import { isIFC } from "@utils";
 import { FilledButton, ActionMenu, LoadingSpinner } from "@ui";
-import { ProjectModal, Can } from "@app/components";
+import { ProjectModal, Can, ProjectPreviewThumbnail } from "@app/components";
+
+const PREVIEW_POLL_INTERVAL_MS = 3000;
+const PREVIEW_POLL_TIMEOUT_MS = 120000;
+
+const needsPreviewPolling = (projects) =>
+  projects.some((p) => p.has_bim && !p.bim_preview_file_id);
 
 export const ProjectsList = () => {
   const { currentWorkspace } = useWorkspace();
@@ -19,17 +25,43 @@ export const ProjectsList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const actionBtnRefs = useRef({});
   const navigate = useNavigate();
+
+  const fetchProjects = useCallback(async () => {
+    if (!currentWorkspace?.id) return [];
+    const res = await getProjects(currentWorkspace.id);
+    setProjects(res.data);
+    return res.data;
+  }, [currentWorkspace?.id]);
+
   useEffect(() => {
     setProjects([]);
     setIsLoading(true);
     if (currentWorkspace?.id) {
-      getProjects(currentWorkspace.id)
-        .then(res => setProjects(res.data))
-        .finally(() => setIsLoading(false));
+      fetchProjects().finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
-  }, [currentWorkspace?.id]);
+  }, [currentWorkspace?.id, fetchProjects]);
+
+  const shouldPollPreviews = needsPreviewPolling(projects);
+
+  useEffect(() => {
+    if (!currentWorkspace?.id || !shouldPollPreviews) return;
+
+    const startedAt = Date.now();
+    const interval = setInterval(async () => {
+      if (Date.now() - startedAt > PREVIEW_POLL_TIMEOUT_MS) {
+        clearInterval(interval);
+        return;
+      }
+      const updated = await fetchProjects();
+      if (!needsPreviewPolling(updated)) {
+        clearInterval(interval);
+      }
+    }, PREVIEW_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [currentWorkspace?.id, fetchProjects, shouldPollPreviews]);
 
   const uploadProjectFile = async (projectId, file) => {
     try {
@@ -37,7 +69,7 @@ export const ProjectsList = () => {
       const uploadLink = await getBimUploadLink(projectId, {
         filename: file.name,
         size: file.size,
-        content_type: isIFC(file) ? "application/x-step" : file.type,
+        content_type: (await isIFC(file)) ? "application/x-step" : file.type,
       });
 
       const presignedUrl = uploadLink.data.url;
@@ -73,20 +105,17 @@ export const ProjectsList = () => {
       console.error("Project creation failed:", error);
     }
 
-    const res = await getProjects(currentWorkspace.id);
-    setProjects(res.data);
+    await fetchProjects();
     setIsModalOpen(false);
   };
   const handleDelete = async (projectId) => {
     await deleteProject(projectId);
-    const res = await getProjects(currentWorkspace.id);
-    setProjects(res.data);
+    await fetchProjects();
     setActiveMenuId(null);
   };
   const handleUpdate = async (data) => {
     await updateProject(editingProject.id, data);
-    const res = await getProjects(currentWorkspace.id);
-    setProjects(res.data);
+    await fetchProjects();
     setEditModalOpen(false);
     setEditingProject(null);
   };
@@ -115,7 +144,7 @@ export const ProjectsList = () => {
         <>
           <div className="flex justify-between items-center mb-4">
             <Can permission="projects:create">
-              <FilledButton onClick={() => setIsModalOpen(true)}>
+              <FilledButton onClick={() => setIsModalOpen(true)} disabled={isUploading}>
                 <i className="fa-solid fa-plus text-text-color"></i> Создать проект
               </FilledButton>
             </Can>
@@ -126,18 +155,23 @@ export const ProjectsList = () => {
         {projects.map((project) => (
           <div
             key={project.id}
-            className="flex items-center justify-between rounded-[5px] p-5 bg-surface cursor-pointer shadow-bottom"
+            className="flex items-stretch rounded-[5px] overflow-hidden bg-surface cursor-pointer shadow-bottom"
             onClick={() => navigate(`/app/projects/${project.id}`)}>
-            <div>
-              <h3 className="font-bold">{project.name}</h3>
-              {project.description ? (
-                <p className="text-text-color">{project.description}</p>
-              ) : (
-                <p className="text-mute-text-color">Описание отсутствует</p>
-              )}
-            </div>
-            <div>
-              <Can permissions={["projects:edit", "projects:delete"]}>
+            <ProjectPreviewThumbnail
+              hasBim={project.has_bim}
+              previewFileId={project.bim_preview_file_id}
+            />
+            <div className="flex flex-1 items-center justify-between gap-4 min-w-0 p-5">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold">{project.name}</h3>
+                {project.description ? (
+                  <p className="text-text-color">{project.description}</p>
+                ) : (
+                  <p className="text-mute-text-color">Описание отсутствует</p>
+                )}
+              </div>
+              <div>
+                <Can permissions={["projects:edit", "projects:delete"]}>
                 <button
                   ref={(el) => actionBtnRefs.current[project.id] = el}
                   onClick={(e) => {
@@ -164,6 +198,7 @@ export const ProjectsList = () => {
                   </button>
                 </ActionMenu>
               )}
+              </div>
             </div>
           </div>
         ))}

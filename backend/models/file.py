@@ -139,12 +139,22 @@ class BIM(BaseModel):
     )
     point_cloud: Mapped[Optional["PointCloud"]] = relationship()
 
+    preview_file_id: Mapped[Optional["UUID"]] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True
+    )
+    preview_file: Mapped[Optional["File"]] = relationship(
+        foreign_keys=[preview_file_id]
+    )
+
     file_id: Mapped["UUID"] = mapped_column(
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=False,
         unique=True
     )
     file: Mapped["File"] = relationship(
+        foreign_keys=[file_id],
         cascade="all, delete",
         passive_deletes=True
     )

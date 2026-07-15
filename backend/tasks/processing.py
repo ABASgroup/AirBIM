@@ -1,3 +1,5 @@
+from .base_task import BaseCeleryTask
+from services.recording_result import RecordingResultService
 import os
 from dataclasses import asdict
 import tempfile
@@ -17,8 +19,7 @@ from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
 from services.stage import StageService
-from services.recording_result import RecordingResultService
-from .base_task import BaseCeleryTask
+fro
 
 
 # heavy tasks with long duration must never use database transaction for far too long
@@ -38,7 +39,115 @@ class ProcessingTask(BaseCeleryTask):
 @celery_app.task(
     base=ProcessingTask
 )
-def convert_bim_to_point_cloud(bim_id: UUID, *args, **kwargs) -> UUID:
+def generate_bim_preview(bim_id: UUID, *args, **kwargs) -> None:
+    from airbim_processing import ifc_to_image  # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            bim = await FileService.get_bim(bim_id, session=uow.session)
+            if bim.preview_file_id is not None:
+                return
+            bim_file = bim.file
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(os.path.join(tmp_dir, bim_file.filename))
+
+            storage.download_file_locally(
+                bim_file.key,
+                save_path=str(file_path)
+            )
+
+            try:
+                image_path = ifc_to_image(
+                    ifc_path=str(file_path),
+                    output_dir=str(clean_path(tmp_dir)),
+                    resolution=(400, 300),
+                    img_format="jpg",
+                )
+            except Exception:
+                print(f"Failed to generate BIM preview for bim_id={bim_id}")
+                return
+
+            file_info = FileService.collect_file_data(image_path)
+            storage.upload_file_locally(file_info["key"], str(image_path))
+
+            file_data = FileModel(
+                filename=file_info["filename"],
+                key=file_info["key"],
+                size=file_info["size"],
+                content_type=file_info["content_type"],
+                status=FileStatus.UPLOADED,
+                workspace_id=bim_file.workspace_id,
+            )
+
+            async with get_database_uow() as uow:
+                await FileService.save_bim_preview_file(
+                    bim_id,
+                    file_data=file_data,
+                    session=uow.session,
+                )
+
+    run_async(run_task())
+
+
+@celery_app.task(
+    base=ProcessingTask,
+)
+def clean_raw_scan_task(
+    point_cloud_id: UUID,
+    config: dict | None = None,
+    *args,
+    **kwargs
+):
+    """
+    Clean/crop a stage scan LAZ in place (overwrite same storage key).
+
+    Returns point_cloud_id for the next chain step (Potree conversion).
+    """
+    from airbim_processing import RawScanPipelineConfig, clean_raw_scan  # type: ignore
+
+    async def run_task():
+        async with get_database_uow() as uow:
+            point_cloud = await FileService.get_point_cloud(
+                point_cloud_id, session=uow.session
+            )
+            point_cloud_file = point_cloud.file
+
+        pipeline_config = RawScanPipelineConfig(**(config or {}))
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = clean_path(
+                os.path.join(tmp_dir, point_cloud_file.filename)
+            )
+            storage.download_file_locally(
+                point_cloud_file.key,
+                save_path=str(file_path),
+            )
+
+            # overwrite locally (output_path=None)
+            clean_raw_scan(
+                input_path=str(file_path),
+                output_path=None,
+                config=pipeline_config,
+            )
+
+            async with get_database_uow() as uow:
+                await FileService.overwrite_file_content(
+                    point_cloud_file.id,
+                    local_path=file_path,
+                    storage=storage,
+                    session=uow.session,
+                )
+
+        return point_cloud_id
+
+    return run_async(run_task())
+
+
+@celery_app.task(
+    base=ProcessingTask,
+)
+def convert_bim_to_point_cloud(bim_id: UUID, task_id: UUID, *args, **kwargs) -> UUID:
     import ifcopenshell  # type: ignore
     from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
 
