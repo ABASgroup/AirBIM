@@ -41,10 +41,18 @@ export const uploadPointCloud = async (stageId, file, onProgress) => {
     content_type: file.type || "application/octet-stream",
   });
 
+  const { file: confirmedFile, point_cloud_id: pointCloudId, bounds } = confirmRes.data;
+
+  if (!pointCloudId || !bounds?.min_xyz || !bounds?.max_xyz) {
+    throw new Error(
+      "Сервер не вернул границы облака точек. Обновите бэкенд или повторите загрузку."
+    );
+  }
+
   return {
-    file: confirmRes.data.file,
-    pointCloudId: confirmRes.data.point_cloud_id,
-    bounds: confirmRes.data.bounds,
+    file: confirmedFile,
+    pointCloudId,
+    bounds,
     success: true,
   };
 };

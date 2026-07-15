@@ -19,7 +19,6 @@ from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
 from services.stage import StageService
-fro
 
 
 # heavy tasks with long duration must never use database transaction for far too long
@@ -37,9 +36,19 @@ class ProcessingTask(BaseCeleryTask):
 
 
 @celery_app.task(
-    base=ProcessingTask
+    queue='processing',
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=3,
 )
-def generate_bim_preview(bim_id: UUID, *args, **kwargs) -> None:
+def generate_bim_preview(bim_id: UUID) -> None:
+    """
+    Generate a best-effort BIM preview independently from IFC conversion.
+
+    This intentionally is not a tracked BaseCeleryTask: preview generation is
+    auxiliary and its failure must not affect the IFC -> LAZ -> Potree task.
+    """
     from airbim_processing import ifc_to_image  # type: ignore
 
     async def run_task():
@@ -51,31 +60,26 @@ def generate_bim_preview(bim_id: UUID, *args, **kwargs) -> None:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = clean_path(os.path.join(tmp_dir, bim_file.filename))
-
             storage.download_file_locally(
                 bim_file.key,
-                save_path=str(file_path)
+                save_path=str(file_path),
             )
 
-            try:
-                image_path = ifc_to_image(
-                    ifc_path=str(file_path),
-                    output_dir=str(clean_path(tmp_dir)),
-                    resolution=(400, 300),
-                    img_format="jpg",
-                )
-            except Exception:
-                print(f"Failed to generate BIM preview for bim_id={bim_id}")
-                return
-
-            file_info = FileService.collect_file_data(image_path)
-            storage.upload_file_locally(file_info["key"], str(image_path))
-
-            file_data = FileModel(
-                filename=file_info["filename"],
-                key=file_info["key"],
-                size=file_info["size"],
-                content_type=file_info["content_type"],
+            image_path = ifc_to_image(
+                ifc_path=str(file_path),
+                output_dir=str(clean_path(tmp_dir)),
+                resolution=(400, 300),
+                img_format="jpg",
+            )
+            image_info = FileService.collect_file_data(image_path)
+            storage.upload_file_locally(
+                image_info["key"], str(image_path)
+            )
+            preview_data = FileModel(
+                filename=image_info["filename"],
+                key=image_info["key"],
+                size=image_info["size"],
+                content_type=image_info["content_type"],
                 status=FileStatus.UPLOADED,
                 workspace_id=bim_file.workspace_id,
             )
@@ -83,7 +87,7 @@ def generate_bim_preview(bim_id: UUID, *args, **kwargs) -> None:
             async with get_database_uow() as uow:
                 await FileService.save_bim_preview_file(
                     bim_id,
-                    file_data=file_data,
+                    file_data=preview_data,
                     session=uow.session,
                 )
 
@@ -149,7 +153,7 @@ def clean_raw_scan_task(
 )
 def convert_bim_to_point_cloud(bim_id: UUID, task_id: UUID, *args, **kwargs) -> UUID:
     import ifcopenshell  # type: ignore
-    from airbim_processing import resolve_geo_transform, ifc_to_laz  # type: ignore
+    from airbim_processing import ifc_to_laz, resolve_geo_transform  # type: ignore
 
     # fixed parameters for conversion
     geom_settings_params = [
@@ -320,11 +324,14 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
                 session=uow.session
             )
             # recording result
+            # JSONB requires JSON-serializable values (dates as ISO strings)
             results["project_name"] = stage.project.name
             results["project_description"] = stage.project.description
             results["stage_name"] = stage.name
             results["stage_description"] = stage.description
-            results["stage_start_date"] = stage.start_date
+            results["stage_start_date"] = (
+                stage.start_date.isoformat() if stage.start_date else None
+            )
             result_data = RecordingResultModel(
                 project_id=stage.project_id,
                 data=results,
@@ -433,10 +440,14 @@ def check_progress(
             results["project_description"] = old_stage.project.description
             results["old_stage_name"] = old_stage.name
             results["old_stage_description"] = old_stage.description
-            results["old_stage_start_date"] = old_stage.start_date
+            results["old_stage_start_date"] = (
+                old_stage.start_date.isoformat() if old_stage.start_date else None
+            )
             results["new_stage_name"] = new_stage.name
             results["new_stage_description"] = new_stage.description
-            results["new_stage_start_date"] = new_stage.start_date
+            results["new_stage_start_date"] = (
+                new_stage.start_date.isoformat() if new_stage.start_date else None
+            )
             result_data = RecordingResultModel(
                 project_id=new_stage.project_id,
                 data=results,
