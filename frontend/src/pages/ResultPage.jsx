@@ -79,7 +79,7 @@ function ResultPage() {
 
   return (
     <>
-      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-text-color/70">
+      <nav className="flex flex-wrap items-center gap-2 text-sm text-text-color/70">
         {workspace && (
           <Link
             to="/app/dashboard"
