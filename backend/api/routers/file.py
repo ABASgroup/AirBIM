@@ -20,6 +20,8 @@ from schemas.file import (
     FileLinkResponse,
     FileResponse,
     FileTaskResponse,
+    FilePointCloudConfirmResponse,
+    PointCloudBounds,
     PointCloudResponse
 )
 from schemas.task import TaskResponse, TaskModel
@@ -30,7 +32,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post(
     "/{file_id}/confirm",
-    response_model=FileResponse | FileTaskResponse,
+    response_model=FileResponse | FileTaskResponse | FilePointCloudConfirmResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
@@ -44,10 +46,15 @@ async def confirm_upload(
     Confirm finishing uploading a file.
 
     You can't confirm file upload if file is not uploaded.
+
+    For BIM files starts IFC→LAZ→Potree conversion.
+    For stage point clouds returns bounds; cleaning+Potree start via
+    POST /stages/{stage_id}/clouds/clean.
     """
     bim_id: uuid.UUID | None = None
     point_cloud_id: uuid.UUID | None = None
     created_task_id: uuid.UUID | None = None
+    bounds: PointCloudBounds | None = None
 
     async with uow:
         file = await FileService.confirm_file_upload(
@@ -61,7 +68,7 @@ async def confirm_upload(
                 file_id=file.id,
                 session=uow.session
             )
-        except: 
+        except:
             bim = None
 
         if bim and bim.point_cloud_id is None:
@@ -84,18 +91,7 @@ async def confirm_upload(
             )
             created_task = await TaskService.create_task(task_data, session=uow.session)
             created_task_id = created_task.id
-
-        # if it's a point cloud - create one task for point cloud conversion
-        elif point_cloud_id is not None:
-            task_data = TaskModel(
-                entity_id=point_cloud_id,
-                entity_type="point_cloud",
-                workspace_id=file.workspace_id,
-                type=TaskType.CONVERTING_POINT_CLOUD,
-            )
-            created_task = await TaskService.create_task(task_data, session=uow.session)
-            created_task_id = created_task.id
-        # else - no task is needed
+        # point cloud: confirm only — clean+Potree started separately
 
     if bim_id is not None and created_task_id is not None:
         pipeline = chain(
@@ -108,10 +104,15 @@ async def confirm_upload(
         task_result = pipeline.apply_async()
         generate_bim_preview.delay(bim_id=bim_id)  # type: ignore[attr-defined]
 
-    elif point_cloud_id is not None and created_task_id is not None:
-        task_result = convert_point_cloud_task.delay(  # type: ignore[attr-defined]
+    if point_cloud_id is not None and bim_id is None:
+        min_xyz, max_xyz = FileService.get_point_cloud_bounds_from_storage(
+            file.key, storage
+        )
+        bounds = PointCloudBounds(min_xyz=min_xyz, max_xyz=max_xyz)
+        return FilePointCloudConfirmResponse(
+            file=FileResponse.model_validate(file, from_attributes=True),
             point_cloud_id=point_cloud_id,
-            task_id=created_task_id,
+            bounds=bounds,
         )
 
     if created_task_id is not None:

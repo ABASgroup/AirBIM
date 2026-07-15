@@ -204,6 +204,41 @@ class FileService:
         return file
 
     @classmethod
+    def get_point_cloud_bounds_from_storage(
+        cls,
+        file_key: str,
+        storage: Storage,
+    ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Download LAS/LAZ temporarily and read header bounds."""
+        import tempfile
+        import os
+        from utils.pointcloud import get_laz_bounds
+        from utils.files import clean_path
+
+        suffix = Path(file_key).suffix or ".laz"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            local_path = clean_path(os.path.join(tmp_dir, f"bounds{suffix}"))
+            storage.download_file_locally(file_key, save_path=str(local_path))
+            return get_laz_bounds(local_path)
+
+    @classmethod
+    async def overwrite_file_content(
+        cls,
+        file_id: uuid.UUID,
+        local_path: Path,
+        storage: Storage,
+        session: AsyncSession,
+    ) -> File:
+        """Re-upload file to the same storage key and refresh size/mime in DB."""
+        file = await cls.get_file(file_id, session=session)
+        storage.upload_file_locally(file.key, str(local_path))
+
+        file.size = get_file_size(str(local_path))
+        file.content_type = get_file_mime_type(str(local_path))
+        await session.flush()
+        return file
+
+    @classmethod
     async def create_file(
         cls,
         file_data: FileModel,
