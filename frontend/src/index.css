@@ -27,19 +27,26 @@
 
 /* Общий фон для всех страниц*/
 @layer base {
-  body {
-    @apply bg-background-color text-primary-color;
-    font-family: "PTSansCaption", Arial, sans-serif;
-    margin: 0px;
-  }
+    body {
+        @apply bg-background-color text-primary-color;
+        font-family: "PTSansCaption", Arial, sans-serif;
+        margin: 0px;
+    }
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     font-family: "RobotoMono", Arial, sans-serif;
 }
 
 h1 {
     font-size: 36px;
+    margin-top: 40px;
+    margin-bottom: 20px;
 }
 
 h2 {
@@ -51,14 +58,22 @@ h3 {
 }
 
 @layer base {
-    p, a, span, button, ::placeholder, ul {
+
+    p,
+    a,
+    span,
+    button,
+    ::placeholder,
+    ul {
         font-size: 16px;
         font-family: "PTSansCaption", Arial, sans-serif;
         @apply text-text-color
     }
+
     i {
         @apply text-primary-color
     }
+
     h1 {
         @apply text-text-color
     }
@@ -69,6 +84,6 @@ button {
     border: none;
 }
 
-a { 
-    text-decoration: none; 
+a {
+    text-decoration: none;
 }

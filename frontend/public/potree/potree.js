@@ -75901,10 +75901,10 @@ ENDSEC
 						<span>Intensity</span>
 					</div>
 
-					<li>Range: <span id="lblIntensityRange"></span> <div id="sldIntensityRange"></div>	</li>
-					<li>Gamma: <span id="lblIntensityGamma"></span> <div id="sldIntensityGamma"></div>	</li>
-					<li>Brightness: <span id="lblIntensityBrightness"></span> <div id="sldIntensityBrightness"></div>	</li>
-					<li>Contrast: <span id="lblIntensityContrast"></span> <div id="sldIntensityContrast"></div>	</li>
+					<li>Диапазон: <span id="lblIntensityRange"></span> <div id="sldIntensityRange"></div>	</li>
+					<li>Гамма: <span id="lblIntensityGamma"></span> <div id="sldIntensityGamma"></div>	</li>
+					<li>Яркость: <span id="lblIntensityBrightness"></span> <div id="sldIntensityBrightness"></div>	</li>
+					<li>Контраст: <span id="lblIntensityContrast"></span> <div id="sldIntensityContrast"></div>	</li>
 				</div>
 
 				<div id="materials.gpstime_container">
@@ -76707,7 +76707,7 @@ ENDSEC
 
 		addLevel(){
 			const elLevel = document.createElement("li");
-			const elRange = document.createTextNode("Range: ");
+			const elRange = document.createTextNode("Диапазон: ");
 			const label = document.createElement("span");
 			const slider = document.createElement("div");
 
@@ -79484,7 +79484,7 @@ ENDSEC
 
 			{ // SHOW / HIDE Measurements
 				let elShow = $("#measurement_options_show");
-				elShow.selectgroup({title: "Show/Hide labels"});
+				elShow.selectgroup({title: "Показать/скрыть метки"});
 
 				elShow.find("input").click( (e) => {
 					const show = e.target.value === "SHOW";
@@ -79511,7 +79511,7 @@ ENDSEC
 				let potreeIcon = `${Potree.resourcePath}/icons/file_potree.svg`;
 
 				elExport.append(`
-				Export: <br>
+				Экспорт: <br>
 				<a href="#" download="measure.json"><img name="geojson_export_button" src="${geoJSONIcon}" class="button-icon" style="height: 24px" /></a>
 				<a href="#" download="measure.dxf"><img name="dxf_export_button" src="${dxfIcon}" class="button-icon" style="height: 24px" /></a>
 				<a href="#" download="potree.json5"><img name="potree_export_button" src="${potreeIcon}" class="button-icon" style="height: 24px" /></a>
@@ -79603,12 +79603,12 @@ ENDSEC
 				return nodeID;
 			};
 
-			let pcID = tree.jstree('create_node', "#", { "text": "<b>Point Clouds</b>", "id": "pointclouds"}, "last", false, false);
-			let measurementID = tree.jstree('create_node', "#", { "text": "<b>Measurements</b>", "id": "measurements" }, "last", false, false);
-			let annotationsID = tree.jstree('create_node', "#", { "text": "<b>Annotations</b>", "id": "annotations" }, "last", false, false);
-			let otherID = tree.jstree('create_node', "#", { "text": "<b>Other</b>", "id": "other" }, "last", false, false);
-			let vectorsID = tree.jstree('create_node', "#", { "text": "<b>Vectors</b>", "id": "vectors" }, "last", false, false);
-			let imagesID = tree.jstree('create_node', "#", { "text": "<b> Images</b>", "id": "images" }, "last", false, false);
+			let pcID = tree.jstree('create_node', "#", { "text": "<b>Облака точек</b>", "id": "pointclouds"}, "last", false, false);
+			let measurementID = tree.jstree('create_node', "#", { "text": "<b>Измерения</b>", "id": "measurements" }, "last", false, false);
+			let annotationsID = tree.jstree('create_node', "#", { "text": "<b>Метки</b>", "id": "annotations" }, "last", false, false);
+			let otherID = tree.jstree('create_node', "#", { "text": "<b>Другое</b>", "id": "other" }, "last", false, false);
+			let vectorsID = tree.jstree('create_node', "#", { "text": "<b>Векторы</b>", "id": "vectors" }, "last", false, false);
+			let imagesID = tree.jstree('create_node', "#", { "text": "<b>Изображения</b>", "id": "images" }, "last", false, false);
 
 			tree.jstree("check_node", pcID);
 			tree.jstree("check_node", measurementID);
@@ -79992,7 +79992,7 @@ ENDSEC
 
 			{
 				let elClipTask = $("#cliptask_options");
-				elClipTask.selectgroup({title: "Clip Task"});
+				elClipTask.selectgroup({title: "Задача обрезки"});
 
 				elClipTask.find("input").click( (e) => {
 					this.viewer.setClipTask(ClipTask[e.target.value]);
@@ -80005,7 +80005,7 @@ ENDSEC
 
 			{
 				let elClipMethod = $("#clipmethod_options");
-				elClipMethod.selectgroup({title: "Clip Method"});
+				elClipMethod.selectgroup({title: "Метод обрезки"});
 
 				elClipMethod.find("input").click( (e) => {
 					this.viewer.setClipMethod(ClipMethod[e.target.value]);
@@ -80343,7 +80343,7 @@ ENDSEC
 				<li>
 					<label style="whitespace: nowrap">
 						<input id="toggleClassificationFilters" type="checkbox" checked/>
-						<span>show/hide all</span>
+						<span>показать/скрыть</span>
 					</label>
 				</li>
 			`);
@@ -80672,12 +80672,12 @@ ENDSEC
 
 			let elCameraProjection = $(`
 			<selectgroup id="camera_projection_options">
-				<option id="camera_projection_options_perspective" value="PERSPECTIVE">Perspective</option>
-				<option id="camera_projection_options_orthigraphic" value="ORTHOGRAPHIC">Orthographic</option>
+				<option id="camera_projection_options_perspective" value="PERSPECTIVE">Перспективное</option>
+				<option id="camera_projection_options_orthigraphic" value="ORTHOGRAPHIC">Ортогональное</option>
 			</selectgroup>
 		`);
 			elNavigation.append(elCameraProjection);
-			elCameraProjection.selectgroup({title: "Camera Projection"});
+			elCameraProjection.selectgroup({title: "Проецирование камеры"});
 			elCameraProjection.find("input").click( (e) => {
 				this.viewer.setCameraMode(CameraMode[e.target.value]);
 			});
@@ -80732,7 +80732,7 @@ ENDSEC
 
 			{
 				let elSplatQuality = $("#splat_quality_options");
-				elSplatQuality.selectgroup({title: "Splat Quality"});
+				elSplatQuality.selectgroup({title: "Качество сплайтинга"});
 
 				elSplatQuality.find("input").click( (e) => {
 					if(e.target.value === "standard"){
