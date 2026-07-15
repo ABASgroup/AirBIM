@@ -11,8 +11,7 @@ export const LandingHeader = () => {
   return (
     <header className="h-14 flex items-center justify-between sticky top-0 z-50 px-5 
     bg-surface/70 backdrop-blur-md border-text-color/10 border-b-3">
-
-      <Link to="/">
+      <Link to="/" className="h-[80%] flex items-center">
         <Logo />
       </Link>
       <div>

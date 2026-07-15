@@ -2,40 +2,35 @@ import uuid
 import tempfile
 import os
 from models.file import FileStatus
-from models.task import TaskStatus
 from core.dependencies import get_database_uow, get_storage
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from services.file import FileService
-from services.task import TaskService
 from schemas.file import FileModel
 from utils.convert import convert_point_cloud
 from utils.files import (
     get_all_dir_files,
     clean_path
 )
+from .base_task import BaseCeleryTask
 
 
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
 # save artifacts
 
-class ConverterTask(celery_app.Task):
+class ConverterTask(BaseCeleryTask):
+    abstract = True
     queue = 'converter'
 
 
 @celery_app.task(
     base=ConverterTask,
-    bind=True,
-    autoretry_for=(ConnectionError, TimeoutError),
-    retry_backoff=True,
-    retry_backoff_max=600,
-    max_retries=5,
 )
 def convert_point_cloud_task(
-    self,
     point_cloud_id: uuid.UUID,
-    task_id: uuid.UUID,
+    *args,
+    **kwargs
 ):
     """
     Converts point cloud into Potree format.
@@ -47,17 +42,6 @@ def convert_point_cloud_task(
 
     async def run_task():
         async with get_database_uow() as uow:
-            # get task that is being executed
-            task = await TaskService.get_task(task_id, session=uow.session)
-            # check if it's a step in a process
-            current_progress = task.progress
-            if current_progress == 0:
-                await TaskService.start_task(
-                    task_id,
-                    celery_task_id=self.request.id,
-                    session=uow.session
-                )
-
             # get point cloud
             point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
             # check if we already have converted files
@@ -69,15 +53,6 @@ def convert_point_cloud_task(
                 print("ALREADY CONVERTED")
                 return
             point_cloud_file = await FileService.get_file(point_cloud.file_id, session=uow.session)
-
-            if current_progress == 0:
-                current_progress = 50
-
-            await TaskService.update_task_progress(
-                task_id,
-                progress=current_progress,
-                session=uow.session
-            )
 
         # all in temp_dir will be deleted after its done
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -130,27 +105,4 @@ def convert_point_cloud_task(
                         session=uow.session
                     )
 
-                await TaskService.update_task_progress(
-                    task_id,
-                    progress=100,
-                    session=uow.session
-                )
-                await TaskService.update_task_status(
-                    task_id,
-                    status=TaskStatus.SUCCEEDED,
-                    session=uow.session
-                )
-
-    try:
-        run_async(run_task())
-    except Exception:
-        async def mark_failed():
-            async with get_database_uow() as uow:
-                await TaskService.update_task_status(
-                    task_id,
-                    status=TaskStatus.FAILED,
-                    session=uow.session
-                )
-
-        run_async(mark_failed())
-        raise
+    return run_async(run_task())

@@ -28,8 +28,8 @@ async def test_stage_repository_create_and_get_by_id(db_session: AsyncSession) -
     assert created_stage.id is not None
     assert created_stage.project_id == project.id
 
-    fetched_stage_by_id = await StageRepository.get_by_id_with_project(
-        created_stage.id, session=db_session
+    fetched_stage_by_id = await StageRepository.get_by_id(
+        created_stage.id, session=db_session, relations=["project"]
     )
     assert fetched_stage_by_id is not None
     assert fetched_stage_by_id.id == created_stage.id
@@ -56,7 +56,8 @@ async def test_stage_repository_get_by_project_id(db_session: AsyncSession) -> N
     )
     assert len(fetched_stages) == 2
     for stage in (created_stage_1, created_stage_2):
-        assert any(fetched_stage.id == stage.id for fetched_stage in fetched_stages)
+        assert any(fetched_stage.id ==
+                   stage.id for fetched_stage in fetched_stages)
 
 
 @pytest.mark.asyncio
@@ -64,8 +65,8 @@ async def test_stage_repository_get_by_id_with_project_nonexistent(
     db_session: AsyncSession,
 ) -> None:
     """Test fetching stage by ID that does not exist."""
-    fetched_stage = await StageRepository.get_by_id_with_project(
-        stage_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
+    fetched_stage = await StageRepository.get_by_id(
+        uuid.UUID("00000000-0000-0000-0000-000000000000"),
         session=db_session,
     )
     assert fetched_stage is None

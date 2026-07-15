@@ -11,13 +11,7 @@ from infrastructure.storage import Storage
 
 from schemas.project import ProjectModel, ProjectUpdate
 
-from services.project import (
-    create_project,
-    delete_project,
-    get_project,
-    get_workspace_projects,
-    update_project,
-)
+from services.project import ProjectService
 
 from tests.helpers import create_test_project, create_test_workspace
 
@@ -30,7 +24,7 @@ async def test_create_project(db_session: AsyncSession) -> None:
     project_data = ProjectModel(
         name="Test Project", workspace_id=workspace.id, description="Test description"
     )
-    project = await create_project(project_data, session=db_session)
+    project = await ProjectService.create_project(project_data, session=db_session)
 
     assert project.id is not None
     assert project.name == "Test Project"
@@ -44,7 +38,7 @@ async def test_get_project(db_session: AsyncSession) -> None:
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
 
-    fetched_project = await get_project(project.id, session=db_session)
+    fetched_project = await ProjectService.get_project(project.id, session=db_session)
 
     assert fetched_project.id == project.id
     assert fetched_project.name == project.name
@@ -58,7 +52,7 @@ async def test_get_nonexistent_project(db_session: AsyncSession) -> None:
     non_existent_id = uuid.uuid4()
 
     with pytest.raises(NotFoundError):
-        await get_project(non_existent_id, session=db_session)
+        await ProjectService.get_project(non_existent_id, session=db_session)
 
 
 @pytest.mark.asyncio
@@ -68,7 +62,7 @@ async def test_get_workspace_projects(db_session: AsyncSession) -> None:
     project1 = await create_test_project(db_session, workspace_id=workspace.id)
     project2 = await create_test_project(db_session, workspace_id=workspace.id)
 
-    projects = await get_workspace_projects(workspace.id, session=db_session)
+    projects = await ProjectService.get_workspace_projects(workspace.id, session=db_session)
 
     assert len(projects) == 2
     assert project1 in projects
@@ -84,7 +78,7 @@ async def test_update_project(db_session: AsyncSession) -> None:
     update_data = ProjectUpdate(
         name="Updated Project", description="Updated description"
     )
-    updated_project = await update_project(project.id, update_data, session=db_session)
+    updated_project = await ProjectService.update_project(project.id, update_data, session=db_session)
 
     assert updated_project.id == project.id
     assert updated_project.name == "Updated Project"
@@ -92,16 +86,16 @@ async def test_update_project(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_project(db_session: AsyncSession, storage: Storage) -> None:
+async def test_delete_project(db_session: AsyncSession) -> None:
     """Service should delete project."""
     workspace = await create_test_workspace(db_session)
     project = await create_test_project(db_session, workspace_id=workspace.id)
 
-    deleted_project = await delete_project(
-        project.id, session=db_session, storage=storage
+    deleted_project = await ProjectService.delete_project(
+        project.id, session=db_session
     )
 
     assert deleted_project.id == project.id
 
     with pytest.raises(NotFoundError):
-        await get_project(project.id, session=db_session)
+        await ProjectService.get_project(project.id, session=db_session)

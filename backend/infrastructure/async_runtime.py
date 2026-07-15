@@ -3,6 +3,8 @@ Async runtime utilities for Celery worker processes.
 
 Keeps one dedicated event loop per worker process to avoid loop-mismatch
 issues with async DB drivers and pooled connections.
+
+Look for an example in `tasks/`
 """
 
 from __future__ import annotations
@@ -41,7 +43,11 @@ def close_worker_event_loop() -> None:
 
 
 def run_async(awaitable: Awaitable[T]) -> T:
-    """Run coroutine in worker-dedicated loop."""
+    """
+    Run coroutine in worker-dedicated loop.
+
+    The method you need to run async code.
+    """
     if _state.worker_loop is None or _state.worker_loop.is_closed():
         init_worker_event_loop()
 

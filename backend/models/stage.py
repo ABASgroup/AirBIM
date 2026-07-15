@@ -6,6 +6,10 @@ from .base import BaseModel
 
 
 class Stage(BaseModel):
+    """
+    A stage is a part of a project, 
+    some step in the project lifecycle represented with a date and a scan (point cloud).
+    """
     __tablename__ = "stages"
 
     project_id: Mapped[UUID] = mapped_column(
@@ -21,6 +25,5 @@ class Stage(BaseModel):
     project: Mapped["Project"] = relationship(back_populates="stages")
     point_cloud: Mapped["PointCloud"] = relationship(
         back_populates="stage",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        cascade="all, delete-orphan"
     )

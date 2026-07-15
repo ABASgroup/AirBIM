@@ -9,45 +9,53 @@ export const createStage = (projectId, data = {}) => api.post(`/projects/${proje
 export const getProjectStages = (projectId) => api.get(`/projects/${projectId}/stages`);
 export const getStage = (stageId) => api.get(`/stages/${stageId}`);
 export const getPointCloudUploadLink = (stageId, data) => api.post(`/stages/${stageId}/clouds/upload`, data);
-export const convertPointCloud = (stageId, pointCloudId) => api.post(`/stages/${stageId}/clouds/${pointCloudId}/convert`);
-export const getConvertedPointCloudLinks = (stageId) => api.post(`/stages/${stageId}/clouds/converted`);
 export const deleteStage = (stageId) => api.delete(`/stages/${stageId}`);
 export const updateStage = (stageId, data) => api.patch(`/stages/${stageId}`, data);
 
 export const compareStage = (stageId, tolerance = 0.05) =>
   api.post(`/stages/${stageId}/compare`, null, { params: { tolerance } });
 
+export const cleanPointCloud = (stageId, config) =>
+  api.post(`/stages/${stageId}/clouds/clean`, config);
+
 export const uploadPointCloudFile = async (presignedUrl, file, onProgress) => {
   await uploadFileWithPresignedLink(presignedUrl, file, onProgress);
 };
 
-export const uploadAndConvertPointCloud = async (stageId, file, onProgress) => {
-  try {
-    const uploadLinkRes = await getPointCloudUploadLink(stageId, {
-      filename: file.name,
-      size: file.size,
-      content_type: file.type || "application/octet-stream",
-    });
+/** Upload LAS/LAZ and confirm; returns bounds (does not start Potree). */
+export const uploadPointCloud = async (stageId, file, onProgress) => {
+  const uploadLinkRes = await getPointCloudUploadLink(stageId, {
+    filename: file.name,
+    size: file.size,
+    content_type: file.type || "application/octet-stream",
+  });
 
-    const presignedUrl = uploadLinkRes.data.url;
-    const pointCloudFileId = uploadLinkRes.data.file.id;
+  const presignedUrl = uploadLinkRes.data.url;
+  const pointCloudFileId = uploadLinkRes.data.file.id;
 
-    await uploadPointCloudFile(presignedUrl, file, onProgress);
+  await uploadPointCloudFile(presignedUrl, file, onProgress);
 
-    const confirmRes = await confirmBimUpload(pointCloudFileId, {
-      filename: file.name,
-      size: file.size,
-      content_type: file.type || "application/octet-stream",
-    });
+  const confirmRes = await confirmBimUpload(pointCloudFileId, {
+    filename: file.name,
+    size: file.size,
+    content_type: file.type || "application/octet-stream",
+  });
 
-    const taskId = confirmRes?.data?.task?.id ?? null;
+  const { file: confirmedFile, point_cloud_id: pointCloudId, bounds } = confirmRes.data;
 
-    return {
-      pointCloudId: pointCloudFileId,
-      taskId,
-      success: true,
-    };
-  } catch (error) {
-    throw error;
+  if (!pointCloudId || !bounds?.min_xyz || !bounds?.max_xyz) {
+    throw new Error(
+      "Сервер не вернул границы облака точек. Обновите бэкенд или повторите загрузку."
+    );
   }
+
+  return {
+    file: confirmedFile,
+    pointCloudId,
+    bounds,
+    success: true,
+  };
 };
+
+/** @deprecated use uploadPointCloud + cleanPointCloud */
+export const uploadAndConvertPointCloud = uploadPointCloud;

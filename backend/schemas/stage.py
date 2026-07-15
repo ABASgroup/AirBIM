@@ -17,6 +17,13 @@ class StageModel(BaseModel):
     start_date: AwareDatetime
 
 
+class StageUpdate(BaseModel):
+    """Update schema. Use to update in DB."""
+    name: str | None = None
+    description: str | None = None
+    start_date: AwareDatetime | None = None
+
+
 class StageResponse(Response):
     """API Response schema."""
     project_id: uuid.UUID

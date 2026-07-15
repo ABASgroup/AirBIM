@@ -21,3 +21,9 @@ class UserModel(BaseModel):
     username: str
     email: EmailStr
     password_hashed: str
+
+
+class UserUpdate(BaseModel):
+    """Update schema."""
+    username: str | None = None
+    email: EmailStr | None = None

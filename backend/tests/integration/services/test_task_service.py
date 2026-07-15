@@ -46,14 +46,10 @@ async def test_start_task(db_session: AsyncSession) -> None:
 
     task = await TaskService.create_task(task_data, session=db_session)
 
-    assert task.celery_task_id is None
-
-    celery_task_id = "celery-task-id"
     started_task = await TaskService.start_task(
-        task.id, celery_task_id, session=db_session
+        task.id, session=db_session
     )
 
-    assert started_task.celery_task_id == celery_task_id
     assert started_task.status == TaskStatus.STARTED
 
 

@@ -3,7 +3,7 @@ import uuid
 from typing import Generic, TypeVar, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel as BaseScheme
+from sqlalchemy.orm import selectinload
 from models.base import BaseModel
 
 # Type parameter bound to your SQLAlchemy models
@@ -12,7 +12,7 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 
 class BaseRepository(Generic[ModelT]):
     """
-    Base repository class for CRUD operations for any model.
+    Base repository class for CRUD operations for any  SQLAlchemy model.
 
     Override '_model' property to use with some specific model.
     """
@@ -35,26 +35,73 @@ class BaseRepository(Generic[ModelT]):
         return entry
 
     @classmethod
-    async def get_all(cls, session: AsyncSession) -> Sequence[ModelT]:
+    async def get_all(cls, session: AsyncSession, relations: list[str] | None = None) -> Sequence[ModelT]:
         """Get all model's entries in the database.
 
         Args:
             session (`AsyncSession`): an asynchronous database session
+            relations (`list[str] | None`): a list of relationship names to load
         """
-        result = await session.execute(select(cls._model))
+        options = []
+
+        if relations:
+            options = [selectinload(getattr(cls._model, relation))
+                       for relation in relations]
+
+        stmt = select(cls._model).options(*options)
+
+        result = await session.execute(stmt)
         entries = result.scalars().all()
         return entries
 
     @classmethod
-    async def get_by_id(cls, entry_id: uuid.UUID, session: AsyncSession) -> None | ModelT:
+    async def get_by_id(
+        cls,
+        entry_id: uuid.UUID,
+        session: AsyncSession,
+        relations: list[str] | None = None
+    ) -> None | ModelT:
         """Get a model entry by the ID/primary key.
 
         Args:
             entry_id (`uuid.UUID`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
+            relations (`list[str] | None`): a list of relationship names to load
         """
-        entry = await session.get(cls._model, entry_id)
+        options = []
+
+        if relations:
+            options = [selectinload(getattr(cls._model, relation))
+                       for relation in relations]
+
+        entry = await session.get(cls._model, entry_id, options=options)
+
+        if entry is not None and relations:
+            await session.refresh(entry, attribute_names=relations)
+
         return entry
+
+    @classmethod
+    async def get_by_ids(cls, entry_ids: list[uuid.UUID], session: AsyncSession, relations: list[str] | None = None) -> Sequence[ModelT]:
+        """Get all rows by the IDs.
+
+        Args:
+            entry_ids (`list[uuid.UUID]`): entry IDs
+            session (`AsyncSession`): an asynchronous database session
+            relations (`list[str] | None`): a list of relationship names to load
+        """
+        options = []
+
+        if relations:
+            options = [selectinload(getattr(cls._model, relation))
+                       for relation in relations]
+
+        stmt = select(cls._model).where(
+            cls._model.id.in_(entry_ids)).options(*options)
+
+        result = await session.execute(stmt)
+
+        return result.scalars().all()
 
     @classmethod
     async def update_by_id(
@@ -70,7 +117,7 @@ class BaseRepository(Generic[ModelT]):
             update_data (`dict`): a dictionary with new data
             session (`AsyncSession`): an asynchronous database session
         """
-        entry = await session.get(cls._model, entry_id)
+        entry = await cls.get_by_id(entry_id, session)
 
         for key, value in update_data.items():
             setattr(entry, key, value)
@@ -115,7 +162,7 @@ class BaseRepository(Generic[ModelT]):
             entry_id (`uuid.UUID`): entry's ID OR primary key
             session (`AsyncSession`): an asynchronous database session
         """
-        entry = await session.get(cls._model, entry_id)
+        entry = await cls.get_by_id(entry_id, session)
 
         await session.delete(entry)
         await session.flush()
@@ -128,9 +175,10 @@ class BaseRepository(Generic[ModelT]):
         session: AsyncSession,
         relations: list[str] | None = None
     ):
-        """Refresh model fields.
+        """
+        Refresh model fields.
 
-        Useful when you need to load additional fields.
+        Useful when you need to load additional fields on relationship.
 
         Args:
             entry_id (`uuid.UUID`): entry itself, which you need to refresh

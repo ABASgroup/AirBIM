@@ -1,6 +1,7 @@
 from uuid import UUID
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from models.file import (
     File,
@@ -21,10 +22,11 @@ class FileRepository(BaseRepository[File]):
         cls,
         session: AsyncSession
     ) -> Sequence[str]:
-        """Get all files using their keys."""
+        """Get all file keys in the database."""
         result = await session.execute(
             select(cls._model.key)
         )
+
         found_keys = result.scalars().all()
 
         return found_keys
@@ -64,12 +66,10 @@ class FileRepository(BaseRepository[File]):
         session: AsyncSession
     ):
         """Get a very specific file by its metadata."""
-        result = await session.execute(
-            select(cls._model)
-            .where(cls._model.filename == filename)
-            .where(cls._model.size == size)
-            .where(cls._model.content_type == content_type)
-        )
+        stmt = select(cls._model).where(cls._model.filename == filename).where(
+            cls._model.size == size).where(cls._model.content_type == content_type)
+
+        result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
     @classmethod
@@ -83,6 +83,7 @@ class FileRepository(BaseRepository[File]):
             select(cls._model)
             .where(cls._model.status == status)
         )
+
         return result.scalars().all()
 
 
@@ -129,6 +130,19 @@ class BIMRepository(BaseRepository[BIM]):
         await session.flush()
         return bim
 
+    @classmethod
+    async def set_preview_file(
+        cls,
+        bim: BIM,
+        preview_file_id: UUID,
+        session: AsyncSession
+    ):
+        """Set connection to the BIM preview image file."""
+        bim.preview_file_id = preview_file_id
+
+        await session.flush()
+        return bim
+
 
 class PointCloudRepository(BaseRepository[PointCloud]):
     """Repository class for CRUD operations with PointCloud model."""
@@ -160,8 +174,8 @@ class PointCloudConvertedRepository(BaseRepository[PointCloudConverted]):
     ):
         """Get files with point cloud ID."""
         result = await session.execute(
-            select(cls._model)
-            .where(cls._model.point_cloud_id == point_cloud_id)
+            select(cls._model).options(
+                selectinload(cls._model.file)
+            ).where(cls._model.point_cloud_id == point_cloud_id)
         )
         return result.scalars().all()
-

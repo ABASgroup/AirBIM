@@ -3,28 +3,28 @@ from celery import chain
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from core.exceptions import NotFoundError
-from schemas.task import TaskModel
-from infrastructure.storage import Storage
-from models.task import TaskType
-from services.file import FileService
-from services.task import TaskService
-from tasks.processing import convert_bim_to_point_cloud
-from tasks.preprocessing import convert_point_cloud_task
-from schemas.file import (
-    FileDataRequest,
-    FileLinkResponse,
-    FileResponse,
-    FileTaskResponse,
-    PointCloudResponse
-)
-from schemas.task import TaskResponse
 from core.roles import Permission
 from core.dependencies import (
     get_database_uow,
     get_storage,
     DatabaseSessionUOW
 )
-
+from infrastructure.storage import Storage
+from models.task import TaskType
+from services.file import FileService
+from services.task import TaskService
+from tasks.processing import convert_bim_to_point_cloud, generate_bim_preview
+from tasks.preprocessing import convert_point_cloud_task
+from schemas.file import (
+    FileDataRequest,
+    FileLinkResponse,
+    FileResponse,
+    FileTaskResponse,
+    FilePointCloudConfirmResponse,
+    PointCloudBounds,
+    PointCloudResponse
+)
+from schemas.task import TaskResponse, TaskModel
 from api.dependencies import require_file_permission
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post(
     "/{file_id}/confirm",
-    response_model=FileResponse | FileTaskResponse,
+    response_model=FileResponse | FileTaskResponse | FilePointCloudConfirmResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
@@ -46,9 +46,15 @@ async def confirm_upload(
     Confirm finishing uploading a file.
 
     You can't confirm file upload if file is not uploaded.
+
+    For BIM files starts IFC→LAZ→Potree conversion and independently starts
+    best-effort preview generation.
+    For stage point clouds returns bounds; cleaning+Potree start via
+    POST /stages/{stage_id}/clouds/clean.
     """
     bim_id: uuid.UUID | None = None
     point_cloud_id: uuid.UUID | None = None
+    created_task = None
     created_task_id: uuid.UUID | None = None
 
     async with uow:
@@ -58,11 +64,14 @@ async def confirm_upload(
             session=uow.session,
             storage=storage,
         )
+        try:
+            bim = await FileService.get_bim_by_file_id(
+                file_id=file.id,
+                session=uow.session
+            )
+        except NotFoundError:
+            bim = None
 
-        bim = await FileService.get_bim_by_file_id(
-            file_id=file.id,
-            session=uow.session
-        )
         if bim and bim.point_cloud_id is None:
             bim_id = bim.id
 
@@ -73,28 +82,18 @@ async def confirm_upload(
         if point_cloud:
             point_cloud_id = point_cloud.id
 
-        # if it's BIM - create one task for the full conversion pipeline
+        # BIM: create tracked task for IFC→LAZ→Potree (2 steps)
         if bim_id is not None:
             task_data = TaskModel(
                 entity_id=bim_id,
                 entity_type="bim",
                 workspace_id=file.workspace_id,
                 type=TaskType.CONVERTING_BIM,
+                steps=2,
             )
             created_task = await TaskService.create_task(task_data, session=uow.session)
             created_task_id = created_task.id
-
-        # if it's a point cloud - create one task for point cloud conversion
-        elif point_cloud_id is not None:
-            task_data = TaskModel(
-                entity_id=point_cloud_id,
-                entity_type="point_cloud",
-                workspace_id=file.workspace_id,
-                type=TaskType.CONVERTING_POINT_CLOUD,
-            )
-            created_task = await TaskService.create_task(task_data, session=uow.session)
-            created_task_id = created_task.id
-        # else - no task is needed
+        # point cloud: confirm only — clean+Potree started separately
 
     if bim_id is not None and created_task_id is not None:
         pipeline = chain(
@@ -104,24 +103,26 @@ async def confirm_upload(
             # type: ignore[attr-defined]
             convert_point_cloud_task.s(task_id=created_task_id),
         )
-        task_result = pipeline.apply_async()
+        pipeline.apply_async()
+        generate_bim_preview.delay(bim_id=bim_id)  # type: ignore[attr-defined]
 
-    elif point_cloud_id is not None and created_task_id is not None:
-        task_result = convert_point_cloud_task.delay(  # type: ignore[attr-defined]
-            point_cloud_id=point_cloud_id,
-            task_id=created_task_id,
+    if point_cloud_id is not None and bim_id is None:
+        min_xyz, max_xyz = FileService.get_point_cloud_bounds_from_storage(
+            file.key, storage
         )
-
-    if created_task_id is not None:
-        response = FileTaskResponse(
+        return FilePointCloudConfirmResponse(
             file=FileResponse.model_validate(file, from_attributes=True),
-            task=TaskResponse.model_validate(
-                created_task, from_attributes=True)
+            point_cloud_id=point_cloud_id,
+            bounds=PointCloudBounds(min_xyz=min_xyz, max_xyz=max_xyz),
         )
-    else:
-        response = FileResponse.model_validate(file, from_attributes=True)
 
-    return response
+    if created_task_id is not None and created_task is not None:
+        return FileTaskResponse(
+            file=FileResponse.model_validate(file, from_attributes=True),
+            task=TaskResponse.model_validate(created_task, from_attributes=True),
+        )
+
+    return FileResponse.model_validate(file, from_attributes=True)
 
 
 @router.delete(
@@ -226,7 +227,9 @@ async def get_point_cloud_file(
     storage: Storage = Depends(get_storage)
 ):
     """
-    For Potree usage.
+    Get a specific file of the converted point cloud by its filename.
+
+    You may need it for PotreeConverter in order to visualize the point cloud.
 
     Gives access to a file from point cloud conversion.
     """

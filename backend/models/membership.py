@@ -6,6 +6,7 @@ from core.roles import Role
 
 
 class Membership(BaseModel):
+    """A representation of a user's membership in a workspace."""
     __tablename__ = "memberships"
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(

@@ -204,6 +204,41 @@ class FileService:
         return file
 
     @classmethod
+    def get_point_cloud_bounds_from_storage(
+        cls,
+        file_key: str,
+        storage: Storage,
+    ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Download LAS/LAZ temporarily and read header bounds."""
+        import tempfile
+        import os
+        from utils.pointcloud import get_laz_bounds
+        from utils.files import clean_path
+
+        suffix = Path(file_key).suffix or ".laz"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            local_path = clean_path(os.path.join(tmp_dir, f"bounds{suffix}"))
+            storage.download_file_locally(file_key, save_path=str(local_path))
+            return get_laz_bounds(local_path)
+
+    @classmethod
+    async def overwrite_file_content(
+        cls,
+        file_id: uuid.UUID,
+        local_path: Path,
+        storage: Storage,
+        session: AsyncSession,
+    ) -> File:
+        """Re-upload file to the same storage key and refresh size/mime in DB."""
+        file = await cls.get_file(file_id, session=session)
+        storage.upload_file_locally(file.key, str(local_path))
+
+        file.size = get_file_size(str(local_path))
+        file.content_type = get_file_mime_type(str(local_path))
+        await session.flush()
+        return file
+
+    @classmethod
     async def create_file(
         cls,
         file_data: FileModel,
@@ -237,13 +272,11 @@ class FileService:
         point_cloud_id: uuid.UUID,
         session: AsyncSession
     ) -> PointCloud:
-        cloud = await PointCloudRepository.get_by_id(point_cloud_id, session=session)
+        cloud = await PointCloudRepository.get_by_id(point_cloud_id, relations=["file"], session=session)
 
         if cloud is None:
             raise NotFoundError(
                 "Point cloud is not found: no such ID.")
-
-        cloud = await PointCloudRepository.refresh(cloud, session=session, relations=["file"])
 
         return cloud
 
@@ -262,13 +295,11 @@ class FileService:
         bim_id: uuid.UUID,
         session: AsyncSession
     ) -> BIM:
-        bim = await BIMRepository.get_by_id(bim_id, session=session)
+        bim = await BIMRepository.get_by_id(bim_id, relations=["file"], session=session)
 
         if bim is None:
             raise NotFoundError(
                 "BIM is not found: no such ID.")
-
-        bim = await BIMRepository.refresh(bim, session=session, relations=["file"])
 
         return bim
 
@@ -279,7 +310,13 @@ class FileService:
         session: AsyncSession
     ) -> BIM | None:
         """Get BIM by the underlying file ID, if it exists."""
-        return await BIMRepository.get_by_file_id(file_id, session=session)
+        bim = await BIMRepository.get_by_file_id(file_id, session=session)
+
+        if bim is None:
+            raise NotFoundError(
+                "BIM is not found: no file with such ID.")
+
+        return bim
 
     @classmethod
     async def get_bim_by_project_id(
@@ -288,7 +325,13 @@ class FileService:
         session: AsyncSession
     ) -> BIM:
         """Get BIM by the project it is connected to."""
-        return await BIMRepository.get_by_project_id(project_id, session=session)
+        bim = await BIMRepository.get_by_project_id(project_id, session=session)
+
+        if bim is None:
+            raise NotFoundError(
+                "BIM is not found: no project with such ID.")
+
+        return bim
 
     @classmethod
     async def generate_bim_upload_link(
@@ -369,6 +412,23 @@ class FileService:
         return point_cloud.id
 
     @classmethod
+    async def save_bim_preview_file(
+        cls,
+        bim_id: uuid.UUID,
+        file_data: FileModel,
+        session: AsyncSession
+    ):
+        """Saves preview image file for the BIM."""
+        file = await cls.create_file(file_data, session=session)
+
+        bim = await cls.get_bim(bim_id, session=session)
+        await BIMRepository.set_preview_file(
+            bim=bim, preview_file_id=file.id, session=session
+        )
+
+        return file.id
+
+    @classmethod
     async def save_converted_point_cloud_file(
         cls,
         point_cloud_id: uuid.UUID,
@@ -401,7 +461,6 @@ class FileService:
         files = []
 
         for record in records:
-            record = await PointCloudConvertedRepository.refresh(record, session=session, relations=["file"])
             files.append(record.file)
 
         return files

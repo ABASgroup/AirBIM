@@ -67,3 +67,11 @@ class MembershipViolationError(BaseAppError):
     def __init__(self, action: str):
         message = f"Workspace doesn't allow this: {action}"
         super().__init__(message)
+
+
+class InvalidTokenError(BaseAppError):
+    """Invalid authorization token."""
+
+    def __init__(self, details: str):
+        message = f"Authorization error with tokens: {details}"
+        super().__init__(message)
