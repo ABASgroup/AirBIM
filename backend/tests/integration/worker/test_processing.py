@@ -117,10 +117,13 @@ async def test_generate_bim_preview(
 
     async def assert_preview_generated() -> None:
         async with session_maker() as session:
-            updated_bim = await FileService.get_bim_by_project_id(project.id, session)
+            updated_bim = await FileService.get_bim_by_project_id(
+                project.id, session
+            )
             assert updated_bim.preview_file_id is not None
-
-            preview_file = await FileService.get_file(updated_bim.preview_file_id, session)
+            preview_file = await FileService.get_file(
+                updated_bim.preview_file_id, session
+            )
             assert preview_file.size > 0
             assert preview_file.status == FileStatus.UPLOADED
             assert preview_file.content_type.startswith("image/")

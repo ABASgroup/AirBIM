@@ -35,35 +35,40 @@ function ProjectPage() {
 
   return (
     <>
-      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-text-color/70">
-        {workspace && (
-          <Link
-            to="/app/dashboard"
-            className="hover:underline"
-            onClick={() => workspace && switchWorkspace(workspace.id)}
-          >
-            <h1>{workspace.name}</h1>
+      <div className="flex justify-between items-center">
+        <nav className="flex flex-wrap items-center gap-2 text-sm text-text-color/70">
+          {workspace && (
+            <Link
+              to="/app/dashboard"
+              className="hover:underline"
+              onClick={() => workspace && switchWorkspace(workspace.id)}
+            >
+              <h1>{workspace.name}</h1>
+            </Link>
+          )}
+          <h1>/</h1>
+          <h1 className="text-primary-color">{project?.name}</h1>
+        </nav>
+        <div>
+          <Link to={`/app/projects/${projectId}/scene`}>
+            <FilledButton>
+              <i class="fa-brands fa-unity text-text-color p-2 transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
+            </FilledButton>
           </Link>
-        )}
-        <h1>/</h1>
-        <h1 className="text-primary-color">{project?.name}</h1>
-      </nav>
+        </div>
+      </div>
 
       <p>{project?.description}</p>
 
       <div className="flex gap-3 mt-5">
-        <Link to={`/app/projects/${projectId}/scene`}>
-          <FilledButton>
-            Перейти к сцене
-          </FilledButton>
-        </Link>
-
         <UnfilledButton onClick={() => setShowStageModal(true)}>
+          <i class="fa-solid fa-upload pr-2 transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
           Загрузить этап
         </UnfilledButton>
 
         <Link to={`/app/projects/${projectId}/results`}>
           <FilledButton>
+            <i class="fa-regular fa-file text-text-color transition-all active:scale-95 cursor-pointer hover:brightness-75"></i>
             Перейти к результатам
           </FilledButton>
         </Link>

@@ -98,7 +98,7 @@ export const StagesAccordion = ({ projectId }) => {
 
   return (
     <>
-      <h2 className="font-semibold mb-4 text-text-color">Загруженные этапы</h2>
+      <h2 className="font-semibold text-text-color">Загруженные этапы</h2>
       <Accordion
         items={stages}
         renderHeader={(stage) => (

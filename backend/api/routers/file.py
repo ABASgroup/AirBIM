@@ -32,7 +32,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post(
     "/{file_id}/confirm",
-    response_model=FileResponse,
+    response_model=FileResponse | FileTaskResponse | FilePointCloudConfirmResponse,
     dependencies=[
         Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
@@ -47,14 +47,15 @@ async def confirm_upload(
 
     You can't confirm file upload if file is not uploaded.
 
-    For BIM files starts IFC→LAZ→Potree conversion.
+    For BIM files starts IFC→LAZ→Potree conversion and independently starts
+    best-effort preview generation.
     For stage point clouds returns bounds; cleaning+Potree start via
     POST /stages/{stage_id}/clouds/clean.
     """
     bim_id: uuid.UUID | None = None
     point_cloud_id: uuid.UUID | None = None
+    created_task = None
     created_task_id: uuid.UUID | None = None
-    bounds: PointCloudBounds | None = None
 
     async with uow:
         file = await FileService.confirm_file_upload(
@@ -68,7 +69,7 @@ async def confirm_upload(
                 file_id=file.id,
                 session=uow.session
             )
-        except:
+        except NotFoundError:
             bim = None
 
         if bim and bim.point_cloud_id is None:
@@ -81,47 +82,47 @@ async def confirm_upload(
         if point_cloud:
             point_cloud_id = point_cloud.id
 
-        # if it's BIM - create one task for the full conversion pipeline
+        # BIM: create tracked task for IFC→LAZ→Potree (2 steps)
         if bim_id is not None:
             task_data = TaskModel(
                 entity_id=bim_id,
                 entity_type="bim",
                 workspace_id=file.workspace_id,
                 type=TaskType.CONVERTING_BIM,
-                steps=2
+                steps=2,
             )
             created_task = await TaskService.create_task(task_data, session=uow.session)
             created_task_id = created_task.id
-            pipeline = chain(
-                # type: ignore[attr-defined]
-                convert_bim_to_point_cloud.s(
-                    bim_id=bim_id, task_id=created_task_id),
-                # type: ignore[attr-defined]
-                convert_point_cloud_task.s(task_id=created_task_id),
-            )
-            pipeline.apply_async()
+        # point cloud: confirm only — clean+Potree started separately
 
-        # if it's a point cloud - create one task for point cloud conversion
-        elif point_cloud_id is not None:
-            task_data = TaskModel(
-                entity_id=point_cloud_id,
-                entity_type="point_cloud",
-                workspace_id=file.workspace_id,
-                type=TaskType.CONVERTING_POINT_CLOUD,
-                steps=1
-            )
-            created_task = await TaskService.create_task(task_data, session=uow.session)
-            created_task_id = created_task.id
-            convert_point_cloud_task.delay(  # type: ignore[attr-defined]
-                point_cloud_id=point_cloud_id,
-                task_id=created_task_id,
-            )
-        else:
-            pass
+    if bim_id is not None and created_task_id is not None:
+        pipeline = chain(
+            # type: ignore[attr-defined]
+            convert_bim_to_point_cloud.s(
+                bim_id=bim_id, task_id=created_task_id),
+            # type: ignore[attr-defined]
+            convert_point_cloud_task.s(task_id=created_task_id),
+        )
+        pipeline.apply_async()
+        generate_bim_preview.delay(bim_id=bim_id)  # type: ignore[attr-defined]
 
-    response = FileResponse.model_validate(file, from_attributes=True)
+    if point_cloud_id is not None and bim_id is None:
+        min_xyz, max_xyz = FileService.get_point_cloud_bounds_from_storage(
+            file.key, storage
+        )
+        return FilePointCloudConfirmResponse(
+            file=FileResponse.model_validate(file, from_attributes=True),
+            point_cloud_id=point_cloud_id,
+            bounds=PointCloudBounds(min_xyz=min_xyz, max_xyz=max_xyz),
+        )
 
-    return response
+    if created_task_id is not None and created_task is not None:
+        return FileTaskResponse(
+            file=FileResponse.model_validate(file, from_attributes=True),
+            task=TaskResponse.model_validate(created_task, from_attributes=True),
+        )
+
+    return FileResponse.model_validate(file, from_attributes=True)
 
 
 @router.delete(

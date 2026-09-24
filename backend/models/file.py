@@ -76,7 +76,8 @@ class PointCloud(BaseModel):
     )
 
     type: Mapped[PointCloudType] = mapped_column(
-        Enum(PointCloudType, name="point_cloud_types", create_constraint=True),
+        Enum(PointCloudType, name="point_cloud_types", create_constraint=True,
+             values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=PointCloudType.SCAN
     )

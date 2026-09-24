@@ -183,6 +183,7 @@ async def clean_stage_point_cloud(
             entity_type="point_cloud",
             workspace_id=stage.project.workspace_id,
             type=TaskType.CONVERTING_POINT_CLOUD,
+            steps=2,  # clean_raw_scan + Potree convert
         )
         created_task = await TaskService.create_task(task_data, session=uow.session)
 

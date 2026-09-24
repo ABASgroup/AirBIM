@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     git \
+    fonts-dejavu-core \
     libxcursor1 \
     libx11-6 \
     libgl1 \

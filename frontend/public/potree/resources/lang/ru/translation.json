@@ -1,0 +1,106 @@
+{
+	"tb": {
+		"navigation_opt": "Навигация",
+		"rendering_opt": "Внешний вид",
+		"tools_opt": "Инструменты",
+		"measurments_opt": "Измерения",
+		"clipping_opt": "Обрезка",
+		"annotations_opt": "Метки",
+		"materials_opt": "Материалы",
+		"scene_opt": "Сцена",
+		"classification_filter_opt": "Фильтр классификации",
+		"filters_opt": "Фильтры",
+		"parameters_opt": "Другие настройки",
+		"about_opt": "Информация о ПО"
+	},
+	"tt": {
+		"angle_measurement": "Измерение угла",
+		"point_measurement": "Координаты точки",
+		"distance_measurement": "Измерение дистанции",
+		"height_measurement": "Измерение высоты",
+		"circle_measurement": "Измерение окружности",
+		"area_measurement": "Измерение площади",
+		"volume_measurement": "Измерение объёма",
+		"height_profile": "Профиль высот",
+		"annotation": "Метка",
+		"clip_volume": "Обрезка по объёму",
+		"clip_polygon": "Обрезка по полигону",
+		"screen_clip_box": "Нарисуйте рамку выделения. Требуется ортографический режим камеры!",
+		"clip_plane_x": "Обрежьте плоскость по оси X",
+		"clip_plane_y": "Обрежьте плоскость по оси Y",
+		"clip_plane_z": "Обрежьте плоскость по оси Z",
+		"remove_all_measurement": "Удалить все измерения",
+		"left_view_control": "Вид слева",
+		"right_view_control": "Вид справа",
+		"front_view_control": "Вид спереди",
+		"back_view_control": "Вид сзади",
+		"top_view_control": "Вид сверху",
+		"bottom_view_control": "Вид снизу",
+		"focus_control": "Показать полностью",
+		"orbit_control": "Управление «Орбита»",
+		"flight_control": "Управление «Полёт»",
+		"heli_control": "Управление «Вертолёт»",
+		"earth_control": "Управление «Земля»",
+		"perspective_camera_control": "Перспективная камера",
+		"orthographic_camera_control": "Ортогональная камера",
+		"navigation_cube_control": "Навигационный куб",
+		"remove_all_clipping_volumes": "Удалить все области обрезки",
+		"compass": "Компас",
+		"camera_animation": "Анимация камеры"
+	},
+	"appearance": {
+		"nb_max_pts": "Бюджет точек", 
+		"point_size": "Размер точек",
+		"min_point_size": "Мин. размер",
+		"point_opacity": "Прозрачность",
+		"field_view": "Поле зрения",
+		"point_size_type": "Тип размера точек",
+		"point_material": "Материалы",
+		"elevation_range": "Диапазон высот",
+		"extra_range": "Скалярный диапозон",
+		"point_quality": "Качество",
+		"point_shape": "Форма",
+		"edl_radius": "Радиус",
+		"edl_strength": "Интенсивность",
+		"edl_opacity": "Прозрачность",
+		"edl_enable": "Включен",
+		"min_node_size": "Мин. размер узла",
+		"clip_mode": "Режим обрезки",
+		"move_speed": "Скорость",
+		"skybox": "Небо",
+		"bottom_lock": "Удерживать над землёй",
+		"box": "Сетка",
+		"length_unit": "Единица длины",
+		"freeze": "Зафиксировать вид",
+		"language": "Язык",
+		"backface_culling": "Отсечение задних граней"
+	},
+	"measurements": {
+		"clip": "обрезать",
+		"show": "показать объём"
+	},
+	"annotations": {
+		"show3D": "показать в 3D",
+		"showMap": "показать на карте"
+	}, 
+	"profile": {
+		"nb_points": "Количество точек",
+		"title": "Профиль высот",
+		"save_las": "Сохранить в LAS(3D)",
+		"save_ortho": "Сохранить в CSV(2D)"
+	},
+	"scene": {
+		"camera_position": "Положение камеры",
+		"camera_target": "Цель камеры"
+	},
+	"filters": {
+		"return_number": "Отражение чисел",
+		"number_of_returns": "Число отражений",
+		"gps_min": "мин.",
+		"gps_max": "макс.",
+		"gps_time": "Время GPS"
+	},
+	"settings": {
+		"language": "Язык"
+	}
+}
