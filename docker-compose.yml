@@ -1,20 +1,20 @@
 services:
   storage:
     container_name: airbim-storage
-    image: quay.io/minio/minio:latest
+    image: chrislusf/seaweedfs:4.15
     restart: unless-stopped
     environment:
-      - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY_ID}
-      - MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY}
-      - MINIO_BUCKET=${STORAGE_BUCKET}
-    command: server /data --console-address ":9001"
+      - AWS_ACCESS_KEY_ID=${STORAGE_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${STORAGE_SECRET_KEY}
+      - S3_BUCKET=${STORAGE_BUCKET}
+    command: mini -dir=/data -s3.port=${STORAGE_PORT_INTERNAL:-8333}
     ports:
-      - "${STORAGE_PORT_EXTERNAL}:${STORAGE_PORT_INTERNAL}"
-      - "9001:9001"
+      - "${STORAGE_PORT_EXTERNAL:-8333}:${STORAGE_PORT_INTERNAL:-8333}"
+      - "${STORAGE_ADMIN_PORT_EXTERNAL:-23646}:23646"
     volumes:
-      - storage_data:/data
+      - seaweed_data:/data
     healthcheck:
-      test: [ "CMD", "curl", "-f", "${STORAGE_INTERNAL_ENDPOINT}/minio/health/live" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:9333/cluster/status" ]
       interval: 1s
       timeout: 5s
       retries: 5
@@ -191,7 +191,7 @@ services:
 
 volumes:
   database_data:
-  storage_data:
+  seaweed_data:
   cache_data:
   broker_data:
 

@@ -107,7 +107,7 @@ _Bash_
 | <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" align="center"> | Контейнеризация |
 | <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" align="center"> | База данных |
 | <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" align="center"> | Кэш / брокер сообщений |
-| <img src="https://img.shields.io/badge/MinIO-C72E49?style=for-the-badge&logo=minio&logoColor=white" alt="MinIO" align="center"> | S3-совместимое хранилище |
+| <img src="https://img.shields.io/badge/SeaweedFS-2F855A?style=for-the-badge&logo=leaflet&logoColor=white" alt="SeaweedFS" align="center"> | S3-совместимое хранилище |
 | <img src="https://img.shields.io/badge/Micromamba-00CC96?style=for-the-badge&logo=anaconda&logoColor=white" alt="Micromamba" align="center"> | Управление окружениями |
 | <img src="https://img.shields.io/badge/PDAL-4B8BBE?style=for-the-badge&logo=cloud&logoColor=white" alt="PDAL" align="center"> | Обработка облаков точек |
 | <img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy" align="center"> | Научные вычисления |
@@ -135,14 +135,14 @@ graph TB
         DB[("PostgreSQL 15<br/>database")]
         Cache[("Redis<br/>cache")]
         Broker[("Redis<br/>broker")]
-        MinIO[("MinIO<br/>S3-совместимое<br/>хранилище")]
+        SeaweedFS[("SeaweedFS<br/>S3-совместимое<br/>хранилище")]
     end
 
     Nginx -->|"/api/"| API
     Vite -->|"/api/" proxy| API
 
     API --> DB
-    API --> MinIO
+    API --> SeaweedFS
     API --> Cache
 
     Beat --> Broker
@@ -154,8 +154,8 @@ graph TB
     WorkerConv --> DB
     WorkerProc --> DB
 
-    WorkerConv --> MinIO
-    WorkerProc --> MinIO
+    WorkerConv --> SeaweedFS
+    WorkerProc --> SeaweedFS
 
     Flower --> Broker
 ```
@@ -171,7 +171,7 @@ graph TB
 | `database` | `postgres:15-alpine` | Реляционная БД |
 | `cache` | `redis:latest` | Кэширование |
 | `broker` | `redis:latest` | Брокер сообщений для Celery |
-| `storage` | `quay.io/minio/minio` | S3-совместимое объектное хранилище |
+| `storage` | `chrislusf/seaweedfs:4.15` | S3-совместимое объектное хранилище |
 
 ---
 
