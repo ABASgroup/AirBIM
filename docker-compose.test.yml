@@ -94,7 +94,7 @@ services:
     command: ["sh", "-c", "exec python -m watchfiles --filter python 'celery -A infrastructure.celery_app:celery_app worker -l info -Q default --concurrency=4' /app"]
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.worker
     environment:
       - C_FORCE_ROOT=true
     env_file:

@@ -4,11 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from core.exceptions import NotFoundError
 from core.roles import Permission
-from core.dependencies import (
-    get_database_uow,
-    get_storage,
-    DatabaseSessionUOW
-)
+from core.dependencies import get_database_uow, get_storage, DatabaseSessionUOW
 from infrastructure.storage import Storage
 from models.task import TaskType
 from services.file import FileService
@@ -22,7 +18,7 @@ from schemas.file import (
     FileTaskResponse,
     FilePointCloudConfirmResponse,
     PointCloudBounds,
-    PointCloudResponse
+    PointCloudResponse,
 )
 from schemas.task import TaskResponse, TaskModel
 from api.dependencies import require_file_permission
@@ -33,14 +29,13 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.post(
     "/{file_id}/confirm",
     response_model=FileResponse | FileTaskResponse | FilePointCloudConfirmResponse,
-    dependencies=[
-        Depends(require_file_permission(Permission.FILES_UPLOAD))],
+    dependencies=[Depends(require_file_permission(Permission.FILES_UPLOAD))],
 )
 async def confirm_upload(
     file_id: uuid.UUID,
     file_data: FileDataRequest,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    storage: Storage = Depends(get_storage),
 ):
     """
     Confirm finishing uploading a file.
@@ -66,8 +61,7 @@ async def confirm_upload(
         )
         try:
             bim = await FileService.get_bim_by_file_id(
-                file_id=file.id,
-                session=uow.session
+                file_id=file.id, session=uow.session
             )
         except NotFoundError:
             bim = None
@@ -76,8 +70,7 @@ async def confirm_upload(
             bim_id = bim.id
 
         point_cloud = await FileService.get_point_cloud_by_file_id(
-            file_id=file.id,
-            session=uow.session
+            file_id=file.id, session=uow.session
         )
         if point_cloud:
             point_cloud_id = point_cloud.id
@@ -98,8 +91,7 @@ async def confirm_upload(
     if bim_id is not None and created_task_id is not None:
         pipeline = chain(
             # type: ignore[attr-defined]
-            convert_bim_to_point_cloud.s(
-                bim_id=bim_id, task_id=created_task_id),
+            convert_bim_to_point_cloud.s(bim_id=bim_id, task_id=created_task_id),
             # type: ignore[attr-defined]
             convert_point_cloud_task.s(task_id=created_task_id),
         )
@@ -128,13 +120,12 @@ async def confirm_upload(
 @router.delete(
     "/{file_id}",
     response_model=FileResponse,
-    dependencies=[
-        Depends(require_file_permission(Permission.FILES_DELETE))],
+    dependencies=[Depends(require_file_permission(Permission.FILES_DELETE))],
 )
 async def delete_file(
     file_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    storage: Storage = Depends(get_storage),
 ):
     """
     Delete the file.
@@ -147,9 +138,7 @@ async def delete_file(
     """
     async with uow:
         deleted_file = await FileService.delete_file(
-            file_id=file_id,
-            session=uow.session,
-            storage=storage
+            file_id=file_id, session=uow.session, storage=storage
         )
 
     return deleted_file
@@ -158,13 +147,12 @@ async def delete_file(
 @router.post(
     "/{file_id}/download",
     response_model=FileLinkResponse,
-    dependencies=[
-        Depends(require_file_permission(Permission.FILES_DOWNLOAD))],
+    dependencies=[Depends(require_file_permission(Permission.FILES_DOWNLOAD))],
 )
 async def get_download_link(
     file_id: uuid.UUID,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    storage: Storage = Depends(get_storage),
 ):
     """
     Get a temporary link to download a file.
@@ -174,19 +162,13 @@ async def get_download_link(
     Requires permission.
     """
     async with uow:
-        file = await FileService.get_file(
-            file_id=file_id,
-            session=uow.session
-        )
+        file = await FileService.get_file(file_id=file_id, session=uow.session)
         url = await FileService.generate_file_download_link(
-            file_id=file_id,
-            session=uow.session,
-            storage=storage
+            file_id=file_id, session=uow.session, storage=storage
         )
 
     response_data = FileLinkResponse(
-        file=FileResponse.model_validate(file, from_attributes=True),
-        url=url
+        file=FileResponse.model_validate(file, from_attributes=True), url=url
     )
     return response_data
 
@@ -194,12 +176,10 @@ async def get_download_link(
 @router.post(
     "/point_clouds/{point_cloud_id}",
     response_model=PointCloudResponse,
-    dependencies=[
-        Depends(require_file_permission(Permission.FILES_VIEW))],
+    dependencies=[Depends(require_file_permission(Permission.FILES_VIEW))],
 )
 async def get_point_cloud(
-    point_cloud_id: uuid.UUID,
-    uow: DatabaseSessionUOW = Depends(get_database_uow)
+    point_cloud_id: uuid.UUID, uow: DatabaseSessionUOW = Depends(get_database_uow)
 ):
     """
     Get point cloud information.
@@ -207,7 +187,9 @@ async def get_point_cloud(
     Requires permission.
     """
     async with uow:
-        point_cloud = await FileService.get_point_cloud(point_cloud_id, session=uow.session)
+        point_cloud = await FileService.get_point_cloud(
+            point_cloud_id, session=uow.session
+        )
 
     return point_cloud
 
@@ -224,7 +206,7 @@ async def get_point_cloud_file(
     filename: str,
     request: Request,
     uow: DatabaseSessionUOW = Depends(get_database_uow),
-    storage: Storage = Depends(get_storage)
+    storage: Storage = Depends(get_storage),
 ):
     """
     Get a specific file of the converted point cloud by its filename.
@@ -235,17 +217,16 @@ async def get_point_cloud_file(
     """
     async with uow:
         await FileService.get_point_cloud(point_cloud_id, session=uow.session)
-        files = await FileService.get_converted_point_cloud_files(point_cloud_id, session=uow.session)
+        files = await FileService.get_converted_point_cloud_files(
+            point_cloud_id, session=uow.session
+        )
 
-    target_file = next(
-        (file for file in files if file.filename == filename), None)
+    target_file = next((file for file in files if file.filename == filename), None)
     if target_file is None:
-        raise NotFoundError(
-            f"File '{filename}' not found for this point cloud")
+        raise NotFoundError(f"File '{filename}' not found for this point cloud")
 
     range_header = request.headers.get("range")
-    s3_response = storage.get_object(
-        target_file.key, range_header=range_header)
+    s3_response = storage.get_object(target_file.key, range_header=range_header)
 
     headers = {
         "Accept-Ranges": "bytes",

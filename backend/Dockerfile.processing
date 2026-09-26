@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM mambaorg/micromamba:latest
 
 ENV MAMBA_DOCKERFILE_ACTIVATE=1
@@ -5,7 +6,9 @@ ENV MAMBA_DOCKERFILE_ACTIVATE=1
 USER root
 WORKDIR /app
 
-RUN apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
     && apt-get install -y --no-install-recommends \
     git \
     fonts-dejavu-core \
@@ -13,8 +16,7 @@ RUN apt-get update \
     libx11-6 \
     libgl1 \
     libglib2.0-0 \
-    xvfb \
-    && rm -rf /var/lib/apt/lists/*
+    xvfb
 
 USER $MAMBA_USER
 
@@ -23,13 +25,16 @@ RUN micromamba install -y -n base -c conda-forge \
     pip "python-pdal>=3.5" \
     && micromamba clean --all --yes
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER . .
-
 ARG EXTRAS=""
 ENV EXTRAS=${EXTRAS}
 
-RUN sed 's/\${EXTRAS}/'"$EXTRAS"'/g' requirements.processing.txt > /tmp/requirements.patched.txt
+COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.base.txt requirements.worker.txt requirements.processing.txt /tmp/requirements/
 
-RUN --mount=type=secret,id=github_token,uid=57439 \
+RUN sed 's/\${EXTRAS}/'"$EXTRAS"'/g' /tmp/requirements/requirements.processing.txt > /tmp/requirements/requirements.patched.txt
+
+RUN --mount=type=cache,target=/opt/pip-cache,uid=57439 \
+    --mount=type=secret,id=github_token,uid=57439 \
     export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
-    micromamba run -n base pip install --no-cache-dir -r requirements.txt -r /tmp/requirements.patched.txt
+    PIP_CACHE_DIR=/opt/pip-cache micromamba run -n base pip install -r /tmp/requirements/requirements.patched.txt
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER . .

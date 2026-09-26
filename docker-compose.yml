@@ -37,9 +37,6 @@ services:
       interval: 1s
       timeout: 5s
       retries: 5
-    depends_on:
-      storage:
-        condition: service_healthy
 
   cache:
     container_name: airbim-cache
@@ -55,9 +52,6 @@ services:
       interval: 1s
       timeout: 5s
       retries: 5
-    depends_on:
-      database:
-        condition: service_healthy
 
   broker:
     container_name: airbim-broker
@@ -73,16 +67,13 @@ services:
       interval: 1s
       timeout: 5s
       retries: 5
-    depends_on:
-      cache:
-        condition: service_healthy
 
   worker:
     container_name: airbim-worker
     command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "worker", "-l", "info", "-Q", "default", "--concurrency=4" ]
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.worker
     env_file:
       - .env
     healthcheck:
@@ -110,7 +101,9 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      worker:
+      broker:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
   worker-processing:
@@ -131,7 +124,9 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      worker-converter:
+      broker:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
   beat:
@@ -139,7 +134,7 @@ services:
     command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "beat", "-l", "info" ]
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.worker
     env_file:
       - .env
     healthcheck:
@@ -148,14 +143,16 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      worker-processing:
+      broker:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
   flower:
     container_name: airbim-flower
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.worker
     command: [ "celery", "-A", "infrastructure.celery_app:celery_app", "flower" ]
     env_file:
       - .env
@@ -167,7 +164,9 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      worker-processing:
+      broker:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
   backend:
@@ -186,7 +185,9 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
-      worker-processing:
+      storage:
+        condition: service_healthy
+      database:
         condition: service_healthy
 
 volumes:

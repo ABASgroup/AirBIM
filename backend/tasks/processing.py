@@ -9,17 +9,11 @@ from models.recording_result import RecordingResultType
 from schemas.file import FileModel
 from schemas.recording_result import RecordingResultModel
 from utils.files import clean_path
-from utils.report_generation import (
-    extract_report_sections,
-    generate_pdf_report,
-    translate_recording_result_type,
-)
 from infrastructure.celery_app import celery_app
 from infrastructure.async_runtime import run_async
 from core.dependencies import get_database_uow, get_storage
 from services.file import FileService
 from services.stage import StageService
-
 
 # heavy tasks with long duration must never use database transaction for far too long
 # use short transactions
@@ -32,11 +26,11 @@ storage = get_storage()
 
 class ProcessingTask(BaseCeleryTask):
     abstract = True
-    queue = 'processing'
+    queue = "processing"
 
 
 @celery_app.task(
-    queue='processing',
+    queue="processing",
     autoretry_for=(ConnectionError, TimeoutError),
     retry_backoff=True,
     retry_backoff_max=600,
@@ -72,9 +66,7 @@ def generate_bim_preview(bim_id: UUID) -> None:
                 img_format="jpg",
             )
             image_info = FileService.collect_file_data(image_path)
-            storage.upload_file_locally(
-                image_info["key"], str(image_path)
-            )
+            storage.upload_file_locally(image_info["key"], str(image_path))
             preview_data = FileModel(
                 filename=image_info["filename"],
                 key=image_info["key"],
@@ -98,10 +90,7 @@ def generate_bim_preview(bim_id: UUID) -> None:
     base=ProcessingTask,
 )
 def clean_raw_scan_task(
-    point_cloud_id: UUID,
-    config: dict | None = None,
-    *args,
-    **kwargs
+    point_cloud_id: UUID, config: dict | None = None, *args, **kwargs
 ):
     """
     Clean/crop a stage scan LAZ in place (overwrite same storage key).
@@ -120,9 +109,7 @@ def clean_raw_scan_task(
         pipeline_config = RawScanPipelineConfig(**(config or {}))
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            file_path = clean_path(
-                os.path.join(tmp_dir, point_cloud_file.filename)
-            )
+            file_path = clean_path(os.path.join(tmp_dir, point_cloud_file.filename))
             storage.download_file_locally(
                 point_cloud_file.key,
                 save_path=str(file_path),
@@ -180,30 +167,22 @@ def convert_bim_to_point_cloud(bim_id: UUID, task_id: UUID, *args, **kwargs) -> 
         ("keep-bounding-boxes", False),
         ("enable-layerset-slicing", False),
         ("no-parallel-mapping", False),
-        ("cache-shapes", False)
+        ("cache-shapes", False),
     ]
 
     async def run_task():
         async with get_database_uow() as uow:
 
-            bim = await FileService.get_bim(
-                bim_id,
-                session=uow.session
-            )
+            bim = await FileService.get_bim(bim_id, session=uow.session)
             bim_file = bim.file
 
         # all in temp_dir will be deleted after its done
         with tempfile.TemporaryDirectory() as tmp_dir:
-            file_path = clean_path(os.path.join(
-                tmp_dir, bim_file.filename))
-            output_path = clean_path(tmp_dir) / \
-                f"converted_bim_{file_path.stem}.laz"
+            file_path = clean_path(os.path.join(tmp_dir, bim_file.filename))
+            output_path = clean_path(tmp_dir) / f"converted_bim_{file_path.stem}.laz"
 
             # download bim file
-            storage.download_file_locally(
-                bim.file.key,
-                save_path=str(file_path)
-            )
+            storage.download_file_locally(bim.file.key, save_path=str(file_path))
 
             # convert
             bim_data = ifcopenshell.open(file_path)
@@ -222,7 +201,7 @@ def convert_bim_to_point_cloud(bim_id: UUID, task_id: UUID, *args, **kwargs) -> 
                 geom_settings_params=geom_settings_params,
                 random_seed=42,
                 visibility_filter=True,
-                remove_context_objects=True
+                remove_context_objects=True,
             )
 
             # collect file info
@@ -237,26 +216,25 @@ def convert_bim_to_point_cloud(bim_id: UUID, task_id: UUID, *args, **kwargs) -> 
                 size=file_info["size"],
                 content_type=file_info["content_type"],
                 status=FileStatus.UPLOADED,
-                workspace_id=bim_file.workspace_id
+                workspace_id=bim_file.workspace_id,
             )
 
             async with get_database_uow() as uow:
                 point_cloud_id = await FileService.save_converted_bim_file(
-                    bim.id,
-                    file_data=file_data,
-                    session=uow.session
+                    bim.id, file_data=file_data, session=uow.session
                 )
 
         return point_cloud_id
+
     point_cloud_id = run_async(run_task())
     return point_cloud_id
 
 
-@celery_app.task(
-    base=ProcessingTask
-)
-def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwargs) -> UUID:
-    from airbim_processing import compute_deviations    # type: ignore
+@celery_app.task(base=ProcessingTask)
+def compare_scan_and_plan(
+    stage_id: UUID, tolerance: float = 0.05, *args, **kwargs
+) -> UUID:
+    from airbim_processing import compute_deviations  # type: ignore
 
     async def run_task():
         async with get_database_uow() as uow:
@@ -264,10 +242,15 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
             # get stage and its point cloud
             stage = await StageService.get_stage(stage_id, session=uow.session)
             stage_point_cloud = await FileService.get_point_cloud(
-                stage.point_cloud.id, session=uow.session)
+                stage.point_cloud.id, session=uow.session
+            )
             # get bim (POINT CLOUD MUST ALREADY EXIST)
-            bim = await FileService.get_bim_by_project_id(stage.project_id, session=uow.session)
-            bim_point_cloud = await FileService.get_point_cloud(bim.point_cloud_id, session=uow.session)
+            bim = await FileService.get_bim_by_project_id(
+                stage.project_id, session=uow.session
+            )
+            bim_point_cloud = await FileService.get_point_cloud(
+                bim.point_cloud_id, session=uow.session
+            )
 
             # get point cloud files
             # bim point cloud is the ideal point cloud
@@ -277,19 +260,19 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             bim_point_cloud_path = clean_path(
-                os.path.join(tmp_dir, stage_point_cloud_file.filename))
-            stage_point_cloud_path = clean_path(os.path.join(
-                tmp_dir, bim_point_cloud_file.filename))
+                os.path.join(tmp_dir, stage_point_cloud_file.filename)
+            )
+            stage_point_cloud_path = clean_path(
+                os.path.join(tmp_dir, bim_point_cloud_file.filename)
+            )
             output_path = clean_path(tmp_dir) / "plan_fact_result.laz"
 
             # download files
             storage.download_file_locally(
-                bim_point_cloud_file.key,
-                save_path=str(bim_point_cloud_path)
+                bim_point_cloud_file.key, save_path=str(bim_point_cloud_path)
             )
             storage.download_file_locally(
-                stage_point_cloud_file.key,
-                save_path=str(stage_point_cloud_path)
+                stage_point_cloud_file.key, save_path=str(stage_point_cloud_path)
             )
 
             # run comparison
@@ -298,7 +281,7 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
                 real_laz_path=stage_point_cloud_path,
                 ideal_laz_path=bim_point_cloud_path,
                 output_laz_path=output_path,
-                tolerance=tolerance
+                tolerance=tolerance,
             )
             results = asdict(results)
 
@@ -316,12 +299,12 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
                 size=file_info["size"],
                 content_type=file_info["content_type"],
                 status=FileStatus.UPLOADED,
-                workspace_id=bim_point_cloud_file.workspace_id
+                workspace_id=bim_point_cloud_file.workspace_id,
             )
             result_point_cloud, _ = await FileService.create_point_cloud(
                 point_cloud_type=PointCloudType.RECORDING,
                 file_data=file_data,
-                session=uow.session
+                session=uow.session,
             )
             # recording result
             # JSONB requires JSON-serializable values (dates as ISO strings)
@@ -336,29 +319,24 @@ def compare_scan_and_plan(stage_id: UUID, tolerance: float = 0.05, *args, **kwar
                 project_id=stage.project_id,
                 data=results,
                 type=RecordingResultType.PLAN_FACT,
-                point_cloud_id=result_point_cloud.id)
+                point_cloud_id=result_point_cloud.id,
+            )
 
             recording_result = await RecordingResultService.create_recording_result(
-                result_data,
-                session=uow.session
+                result_data, session=uow.session
             )
 
             return recording_result.id
+
     result_id = run_async(run_task())
     return result_id
 
 
-@celery_app.task(
-    base=ProcessingTask
-)
+@celery_app.task(base=ProcessingTask)
 def check_progress(
-    old_stage_id: UUID,
-    new_stage_id: UUID,
-    tolerance: float = 0.05,
-    *args,
-    **kwargs
+    old_stage_id: UUID, new_stage_id: UUID, tolerance: float = 0.05, *args, **kwargs
 ) -> UUID:
-    from airbim_processing import compute_progress    # type: ignore
+    from airbim_processing import compute_progress  # type: ignore
 
     async def run_task():
         async with get_database_uow() as uow:
@@ -368,9 +346,11 @@ def check_progress(
             new_stage = await StageService.get_stage(new_stage_id, session=uow.session)
 
             old_stage_point_cloud = await FileService.get_point_cloud(
-                old_stage.point_cloud.id, session=uow.session)
+                old_stage.point_cloud.id, session=uow.session
+            )
             new_stage_point_cloud = await FileService.get_point_cloud(
-                new_stage.point_cloud.id, session=uow.session)
+                new_stage.point_cloud.id, session=uow.session
+            )
 
             # get point cloud files
             old_point_cloud_file = old_stage_point_cloud.file
@@ -379,21 +359,21 @@ def check_progress(
         with tempfile.TemporaryDirectory() as tmp_dir:
             # paths to existing point clouds
             old_point_cloud_path = clean_path(
-                os.path.join(tmp_dir, old_point_cloud_file.filename))
+                os.path.join(tmp_dir, old_point_cloud_file.filename)
+            )
             new_point_cloud_path = clean_path(
-                os.path.join(tmp_dir, new_point_cloud_file.filename))
+                os.path.join(tmp_dir, new_point_cloud_file.filename)
+            )
 
             # path to resulting point cloud
             output_path = clean_path(tmp_dir) / "progress_result.laz"
 
             # download files
             storage.download_file_locally(
-                old_point_cloud_file.key,
-                save_path=str(old_point_cloud_path)
+                old_point_cloud_file.key, save_path=str(old_point_cloud_path)
             )
             storage.download_file_locally(
-                new_point_cloud_file.key,
-                save_path=str(new_point_cloud_path)
+                new_point_cloud_file.key, save_path=str(new_point_cloud_path)
             )
 
             # run comparison
@@ -402,7 +382,7 @@ def check_progress(
                 before_laz_path=old_point_cloud_path,
                 after_laz_path=new_point_cloud_path,
                 output_laz_path=output_path,
-                tolerance=tolerance
+                tolerance=tolerance,
             )
             results = asdict(results)
 
@@ -420,20 +400,20 @@ def check_progress(
                 size=file_info["size"],
                 content_type=file_info["content_type"],
                 status=FileStatus.UPLOADED,
-                workspace_id=old_stage.project.workspace_id
+                workspace_id=old_stage.project.workspace_id,
             )
             result_point_cloud, _ = await FileService.create_point_cloud(
                 point_cloud_type=PointCloudType.RECORDING,
                 file_data=file_data,
-                session=uow.session
+                session=uow.session,
             )
 
             # append extra data you need
             # all in str, otherwise expect errors
-            results['tolerance'] = tolerance
-            results['project_id'] = str(old_stage.project_id)
-            results['old_stage_id'] = str(old_stage.id)
-            results['new_stage_id'] = str(new_stage.id)
+            results["tolerance"] = tolerance
+            results["project_id"] = str(old_stage.project_id)
+            results["old_stage_id"] = str(old_stage.id)
+            results["new_stage_id"] = str(new_stage.id)
 
             # recording result
             results["project_name"] = old_stage.project.name
@@ -452,22 +432,23 @@ def check_progress(
                 project_id=new_stage.project_id,
                 data=results,
                 type=RecordingResultType.PROGRESS,
-                point_cloud_id=result_point_cloud.id)
+                point_cloud_id=result_point_cloud.id,
+            )
 
             recording_result = await RecordingResultService.create_recording_result(
-                result_data,
-                session=uow.session
+                result_data, session=uow.session
             )
 
             return recording_result.id
+
     result_id = run_async(run_task())
     return result_id
 
 
-@celery_app.task(
-    base=ProcessingTask
-)
-def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwargs) -> UUID:
+@celery_app.task(base=ProcessingTask)
+def create_recording_result_pdf_report(
+    recording_result_id: UUID, *args, **kwargs
+) -> UUID:
     """
     Generates a .pdf report for the recording result and stores it.
 
@@ -478,13 +459,17 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
     Returns:
         UUID: ID of the resulting point cloud you might need later
     """
-    from airbim_processing import laz_to_images    # type: ignore
+    from airbim_processing import laz_to_images  # type: ignore
+    from utils.report_generation import (
+        extract_report_sections,
+        generate_pdf_report,
+        translate_recording_result_type,
+    )
 
     async def run_task():
         async with get_database_uow() as uow:
             recording_result = await RecordingResultService.get_recording_result(
-                recording_result_id,
-                session=uow.session
+                recording_result_id, session=uow.session
             )
 
             workspace_id = recording_result.project.workspace_id
@@ -501,33 +486,36 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
             }
 
             if recording_result.type == RecordingResultType.PROGRESS:
-                section_specs.update({
-                    "Старый этап": [
-                        ("old_stage_name", "Название"),
-                        ("old_stage_description", "Описание"),
-                        ("old_stage_start_date", "Дата начала"),
-                    ],
-                    "Новый этап": [
-                        ("new_stage_name", "Название"),
-                        ("new_stage_description", "Описание"),
-                        ("new_stage_start_date", "Дата начала"),
-                    ],
-                })
+                section_specs.update(
+                    {
+                        "Старый этап": [
+                            ("old_stage_name", "Название"),
+                            ("old_stage_description", "Описание"),
+                            ("old_stage_start_date", "Дата начала"),
+                        ],
+                        "Новый этап": [
+                            ("new_stage_name", "Название"),
+                            ("new_stage_description", "Описание"),
+                            ("new_stage_start_date", "Дата начала"),
+                        ],
+                    }
+                )
             else:
-                section_specs.update({
-                    "Этап": [
-                        ("stage_name", "Название"),
-                        ("stage_description", "Описание"),
-                        ("stage_start_date", "Дата начала"),
-                    ],
-                })
+                section_specs.update(
+                    {
+                        "Этап": [
+                            ("stage_name", "Название"),
+                            ("stage_description", "Описание"),
+                            ("stage_start_date", "Дата начала"),
+                        ],
+                    }
+                )
 
             sections, data = extract_report_sections(data, section_specs)
 
             # get resulting point cloud
             result_point_cloud = await FileService.get_point_cloud(
-                recording_result.point_cloud_id,
-                session=uow.session
+                recording_result.point_cloud_id, session=uow.session
             )
             # get file
             result_point_cloud_file = result_point_cloud.file
@@ -539,25 +527,26 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
             result_point_cloud_file_path = clean_path(
                 os.path.join(tmp_dir, result_point_cloud_file.filename)
             )
-            report_path = clean_path(os.path.join(
-                tmp_dir, f"{recording_result.type}_report.pdf"))
+            report_path = clean_path(
+                os.path.join(tmp_dir, f"{recording_result.type}_report.pdf")
+            )
 
             # download file
             storage.download_file_locally(
-                result_point_cloud_file.key,
-                save_path=str(result_point_cloud_file_path)
+                result_point_cloud_file.key, save_path=str(result_point_cloud_file_path)
             )
 
             # collect images of the result
             photo_paths = laz_to_images(
-                laz_path=result_point_cloud_file_path,
-                output_dir=tmp_dir
+                laz_path=result_point_cloud_file_path, output_dir=tmp_dir
             )
 
             # append path dir
             # the library provides only names for the files
-            photo_paths = [clean_path(os.path.join(tmp_dir, photo_path))
-                           for photo_path in photo_paths]
+            photo_paths = [
+                clean_path(os.path.join(tmp_dir, photo_path))
+                for photo_path in photo_paths
+            ]
 
             photos_data = []
 
@@ -574,7 +563,7 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
                     size=photo_data["size"],
                     content_type=photo_data["content_type"],
                     status=FileStatus.UPLOADED,
-                    workspace_id=workspace_id
+                    workspace_id=workspace_id,
                 )
 
                 photos_data.append(photo_data)
@@ -592,8 +581,7 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
             report_file_data = FileService.collect_file_data(report_path)
 
             # upload to the storage
-            storage.upload_file_locally(
-                report_file_data["key"], str(report_path))
+            storage.upload_file_locally(report_file_data["key"], str(report_path))
 
         # save everything in the database
         async with get_database_uow() as uow:
@@ -603,15 +591,16 @@ def create_recording_result_pdf_report(recording_result_id: UUID, *args, **kwarg
                 size=report_file_data["size"],
                 content_type=report_file_data["content_type"],
                 status=FileStatus.UPLOADED,
-                workspace_id=workspace_id
+                workspace_id=workspace_id,
             )
             await RecordingResultService.create_pdf_report(
                 recording_result_id,
                 file_data,
                 photos_file_data=photos_data,
-                session=uow.session
+                session=uow.session,
             )
 
         return recording_result.point_cloud_id
+
     result_point_cloud = run_async(run_task())
     return result_point_cloud

@@ -1,0 +1,4 @@
+-r requirements.worker.txt
+
+laspy==2.7.0
+lazrs==0.8.0

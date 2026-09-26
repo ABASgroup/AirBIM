@@ -1,0 +1,7 @@
+-r requirements.base.txt
+
+flower==2.0.1
+watchfiles==0.24.0
+
+reportlab==4.5.1
+openpyxl==3.1.5

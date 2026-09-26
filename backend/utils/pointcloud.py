@@ -1,16 +1,19 @@
 """Point cloud geometry helpers (API-safe: laspy only, no PDAL)."""
+
 from pathlib import Path
 
-import laspy
 
-
-def get_laz_bounds(path: str | Path) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+def get_laz_bounds(
+    path: str | Path,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     """
     Read min/max XYZ from a LAS/LAZ file header without loading all points.
 
     Returns:
         (min_xyz, max_xyz) as ((x_min, y_min, z_min), (x_max, y_max, z_max))
     """
+    import laspy
+
     path = Path(path)
     with laspy.open(path) as reader:
         header = reader.header

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -9,12 +9,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get install -y --no-install-recommends \
     fonts-dejavu-core
 
-COPY requirements.base.txt requirements.api.txt ./
+COPY requirements.base.txt requirements.worker.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.api.txt
+    pip install -r requirements.worker.txt
 
 COPY . .
-
-EXPOSE 8000
-
-CMD ["sh", "entrypoint.sh"]

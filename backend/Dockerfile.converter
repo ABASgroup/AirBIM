@@ -1,33 +1,36 @@
-FROM python:3.12-slim AS potree-builder
+# syntax=docker/dockerfile:1
+FROM python:3.13-slim AS potree-builder
 
 ARG POTREE_CONVERTER_REF=2.1.1
 
-RUN apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
     && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
     liblaszip-dev \
-    libtbb-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libtbb-dev
 
 RUN git clone --depth 1 --branch "${POTREE_CONVERTER_REF}" https://github.com/potree/PotreeConverter.git /tmp/PotreeConverter \
     && cmake -S /tmp/PotreeConverter -B /tmp/PotreeConverter/build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build /tmp/PotreeConverter/build --target PotreeConverter -j"$(nproc)"
 
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
-RUN apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
     && apt-get install -y --no-install-recommends \
     liblaszip8 \
-    liblaszip-dev \
-    libtbb12 \
-    && rm -rf /var/lib/apt/lists/*
+    libtbb12
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.base.txt requirements.worker.txt requirements.converter.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.converter.txt
 
 COPY . .
 
